@@ -30,7 +30,6 @@ public struct PatherWayPoint : IBufferElementData
     public float3 Position;
 }
 
-// ---------- NavSystem (clean, single-threaded NavMeshQuery usage) ----------
 [BurstCompile]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct NavSystem : ISystem
@@ -43,7 +42,10 @@ public partial struct NavSystem : ISystem
     private uint _maxBucket;
     // Keep a list of entities that need pathing this frame (temporary each update)ss
     private EntityQuery _patherQuery;
+
+    //To stop too many queries in one update
     const int MAX_QUERIES = 10000;
+    
     public void OnCreate(ref SystemState state)
     {
         _bucket = 0;
@@ -67,7 +69,7 @@ public partial struct NavSystem : ISystem
             }
             catch
             {
-                // swallow - disposal can fail if not created, but we try best-effort
+                //gulp, disposal can fail if not created, but we try
             }
         }
         if (_navQueries.IsCreated) _navQueries.Dispose();
