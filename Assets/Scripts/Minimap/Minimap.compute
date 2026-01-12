@@ -1,0 +1,40 @@
+#pragma kernel Clear
+#pragma kernel Stamp
+
+StructuredBuffer<float2> _Positions;
+float4 _Color;
+int _UnitCount;
+RWTexture2D<float4> _Result;
+
+[numthreads(8, 8, 1)]
+void Clear(uint3 id : SV_DispatchThreadID)
+{
+    uint w, h;
+    _Result.GetDimensions(w, h);
+
+    if (id.x >= w || id.y >= h)
+        return;
+
+    _Result[int2(id.xy)] = float4(0, 0, 0, 0);
+}
+
+
+[numthreads(64, 1, 1)]
+void Stamp(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+    if (index >= _UnitCount)
+        return;
+
+    uint w, h;
+    _Result.GetDimensions(w, h);
+
+    float2 pos = _Positions[index];
+    int2 p = int2(pos.x * w, pos.y * h);
+
+    // Safety clamp
+    p.x = clamp(p.x, 0, w - 1);
+    p.y = clamp(p.y, 0, h - 1);
+
+    _Result[p] = _Color;
+}

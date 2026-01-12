@@ -1,0 +1,5 @@
+{
+    "TargetBucketCount": 16,
+    "NavBucketCount": 16,
+    "SpatialPartitionTargetCount": 16
+}
