@@ -120,9 +120,9 @@ public partial struct UnitStateMachineJob : IJobEntity
         else
         {
             mov.ValueRW.Dest = transform.ValueRO.Position;
-            pather.ValueRW.Dest = transform.ValueRO.Position;
+            /*pather.ValueRW.Dest = transform.ValueRO.Position;
             pather.ValueRW.NeedsUpdate = true;
-            pather.ValueRW.PathCalculated = false;
+            pather.ValueRW.PathCalculated = false;*/
         }
     }
 
@@ -136,11 +136,11 @@ public partial struct UnitStateMachineJob : IJobEntity
         {
             uState.ValueRW.State = UnitStates.Idle;
         }
-        UnityEngine.Debug.DrawLine(
+        /*UnityEngine.Debug.DrawLine(
             mov.ValueRO.Dest,
             transform.ValueRO.Position,
             Color.cyan,
-            1f / 50f);
+            1f / 50f);*/
 
     }
 
@@ -174,11 +174,11 @@ public partial struct UnitStateMachineJob : IJobEntity
             pather.ValueRW.NeedsUpdate = true;
         }
 
-        UnityEngine.Debug.DrawLine(
+        /*UnityEngine.Debug.DrawLine(
             mov.ValueRO.Dest,
             transform.ValueRO.Position,
             Color.magenta,
-            1f / 50f);
+            1f / 50f);*/
 
         // Transition to attack if within range
         if (targ.ValueRO.DistSq < attack.ValueRO.RangeSq)

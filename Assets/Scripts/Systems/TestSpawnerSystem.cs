@@ -89,6 +89,7 @@ public partial struct TestSpawnerSystem : ISystem
                         Entity e = ECB.Instantiate(sortKey, spawner.Prefab);
                         // Set the position of the newly spawned entity
                         ECB.SetComponent(sortKey, e, LocalTransform.FromPosition(hit.Position));
+                        ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position});
                     }
                     spawner.Count++;
                     // 5. Instantiate and Configure the New Entity

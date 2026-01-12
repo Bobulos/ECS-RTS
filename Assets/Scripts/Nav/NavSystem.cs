@@ -41,7 +41,7 @@ public partial struct NavSystem : ISystem
     private NavMeshWorld _navMeshWorld;
     private uint _bucket;
     private uint _maxBucket;
-    // Keep a list of entities that need pathing this frame (temporary each update)
+    // Keep a list of entities that need pathing this frame (temporary each update)ss
     private EntityQuery _patherQuery;
     const int MAX_QUERIES = 10000;
     public void OnCreate(ref SystemState state)

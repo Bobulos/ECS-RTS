@@ -60,7 +60,7 @@ public partial struct UnitMovementSystem : ISystem
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
             GroundUnit(ref transform, transform.Position);
 
-            DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
+            //DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
         }
 
         private float3 GetTargetPosition(
