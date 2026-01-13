@@ -48,7 +48,7 @@ public partial class InputHandlerSystem : SystemBase
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
-        var playerData = SystemAPI.GetSingleton<LocalPlayerData>();
+        //var playerData = SystemAPI.GetSingleton<LocalPlayerData>();
         var collisionWorld = physicsWorld.CollisionWorld;
 
         var tag = SystemAPI.GetComponentLookup<UnitTag>(true);
@@ -73,7 +73,7 @@ public partial class InputHandlerSystem : SystemBase
 
             if (hitEntity == selectionEntity) continue; // skip self
 
-            if (tag.HasComponent(hitEntity) && team.GetRefRO(hitEntity).ValueRO.TeamID == playerData.TeamID)
+            if (tag.HasComponent(hitEntity) && team.GetRefRO(hitEntity).ValueRO.TeamID == t)
             {
                 AddSelection(ref ecb, hitEntity);
             }

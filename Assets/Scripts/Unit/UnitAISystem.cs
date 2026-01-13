@@ -157,6 +157,8 @@ public partial struct UnitStateMachineJob : IJobEntity
         if (!IsTargetValid(target))
         {
             uState.ValueRW.State = UnitStates.Idle;
+            mov.ValueRW.Dest = transform.ValueRO.Position;
+            pather.ValueRW.Dest = transform.ValueRO.Position;
             return;
         }
 
