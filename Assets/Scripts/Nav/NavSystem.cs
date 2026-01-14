@@ -77,6 +77,16 @@ public partial struct NavSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+        //test declaration of pathing job
+        var pathJob = new NavJob
+        {
+            Ecb = ecb,
+            NavWorld = NavMeshWorld.GetDefaultWorld();
+        }
+        var handle = pathJob.Schedule(state.Dependency);
+        handle.Complete();
+
         int count = 0;
         // Ensure nav world handle is valid
         _navMeshWorld = NavMeshWorld.GetDefaultWorld();
