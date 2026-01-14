@@ -68,7 +68,8 @@ public partial struct UnitSpatialPartitioning : ISystem
             _spatialMap.Capacity = unitCount;
 
         // This is cheap memory-wise because we reuse the list memory every frame.
-        foreach (var (team, mov, transform, entity) in SystemAPI.Query<UnitTeam,UnitMovement,LocalTransform>().WithEntityAccess())
+        foreach (var (team, mov, transform, entity) in SystemAPI.Query<UnitTeam,UnitMovement,LocalTransform>()
+        .WithEntityAccess().WithNone<DeadTag>())
         {
             unitCount ++;
             UnitData ud = new UnitData
@@ -84,17 +85,17 @@ public partial struct UnitSpatialPartitioning : ISystem
             _spatialMap.Add(hashKey, ud);
         }
 
-        var dedLookup = SystemAPI.GetComponentLookup<DeadTag>(true);
+        //var dedLookup = SystemAPI.GetComponentLookup<DeadTag>(true);
 
         var job = new FindTargetsJob
         {
             T = SystemAPI.Time.ElapsedTime,
-            DeadLookup = dedLookup,
+            //DeadLookup = dedLookup,
             UnitSpatialMap = _spatialMap,
             Bucket = _bucket,
         };
 
-        // Schedule the IJobEntity in parallel. We do NOT call Complete() — let the scheduler run it async.
+        // Schedule the IJobEntity in parallel. We do NOT call Complete() ï¿½ let the scheduler run it async.
         // The returned JobHandle is stored in state.Dependency so that subsequent jobs/systems respect it.
         
         JobHandle handle = job.ScheduleParallel(state.Dependency);
@@ -120,7 +121,7 @@ public partial struct FindTargetsJob : IJobEntity
 {
     [ReadOnly] public uint Bucket;
     [ReadOnly] public double T;
-    [ReadOnly] public ComponentLookup<DeadTag> DeadLookup;
+    //[ReadOnly] public ComponentLookup<DeadTag> DeadLookup;
     [ReadOnly] public NativeParallelMultiHashMap<int, UnitData> UnitSpatialMap;
 
     public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
@@ -147,8 +148,7 @@ public partial struct FindTargetsJob : IJobEntity
                         do
                         {
                             if (u.Entity == entity ||
-                                u.TeamID == team.TeamID ||
-                                DeadLookup.HasComponent(u.Entity))
+                                u.TeamID == team.TeamID)
                                 continue;
 
                             float d = DistsqXZ(transform.Position, u.Position);

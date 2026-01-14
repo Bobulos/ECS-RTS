@@ -8,7 +8,6 @@ using UnityEngine; // for Debug
 using NUnit;
 using Unity.Entities.UniversalDelegates;
 
-// ---------- Components ----------
 public struct Pather : IComponentData
 {
     public bool NeedsUpdate;
