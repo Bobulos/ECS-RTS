@@ -12,7 +12,7 @@ public partial class InputHandlerSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;
     const float FORMATION_SPACING = 2f;
-
+    const float UNIT_RADIUS_MULTIPLIER = 0.9f;
 
     //DEPRECATED
     /*private Terrain terrain;
@@ -48,7 +48,6 @@ public partial class InputHandlerSystem : SystemBase
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
-        //var playerData = SystemAPI.GetSingleton<LocalPlayerData>();
         var collisionWorld = physicsWorld.CollisionWorld;
 
         var tag = SystemAPI.GetComponentLookup<UnitTag>(true);
@@ -57,7 +56,7 @@ public partial class InputHandlerSystem : SystemBase
         // Get collider from your selection entity
         var collider = EntityManager.GetComponentData<PhysicsCollider>(selectionEntity);
 
-        // --- Build an input for OverlapCollider ---
+        // Build an input for OverlapCollider
         float3 pos = EntityManager.GetComponentData<LocalTransform>(selectionEntity).Position;
         var input = new ColliderCastInput(collider.Value, pos, pos+new float3(0.1f,0,0), quaternion.identity);
         // Collect results
@@ -114,37 +113,56 @@ public partial class InputHandlerSystem : SystemBase
         };
 
         float3 calculatedCenter = float3.zero;
+
+        //assigned after the center has been calculated;
+        float calculatedRadius = 0;
+
         int unitCount = 0;
+
+        //given 64 to reduce memory churn
+        var unitPositions = new NativeList<float3>(64, Allocator.Temp);
         if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
         {
+
             foreach (var transform in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>())
             {
                 unitCount++;
                 calculatedCenter += transform.Position;
+                unitPositions.Add(transform.position);
             }
             if (unitCount == 0)
             {
                 ecb.Dispose();
+                unitPositions.Dispose();
                 return;
             }
+            
+            //calculate avg radius arround center
+            foreach (float3 p in unitPositions)
+            {
+                calculatedRadius += MathB.DistXZ(p, calculatedCenter);
+            }
+
+            //average everything out
+            calculatedRadius /= unitCount;
+            calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
+
             calculatedCenter /= unitCount;
 
             foreach (var (transform, entity) in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>().WithEntityAccess())
             {
+                //if its outside then
                 float3 movPos = (transform.Position - calculatedCenter)+movCenter.Position;
-                float3 vo = new float3(0, DEPTH_TEST, 0);
-                var ray = new RaycastInput
+                //if its inside then
+                if (MathB.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius)
                 {
-                    Start = movPos + vo,
-                    End = movPos - vo,
-                    Filter = TERRAIN_MASK,
-                };
-                if (physicsWorld.CastRay(ray, out var hit))
-                {
-                    ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
+                    movPos = movCenter.Position;
                 }
+                OrderUnitUtil.UnitMoveOrder(ref ecb, movPos);
             }
         }
+
+        unitPositions.Dispose();
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
@@ -225,13 +243,8 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Dispose();
         //physicsWorld.Dispose();
     }*/
-    private CollisionFilter TERRAIN_MASK = new CollisionFilter
-    {
-        CollidesWith = 1 << 7,
-        BelongsTo = CollisionFilter.Default.BelongsTo,
-        GroupIndex = 0
-    };
-    const float DEPTH_TEST = 10;
+
+    const float DEPTH_TEST = 10f;
 
     private bool SampleTerrainHeight(PhysicsWorldSingleton world, float3 worldPos, out float3 terrainPos)
     {

@@ -35,10 +35,13 @@ public partial struct NavSystem : ISystem
 {
     // Persistent storage for NavMeshQuery objects. Index -> NavMeshQuery.
     // Each pather entity will own one query index.
-    private NativeList<NavMeshQuery> _navQueries;
-    private NavMeshWorld _navMeshWorld;
-    private uint _bucket;
-    private uint _maxBucket;
+
+    //DEPRECATED
+    //private NativeList<NavMeshQuery> _navQueries;
+    //private NavMeshWorld _navMeshWorld;
+
+    private int _bucket;
+    private int _maxBucket;
     // Keep a list of entities that need pathing this frame (temporary each update)ss
     private EntityQuery _patherQuery;
 
@@ -50,28 +53,11 @@ public partial struct NavSystem : ISystem
         _bucket = 0;
 
         var config = ConfigLoader.Load<SimulationConfig>("SimulationConfig");
-        _maxBucket = (uint)config.TargetBucketCount;
-        // Query for all entities that have a Pather and a LocalTransform
-
-        _navQueries = new NativeList<NavMeshQuery>(Allocator.Persistent);
-        _navMeshWorld = NavMeshWorld.GetDefaultWorld();
+        _maxBucket = config.TargetBucketCount;
     }
 
     public void OnDestroy(ref SystemState state)
     {
-        // Dispose all NavMeshQuery objects and the list
-        for (int i = 0; i < _navQueries.Length; i++)
-        {
-            try
-            {
-                _navQueries[i].Dispose();
-            }
-            catch
-            {
-                //gulp, disposal can fail if not created, but we try
-            }
-        }
-        if (_navQueries.IsCreated) _navQueries.Dispose();
     }
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
@@ -81,48 +67,17 @@ public partial struct NavSystem : ISystem
         //test declaration of pathing job
         var pathJob = new NavJob
         {
+            Bucket = _bucket,
             Ecb = ecb,
             NavWorld = NavMeshWorld.GetDefaultWorld();
         }
         var handle = pathJob.Schedule(state.Dependency);
         handle.Complete();
-
-        int count = 0;
-        // Ensure nav world handle is valid
-        _navMeshWorld = NavMeshWorld.GetDefaultWorld();
-        foreach (var (pather, transform, entity) in SystemAPI.Query<RefRW<Pather>, RefRO<LocalTransform>>().WithEntityAccess())
-        {
-            if (count >= MAX_QUERIES) break;
-            count++;
-            // Skip if nothing to do
-            if (!pather.ValueRO.NeedsUpdate || _bucket != pather.ValueRO.Bucket)
-                continue;
-
-            // Ensure Query assigned
-            if (!pather.ValueRO.QuerySet)
-            {
-                int newIndex = _navQueries.Length;
-                // Create a NavMeshQuery with a sane max node capacity (adjust if needed)
-                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024);
-                _navQueries.Add(q);
-
-                pather.ValueRW.QuerySet = true;
-                pather.ValueRW.QueryIndex = newIndex;
-
-                // update local copy (we will write back via ECB at end)
-            }
-
-            pather.ValueRW.NeedsUpdate = false;
-
-            // Do the pathfinding synchronously on main thread using the entity's NavMeshQuery
-            TryCalculatePathAndWriteResults(entity, pather, transform.ValueRO.Position, ecb);
-        }
-
         // Playback changes
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
         _bucket += 1;
-        if (_bucket > _maxBucket) { _bucket = 0; }
+        if (_bucket > _maxBucket) _bucket = 0;
 
     }
 

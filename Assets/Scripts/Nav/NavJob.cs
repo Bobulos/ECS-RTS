@@ -12,13 +12,24 @@ using Unity.Entities.UniversalDelegates;
 public partial struct NavJob : IJobEntity
 {
     const int MAX_NODE_LENGTH = 1024;
+
     const int MAX_QUERIES = 10000;
+    //does not support parrallel MUST BE ON ONE THREAD
+    private int QueryCount = 0;
+    const int MAX_ITERATIONS = 500;
+
+
+    //TS NEEDS TO BE ASSIGNED
     public EntityCommandBuffer Ecb;
+    [ReadOnly] public int Bucket;
     [ReadOnly] public NavMeshWorld NavWorld;
+
     public void Execute(Entity entity, RefRW<Pather> pather, RefRO<LocalTransform> transform)
     {
+
         //make sure agent needs it
-        if (!pather.ValueRO.NeedsUpdate) return;
+        if (QueryCount > MAX_QUERIES || !pather.ValueRO.NeedsUpdate || 
+        pather.ValueRO.Bucket == Bucket) return;
 
         var query = new NavMeshQuery(NavWorld, Allocator.Temp, MAX_NODE_LENGTH);
 
@@ -43,7 +54,7 @@ public partial struct NavJob : IJobEntity
         }
 
         // We'll let the query run a limited number of iterations (tweak as needed)
-        status = query.UpdateFindPath(500, out _);
+        status = query.UpdateFindPath(MAX_ITERATIONS, out _);
         if (status != PathQueryStatus.Success && status != PathQueryStatus.InProgress)
         {
             query.Dispose();
@@ -115,6 +126,7 @@ public partial struct NavJob : IJobEntity
 
         // Mark pather as calculated and update other fields
         pather.ValueRW.PathCalculated = true;
+        pather.ValueRW.NeedsUpdate = false;
         pather.ValueRW.WaypointIndex = 0;
         straightResult.Dispose();
         straightFlags.Dispose();
@@ -122,5 +134,7 @@ public partial struct NavJob : IJobEntity
         //mabeye do this mabeye fix
         polygonIds.Dispose();
         query.Dispose();
+
+        QueryCount ++;
     }
 }
