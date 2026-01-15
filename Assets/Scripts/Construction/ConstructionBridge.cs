@@ -20,6 +20,7 @@ public class ConstructionBridge : MonoBehaviour
 
     public void UpdateConstructionData(ConstructionData d)
     {
+        CancelContrstruction?.Invoke();
         constructData = d;
     }
     Camera cam;
