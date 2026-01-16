@@ -37,8 +37,8 @@ public partial struct NavSystem : ISystem
     // Each pather entity will own one query index.
 
     //DEPRECATED
-    //private NativeList<NavMeshQuery> _navQueries;
-    //private NavMeshWorld _navMeshWorld;
+    private NativeList<NavMeshQuery> _navQueries;
+    private NavMeshWorld _navMeshWorld;
 
     private int _bucket;
     private int _maxBucket;
@@ -47,33 +47,69 @@ public partial struct NavSystem : ISystem
 
     //To stop too many queries in one update
     const int MAX_QUERIES = 10000;
-    
+
     public void OnCreate(ref SystemState state)
     {
         _bucket = 0;
 
         var config = ConfigLoader.Load<SimulationConfig>("SimulationConfig");
         _maxBucket = config.TargetBucketCount;
+
+        _navQueries = new NativeList<NavMeshQuery>(Allocator.Persistent);
     }
+
 
     public void OnDestroy(ref SystemState state)
     {
+        foreach (var q in _navQueries)
+        {
+            try
+            {
+                q.Dispose();
+            }
+            catch
+            {
+
+            }
+            
+        }
+        _navQueries.Dispose();
     }
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
-
-        //test declaration of pathing job
-        var pathJob = new NavJob
+        int count = 0;
+        // Ensure nav world handle is valid
+        _navMeshWorld = NavMeshWorld.GetDefaultWorld();
+        foreach (var (pather, transform, entity) in SystemAPI.Query<RefRW<Pather>, RefRO<LocalTransform>>().WithEntityAccess())
         {
-            Bucket = _bucket,
-            Ecb = ecb,
-            NavWorld = NavMeshWorld.GetDefaultWorld();
+            if (count >= MAX_QUERIES) break;
+            count++;
+            // Skip if nothing to do
+            if (!pather.ValueRO.NeedsUpdate || _bucket != pather.ValueRO.Bucket)
+                continue;
+
+            // Ensure Query assigned
+            if (!pather.ValueRO.QuerySet)
+            {
+                int newIndex = _navQueries.Length;
+                // Create a NavMeshQuery with a sane max node capacity (adjust if needed)
+                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024);
+                _navQueries.Add(q);
+
+                pather.ValueRW.QuerySet = true;
+                pather.ValueRW.QueryIndex = newIndex;
+
+                // update local copy (we will write back via ECB at end)
+            }
+
+            pather.ValueRW.NeedsUpdate = false;
+            pather.ValueRW.PathCalculated = true;
+
+            // Do the pathfinding synchronously on main thread using the entity's NavMeshQuery
+            TryCalculatePathAndWriteResults(entity, pather, transform.ValueRO.Position, ecb);
         }
-        var handle = pathJob.Schedule(state.Dependency);
-        handle.Complete();
-        // Playback changes
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
         _bucket += 1;
@@ -149,12 +185,16 @@ public partial struct NavSystem : ISystem
 
         if (pathStatus != PathQueryStatus.Success || straightCount <= 0)
         {
-            // path failed or no straight path
-            //lost unit for now 
-            pather.ValueRW.PathCalculated = true;
+            polygonIds.Dispose();
+            straightResult.Dispose();
+            straightFlags.Dispose();
+            vertexSide.Dispose();
+
+            pather.ValueRW.PathCalculated = false;
             pather.ValueRW.WaypointIndex = 0;
             return;
         }
+
 
         ecb.SetBuffer<PatherWayPoint>(entity);
 

@@ -1,6 +1,8 @@
 using UnityEngine;
-using BurstCompile;
+using Unity.Burst;
 using Unity.Mathematics;
+
+
 [BurstCompile]
 public static class BMath
 {
@@ -8,8 +10,6 @@ public static class BMath
     {
         float2 a2 = new float2(a.x,a.z);
         float2 b2 = new float2(b.x,b.z);
-
-        float distSq = (a2*a2)+(b2*b2);
-        return Math.Sqrt(distSq);
+        return math.distance(a2,b2);
     }
 }

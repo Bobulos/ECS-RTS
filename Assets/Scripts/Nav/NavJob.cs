@@ -7,6 +7,7 @@ using UnityEngine.Experimental.AI; // NavMesh types
 using UnityEngine; // for Debug
 using NUnit;
 using Unity.Entities.UniversalDelegates;
+using Unity.Collections.LowLevel.Unsafe;
 
 [BurstCompile]
 public partial struct NavJob : IJobEntity
@@ -15,13 +16,17 @@ public partial struct NavJob : IJobEntity
 
     const int MAX_QUERIES = 10000;
     //does not support parrallel MUST BE ON ONE THREAD
-    private int QueryCount = 0;
+
     const int MAX_ITERATIONS = 500;
 
 
     //TS NEEDS TO BE ASSIGNED
     public EntityCommandBuffer Ecb;
+    public int QueryCount;
     [ReadOnly] public int Bucket;
+
+    //o lawd
+    [NativeDisableUnsafePtrRestriction]
     [ReadOnly] public NavMeshWorld NavWorld;
 
     public void Execute(Entity entity, RefRW<Pather> pather, RefRO<LocalTransform> transform)
@@ -29,14 +34,14 @@ public partial struct NavJob : IJobEntity
 
         //make sure agent needs it
         if (QueryCount > MAX_QUERIES || !pather.ValueRO.NeedsUpdate || 
-        pather.ValueRO.Bucket == Bucket) return;
+        pather.ValueRO.Bucket != Bucket) return;
 
         var query = new NavMeshQuery(NavWorld, Allocator.Temp, MAX_NODE_LENGTH);
 
         float3 toPosition = pather.ValueRO.Dest;
         var extents = new float3(1f, 1f, 1f);
 
-        var fromLocation = query.MapLocation(transform.ValueRO.Dest, extents, 0);
+        var fromLocation = query.MapLocation(transform.ValueRO.Position, extents, 0);
         var toLocation = query.MapLocation(pather.ValueRO.Dest, extents, 0);
 
         if (!query.IsValid(fromLocation) || !query.IsValid(toLocation))
@@ -81,7 +86,7 @@ public partial struct NavJob : IJobEntity
         int straightCount = 0;
         var pathStatus = PathUtils.FindStraightPath(
             query,
-            fromPosition,
+            transform.ValueRO.Position,
             toPosition,
             polygonIds,
             pathSize,

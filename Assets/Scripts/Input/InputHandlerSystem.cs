@@ -128,7 +128,7 @@ public partial class InputHandlerSystem : SystemBase
             {
                 unitCount++;
                 calculatedCenter += transform.Position;
-                unitPositions.Add(transform.position);
+                unitPositions.Add(transform.Position);
             }
             if (unitCount == 0)
             {
@@ -140,7 +140,7 @@ public partial class InputHandlerSystem : SystemBase
             //calculate avg radius arround center
             foreach (float3 p in unitPositions)
             {
-                calculatedRadius += MathB.DistXZ(p, calculatedCenter);
+                calculatedRadius += BMath.DistXZ(p, calculatedCenter);
             }
 
             //average everything out
@@ -154,11 +154,11 @@ public partial class InputHandlerSystem : SystemBase
                 //if its outside then
                 float3 movPos = (transform.Position - calculatedCenter)+movCenter.Position;
                 //if its inside then
-                if (MathB.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius)
+                if (BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius)
                 {
                     movPos = movCenter.Position;
                 }
-                OrderUnitUtil.UnitMoveOrder(ref ecb, movPos);
+                UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
             }
         }
 
@@ -245,26 +245,6 @@ public partial class InputHandlerSystem : SystemBase
     }*/
 
     const float DEPTH_TEST = 10f;
-
-    private bool SampleTerrainHeight(PhysicsWorldSingleton world, float3 worldPos, out float3 terrainPos)
-    {
-        float3 offset = new float3(0, DEPTH_TEST, 0);
-
-        var ray = new RaycastInput
-        {
-            Start = worldPos + DEPTH_TEST,
-            End = worldPos - DEPTH_TEST,
-            Filter = TERRAIN_MASK
-        };
-        if (world.CastRay(ray, out var hit))
-        {
-            terrainPos = hit.Position;
-            return true;
-        }
-        terrainPos = worldPos;
-        return false;
-        
-    }
 /*    private float3 SampleTerrainHeight(float3 worldPos)
     {
         float3 localPos = worldPos - terrainPos;
