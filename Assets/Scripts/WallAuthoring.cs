@@ -1,9 +1,5 @@
-using System;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class WallAuthoring : MonoBehaviour
 {
@@ -20,7 +16,7 @@ class WallBaker : Baker<WallAuthoring>
             ID = authoring.id
         });
         AddComponent(entity, new LocalVisibility { IsVisible = true, DisableChildren = true });
-        AddComponent(entity, new UnitTeam { TeamID = 0, UnitID = -1});
+        AddComponent(entity, new UnitTeam { TeamID = 0, UnitID = -1 });
     }
 }
 public struct WallNode : IComponentData

@@ -1,11 +1,11 @@
-﻿using Unity.Burst;
-using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using Unity.Physics;
+﻿using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Transforms;
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
@@ -26,14 +26,14 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnSelectUnits += HandleUnitSelect;
 
         //DEPRECATED
-/*        var t = GameObject.FindFirstObjectByType<Terrain>();
-        if (t != null)
-        {
-            terrain = t;
-            terrainData = t.terrainData;
-            terrainPos = t.transform.position;
-            terrainSize = terrainData.size;
-        }*/
+        /*        var t = GameObject.FindFirstObjectByType<Terrain>();
+                if (t != null)
+                {
+                    terrain = t;
+                    terrainData = t.terrainData;
+                    terrainPos = t.transform.position;
+                    terrainSize = terrainData.size;
+                }*/
     }
     protected override void OnDestroy()
     {
@@ -51,6 +51,7 @@ public partial class InputHandlerSystem : SystemBase
         var collisionWorld = physicsWorld.CollisionWorld;
 
         var tag = SystemAPI.GetComponentLookup<UnitTag>(true);
+        var structureTag = SystemAPI.GetComponentLookup<StructureTag>(true);
         var team = SystemAPI.GetComponentLookup<UnitTeam>(true);
 
         // Get collider from your selection entity
@@ -58,12 +59,18 @@ public partial class InputHandlerSystem : SystemBase
 
         // Build an input for OverlapCollider
         float3 pos = EntityManager.GetComponentData<LocalTransform>(selectionEntity).Position;
-        var input = new ColliderCastInput(collider.Value, pos, pos+new float3(0.1f,0,0), quaternion.identity);
+        var input = new ColliderCastInput(collider.Value, pos, pos + new float3(0.1f, 0, 0), quaternion.identity);
         // Collect results
         var hits = new NativeList<ColliderCastHit>(Allocator.Temp);
 
         //UnityEngine.Debug.Log(hits.Length);
         collisionWorld.CastCollider(input, ref hits);
+
+        bool onlyStructures = true;
+        NativeList<Entity> hitStructures = new NativeList<Entity>(16, Allocator.Temp);
+
+        var assetSingleton = SystemAPI.GetSingleton<AssetSingleton>();
+
         // --- Process results ---
         foreach (var h in hits)
         {
@@ -74,13 +81,26 @@ public partial class InputHandlerSystem : SystemBase
 
             if (tag.HasComponent(hitEntity) && team.GetRefRO(hitEntity).ValueRO.TeamID == t)
             {
-                AddSelection(ref ecb, hitEntity);
+                onlyStructures = false;
+                AddSelection(ref ecb, hitEntity, assetSingleton);
+            } else if (onlyStructures && structureTag.HasComponent(hitEntity))
+            {
+                hitStructures.Add(hitEntity);
+            }
+        }
+        //handle structure selection
+        if (onlyStructures && hitStructures.Length > 0)
+        {
+            foreach (var h in hitStructures)
+            {
+                AddStructureSelection(ref ecb, h, assetSingleton);
             }
         }
 
         //your use has exspired me
         ecb.DestroyEntity(selectionEntity);
         hits.Dispose();
+        hitStructures.Dispose();
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
@@ -115,7 +135,7 @@ public partial class InputHandlerSystem : SystemBase
         float3 calculatedCenter = float3.zero;
 
         //assigned after the center has been calculated;
-        float calculatedRadius = 0;
+        
 
         int unitCount = 0;
 
@@ -136,7 +156,12 @@ public partial class InputHandlerSystem : SystemBase
                 unitPositions.Dispose();
                 return;
             }
-            
+
+            float calculatedRadius = 0;
+
+
+
+            calculatedCenter /= unitCount;
             //calculate avg radius arround center
             foreach (float3 p in unitPositions)
             {
@@ -147,16 +172,22 @@ public partial class InputHandlerSystem : SystemBase
             calculatedRadius /= unitCount;
             calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
 
-            calculatedCenter /= unitCount;
+            
+
+            /*UnityEngine.Debug.DrawLine(calculatedCenter, calculatedCenter +
+                new float3(calculatedRadius, 0, 0),
+                UnityEngine.Color.red, 5f);*/
+
+            bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
 
             foreach (var (transform, entity) in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>().WithEntityAccess())
             {
                 //if its outside then
-                float3 movPos = (transform.Position - calculatedCenter)+movCenter.Position;
+                float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
                 //if its inside then
-                if (BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius)
+                if (mode)
                 {
-                    movPos = movCenter.Position;
+                    movPos = (transform.Position - calculatedCenter)/2f + movCenter.Position;
                 }
                 UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
             }
@@ -166,93 +197,6 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
-
-
-    /*[BurstCompile]
-    private void OnMoveUnits(MoveUnitsData m, uint team)
-    {
-        //EnsureTerrain();   
-
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
-        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
-        var orderLookup = SystemAPI.GetComponentLookup<UnitMoveOrder>(false);
-        var raycastInput = new RaycastInput
-        {
-            Start = m.CurrentRayOrigin, // Ray origin
-            End = m.CurrentRayOrigin + m.CurrentRayDirection * MAX_RAY_LENGTH,   // Ray end point
-            Filter = CollisionFilter.Default // Or a custom filter
-        };
-
-
-        if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit hit))
-        {
-            var selectedEntities = new NativeList<(Entity entity, float3 pos)>(16, Allocator.Temp);
-            foreach (var (tag, transform, entity) in
-                     SystemAPI.Query<RefRO<UnitSelecetedTag>, RefRO<LocalTransform>>().WithEntityAccess())
-            {
-                selectedEntities.Add((entity, transform.ValueRO.Position));
-            }
-
-            int count = selectedEntities.Length;
-            if (count == 0)
-            {
-                selectedEntities.Dispose();
-                ecb.Dispose();
-                return;
-            }
-
-            // Formation grid dimensions
-            int gridSize = (int)math.ceil(math.sqrt(count));
-            float3 basePos = hit.Position;
-
-            var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-            for (int i = 0; i < count; i++)
-            {
-                var (entity, currentPos) = selectedEntities[i];
-                int row = i / gridSize;
-                int col = i % gridSize;
-
-                // Calculate offset in a centered grid formation
-                float offsetX = (col - (gridSize - 1) / 2f) * FORMATION_SPACING;
-                float offsetZ = (row - (gridSize - 1) / 2f) * FORMATION_SPACING;
-
-                //float3 targetPos = basePos + new float3(offsetX, 0, offsetZ);
-                float3 targetXZ = basePos + new float3(offsetX, 0, offsetZ);
-
-                if (SampleTerrainHeight(world, targetXZ, out float3 targetPos))
-                {
-                    // Update or add the UnitMoveOrder component
-                    if (orderLookup.HasComponent(entity))
-                    {
-                        ecb.SetComponent(entity, new UnitMoveOrder { Dest = targetPos });
-                    }
-                    else
-                    {
-                        ecb.AddComponent(entity, new UnitMoveOrder
-                        {
-                            Dest = targetPos
-                        });
-                    }
-                }
-            }
-
-            selectedEntities.Dispose();
-        }
-        
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
-        //physicsWorld.Dispose();
-    }*/
-
-    const float DEPTH_TEST = 10f;
-/*    private float3 SampleTerrainHeight(float3 worldPos)
-    {
-        float3 localPos = worldPos - terrainPos;
-        float u = Mathf.Clamp01(localPos.x / terrainSize.x);
-        float v = Mathf.Clamp01(localPos.z / terrainSize.z);
-        float height = terrainData.GetInterpolatedHeight(u, v) + terrainPos.y;
-        return new float3(worldPos.x, height, worldPos.z);
-    }*/
 
     [BurstCompile]
     private void OnClearSelection(uint team)
@@ -295,29 +239,42 @@ public partial class InputHandlerSystem : SystemBase
         selectedParentEntities.Dispose();
     }
     [BurstCompile]
-    private void AddSelection(ref EntityCommandBuffer ecb, Entity unit)
+    private void AddStructureSelection(ref EntityCommandBuffer ecb, Entity unit, AssetSingleton assetSingleton)
     {
-        var entityManager = EntityManager;
-
-        // 1. Skip already selected units
-        if (entityManager.HasComponent<UnitSelecetedTag>(unit))
-            return;
-
-        var assetSingleton = SystemAPI.GetSingleton<AssetSingleton>();
         ecb.AddComponent<UnitSelecetedTag>(unit);
 
-        // 2. Ensure the Child buffer exists *using ECB* (not EntityManager)
-        // If you use EntityManager.AddBuffer here, it makes a live structural change,
-        // which can cause crashes if called mid-frame. Use ECB safely instead.
-        if (!entityManager.HasBuffer<Child>(unit))
+        if (!EntityManager.HasBuffer<Child>(unit))
         {
             ecb.AddBuffer<Child>(unit);
         }
 
-        // 3. Instantiate visual and attach it properly
         var visual = ecb.Instantiate(assetSingleton.SelectedVisual);
 
-        // 4. Link the visual as a child of the unit
+        ecb.AddComponent(visual, new Parent { Value = unit });
+        ecb.SetComponent(visual, new LocalTransform
+        {
+            Position = new float3(0, 0, 0),
+            Rotation = quaternion.identity,
+            Scale = 5f
+        });
+        ecb.AddComponent<SelectedVisualTag>(visual);
+    }
+
+    [BurstCompile]
+    private void AddSelection(ref EntityCommandBuffer ecb, Entity unit, AssetSingleton assetSingleton)
+    {
+
+
+        
+        ecb.AddComponent<UnitSelecetedTag>(unit);
+
+        if (!EntityManager.HasBuffer<Child>(unit))
+        {
+            ecb.AddBuffer<Child>(unit);
+        }
+
+        var visual = ecb.Instantiate(assetSingleton.SelectedVisual);
+
         ecb.AddComponent(visual, new Parent { Value = unit });
         ecb.SetComponent(visual, new LocalTransform
         {

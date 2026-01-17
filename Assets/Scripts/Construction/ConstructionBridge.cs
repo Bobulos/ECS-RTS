@@ -1,8 +1,6 @@
-using NUnit.Framework.Constraints;
 using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
-using Unity.Physics;
 using UnityEngine;
 
 public class ConstructionBridge : MonoBehaviour
@@ -51,7 +49,7 @@ public class ConstructionBridge : MonoBehaviour
             if (!UIUtility.IsPointerOverUI() && Physics.Raycast(camRay, out UnityEngine.RaycastHit hit, 100f, terrainMask))
             {
 
-                if (constructData.mode == ConstructionMode.Wall )
+                if (constructData.mode == ConstructionMode.Wall)
                 {
                     if (Input.GetMouseButtonDown(0))
                     {
@@ -73,8 +71,9 @@ public class ConstructionBridge : MonoBehaviour
                             }, team));
                             CancelContrstruction?.Invoke();
                         }
-                        
-                    }else if (startBuild)
+
+                    }
+                    else if (startBuild)
                     {
                         VisualizeWalls?.Invoke(new ConstructWallData
                         {
@@ -94,16 +93,18 @@ public class ConstructionBridge : MonoBehaviour
                             isSingleVis = true
                         });
                     }
-                } else if (constructData.mode == ConstructionMode.Structure)
+                }
+                else if (constructData.mode == ConstructionMode.Structure)
                 {
                     if (Input.GetMouseButtonDown(0))
                     {
-                        
-                        buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData{ 
+
+                        buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData
+                        {
                             constructData = constructData,
                             pos = hit.point,
                         }, team));
-                    } 
+                    }
                     //visualize
                     else
                     {
@@ -121,8 +122,8 @@ public class ConstructionBridge : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        
-        foreach(InputRecord r in buffer)
+
+        foreach (InputRecord r in buffer)
         {
             PlaybackRLInput(r);
         }
@@ -172,7 +173,7 @@ public class ConstructionBridge : MonoBehaviour
                 }, team);
                 break;
             case InputType.Construct:
-                ConstructStructure?.Invoke( new ConstructData
+                ConstructStructure?.Invoke(new ConstructData
                 {
                     pos = r.Structure.pos,
                     constructData = r.Structure.constructData,

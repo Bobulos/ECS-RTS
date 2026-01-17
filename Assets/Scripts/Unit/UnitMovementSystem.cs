@@ -1,19 +1,18 @@
-﻿using Unity.Entities;
+﻿using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
-using Unity.Burst;
 using Unity.Physics;
-using System;
+using Unity.Transforms;
 
 
-[BurstCompile,UpdateInGroup(typeof(FixedStepSimulationSystemGroup)),UpdateAfter(typeof(UnitSpatialPartitioning))]
+[BurstCompile, UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitSpatialPartitioning))]
 public partial struct UnitMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var waypointLookup = SystemAPI.GetBufferLookup<PatherWayPoint>(isReadOnly: true); 
+        var waypointLookup = SystemAPI.GetBufferLookup<PatherWayPoint>(isReadOnly: true);
         var movementJob = new MovementJob
         {
             WaypointLookup = waypointLookup,
@@ -25,7 +24,7 @@ public partial struct UnitMovementSystem : ISystem
                 GroupIndex = 0
             }
 
-    };
+        };
 
         state.Dependency = movementJob.ScheduleParallel(state.Dependency);
     }
@@ -60,6 +59,7 @@ public partial struct UnitMovementSystem : ISystem
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
             GroundUnit(ref transform, transform.Position);
 
+            //                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              DrawDebugDest(mov.Dest, transform.Position);
             //DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
         }
 
@@ -72,7 +72,7 @@ public partial struct UnitMovementSystem : ISystem
             if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) || !pather.PathCalculated)
                 return defaultDestination;
 
-            if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length-2)
+            if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length - 2)
                 return defaultDestination;
 
             return UpdateWaypointIndex(ref pather, waypoints, currentPosition);
@@ -197,6 +197,10 @@ public partial struct UnitMovementSystem : ISystem
                 basePosition + actualDirection * DEBUG_LINE_LENGTH,
                 UnityEngine.Color.red,
                 FIXED_DT);
+        }
+        private void DrawDebugDest(float3 pos, float3 dest)
+        {
+            UnityEngine.Debug.DrawLine(pos, dest, UnityEngine.Color.cyan, FIXED_DT);
         }
     }
     private static float3 IY(float3 a)

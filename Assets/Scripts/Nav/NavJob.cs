@@ -1,13 +1,11 @@
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 using UnityEngine.Experimental.AI; // NavMesh types
-using UnityEngine; // for Debug
-using NUnit;
-using Unity.Entities.UniversalDelegates;
-using Unity.Collections.LowLevel.Unsafe;
 
 [BurstCompile]
 public partial struct NavJob : IJobEntity
@@ -31,9 +29,8 @@ public partial struct NavJob : IJobEntity
 
     public void Execute(Entity entity, RefRW<Pather> pather, RefRO<LocalTransform> transform)
     {
-
         //make sure agent needs it
-        if (QueryCount > MAX_QUERIES || !pather.ValueRO.NeedsUpdate || 
+        if (QueryCount > MAX_QUERIES || !pather.ValueRO.NeedsUpdate ||
         pather.ValueRO.Bucket != Bucket) return;
 
         var query = new NavMeshQuery(NavWorld, Allocator.Temp, MAX_NODE_LENGTH);
@@ -140,6 +137,6 @@ public partial struct NavJob : IJobEntity
         polygonIds.Dispose();
         query.Dispose();
 
-        QueryCount ++;
+        QueryCount++;
     }
 }

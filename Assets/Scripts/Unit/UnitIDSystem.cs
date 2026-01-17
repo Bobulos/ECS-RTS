@@ -9,7 +9,7 @@ public partial struct UnitIDSystem : ISystem
     }
     private void OnUpdate(ref SystemState state)
     {
-        foreach (var team  in SystemAPI.Query<RefRW<UnitTeam>>())
+        foreach (var team in SystemAPI.Query<RefRW<UnitTeam>>())
         {
             if (team.ValueRO.UnitID == -1)
             {

@@ -1,5 +1,3 @@
-using System.IO;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -7,7 +5,7 @@ public class ReplayManifestUI : MonoBehaviour
 {
     [SerializeField] private GameObject replayElement;
     [SerializeField] private Transform content;
-    
+
     private ReplayManifest manifest;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     /*    private void Awake()
@@ -25,7 +23,7 @@ public class ReplayManifestUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        for (int i = manifest.replays.Length-1; i >= 0; i --)
+        for (int i = manifest.replays.Length - 1; i >= 0; i--)
         {
             string replay = manifest.replays[i];
             GameObject e = Instantiate(replayElement, content, false);
@@ -55,6 +53,6 @@ public class ReplayManifestUI : MonoBehaviour
         GameSettings.MapSceneName = "Battles";
         // 1. Start loading the scene asynchronously
         SceneManager.LoadScene("LoadingScene");
-        
+
     }
 }

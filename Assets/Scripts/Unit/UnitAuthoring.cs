@@ -1,12 +1,10 @@
-using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
 
 public class UnitAuthoring : MonoBehaviour
 {
-    
+
     public int hp = 10;
     public int dmg = 10;
     public float speed = 10f;
@@ -57,12 +55,13 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent(entity, unitMovement);
         AddComponent(entity, unitTeam);
         AddComponent(entity, unitTarget);
-        AddComponent(entity, new UnitAttack 
-        { 
-            Dmg = authoring.dmg, 
-            RangeSq = authoring.attackRange*authoring.attackRange, 
-            Last = 0, 
-            Rate = authoring.attackRate });
+        AddComponent(entity, new UnitAttack
+        {
+            Dmg = authoring.dmg,
+            RangeSq = authoring.attackRange * authoring.attackRange,
+            Last = 0,
+            Rate = authoring.attackRate
+        });
         AddComponent(entity, new Pather
         {
             Dest = authoring.transform.position,
@@ -85,7 +84,7 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = false });
     }
 }
-public struct UnitInitFlag : IComponentData { } 
+public struct UnitInitFlag : IComponentData { }
 public struct UnitAttack : IComponentData
 {
     public float RangeSq;

@@ -1,8 +1,6 @@
-using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
 
 public class MapDataAuthoring : MonoBehaviour
 {

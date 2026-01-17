@@ -1,12 +1,11 @@
-﻿using Unity.Entities;
-using Unity.Transforms;
-using Unity.Burst;
-using Unity.Mathematics;
+﻿using Unity.Burst;
 using Unity.Collections;
-using Unity.Jobs;
+using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
-using Random = Unity.Mathematics.Random;
 using Unity.Physics.Systems;
+using Unity.Transforms;
+using Random = Unity.Mathematics.Random;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitStateSystem))]
@@ -25,7 +24,7 @@ public partial struct TestSpawnerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        Random currentRandom = new Random((uint)SystemAPI.Time.ElapsedTime+1);
+        Random currentRandom = new Random((uint)SystemAPI.Time.ElapsedTime + 1);
         var collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld.CollisionWorld;
 
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
@@ -71,8 +70,8 @@ public partial struct TestSpawnerSystem : ISystem
             if (spawner.LastTime + spawner.Rate < CurrentTime &&
                 spawner.Count < spawner.MaxCount)
             {
-                float3 offset = new float3(0,10,0);
-                
+                float3 offset = new float3(0, 10, 0);
+
                 spawner.LastTime = CurrentTime;
                 for (int i = 0; i < spawner.Per; i++)
                 {
@@ -89,13 +88,13 @@ public partial struct TestSpawnerSystem : ISystem
                         Entity e = ECB.Instantiate(sortKey, spawner.Prefab);
                         // Set the position of the newly spawned entity
                         ECB.SetComponent(sortKey, e, LocalTransform.FromPosition(hit.Position));
-                        ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position});
+                        ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position });
                     }
                     spawner.Count++;
                     // 5. Instantiate and Configure the New Entity
-                    
+
                 }
-                    
+
 
                 // Set initial state and target (using the job's random state for simplicity)
                 //ECB.SetComponent(sortKey, e, new UnitTarget { Targ = Entity.Null, Last = CurrentTime });

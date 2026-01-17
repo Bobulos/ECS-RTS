@@ -23,7 +23,7 @@ public partial struct UnitDebugSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         double et = SystemAPI.Time.ElapsedTime;
-        if (last+rate < et)
+        if (last + rate < et)
         {
             NativeArray<Entity> arr = _query.ToEntityArray(Allocator.Temp);
             Debug.Log("Num units" + arr.Count());

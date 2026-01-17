@@ -1,10 +1,8 @@
-using Unity.Mathematics;
-using Unity.Entities;
-using Unity.Collections;
-using Unity.Transforms;
 using Unity.Burst;
-using System.Diagnostics;
-using System.Linq;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 [BurstCompile]
 public partial struct UnitLocalAvoidanceJob : IJobEntity
@@ -89,7 +87,8 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
         if (newVelocity.Equals(float2.zero))
         {
             mov.Velocity = newVelocity;
-        }else
+        }
+        else
         {
             mov.Velocity = newVelocity;
         }
@@ -110,7 +109,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
         // Preferred velocity (blue)
         UnityEngine.Debug.DrawLine(velStart, prefVelEnd, UnityEngine.Color.blue, FIXED_DT);*/
 
-        
+
     }
     void AddORCALine(float3 pos, float2 vel, float radius, in UnitData other, ref FixedList4096Bytes<Line> lines)
     {
@@ -187,11 +186,12 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             // If the current result violates this line...
             if (Cross(lines[i].Direction, lines[i].Point - result) > 0f)
             {
-                float2 oldResult = result;
                 if (!SolveLine(lines, i, maxSpeed, preferred, ref result))
                 {
-                    //fail set pref to 0
                     return float2.zero;
+                    //fail set pref to 0
+                    //return new float2(5f, 5f);
+                    //return result;
                 }
             }
         }
@@ -211,7 +211,11 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
         float disc = dot * dot + maxSpeed * maxSpeed - math.lengthsq(line.Point);
 
         if (disc < 0f)
+        {
+            // No feasible solution - find least bad option
+            result = FindLeastBadSolution(lines, index, maxSpeed, preferred);
             return false;
+        }
 
         float sqrt = math.sqrt(disc);
         float left = -dot - sqrt;
@@ -226,6 +230,8 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             {
                 if (numer < 0f)
                 {
+                    // Lines are parallel and infeasible
+                    //result = FindLeastBadSolution(lines, index, maxSpeed, preferred);
                     return false;
                 }
                 continue;
@@ -236,7 +242,11 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             else left = math.max(left, t);
 
             if (left > right)
+            {
+                // Constraints are infeasible
+                //result = FindLeastBadSolution(lines, index, maxSpeed, preferred);
                 return false;
+            }
         }
 
         float tFinal = math.clamp(
@@ -246,6 +256,76 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
 
         result = line.Point + tFinal * line.Direction;
         return true;
+    }
+
+    float2 FindLeastBadSolution(
+        FixedList4096Bytes<Line> lines,
+        int index,
+        float maxSpeed,
+        float2 preferred)
+    {
+        // Strategy: Find velocity that minimizes constraint violations
+        // while staying close to preferred velocity
+
+        float2 bestVelocity = preferred;
+
+        // Clamp to max speed circle
+        if (math.lengthsq(bestVelocity) > maxSpeed * maxSpeed)
+            bestVelocity = math.normalize(bestVelocity) * maxSpeed;
+
+        float minPenalty = float.MaxValue;
+
+        // Sample around the speed circle to find least violation
+        const int samples = 16;
+        for (int s = 0; s < samples; s++)
+        {
+            float angle = (s / (float)samples) * 2f * math.PI;
+            float2 testVel = new float2(math.cos(angle), math.sin(angle)) * maxSpeed;
+
+            // Calculate total violation for this velocity
+            float penalty = 0f;
+
+            for (int i = 0; i <= index; i++)
+            {
+                Line line = lines[i];
+                float violation = Cross(line.Direction, line.Point - testVel);
+
+                if (violation > 0f)
+                {
+                    // This line is violated, add squared penalty
+                    penalty += violation * violation;
+                }
+            }
+
+            // Also prefer velocities closer to preferred
+            float distToPreferred = math.lengthsq(testVel - preferred);
+            penalty += distToPreferred * 0.1f; // Weight factor
+
+            if (penalty < minPenalty)
+            {
+                minPenalty = penalty;
+                bestVelocity = testVel;
+            }
+        }
+
+        // Also test the preferred velocity (clamped)
+        float2 clampedPreferred = preferred;
+        if (math.lengthsq(clampedPreferred) > maxSpeed * maxSpeed)
+            clampedPreferred = math.normalize(clampedPreferred) * maxSpeed;
+
+        float prefPenalty = 0f;
+        for (int i = 0; i <= index; i++)
+        {
+            Line line = lines[i];
+            float violation = Cross(line.Direction, line.Point - clampedPreferred);
+            if (violation > 0f)
+                prefPenalty += violation * violation;
+        }
+
+        if (prefPenalty < minPenalty)
+            bestVelocity = clampedPreferred;
+
+        return bestVelocity;
     }
 
     static float Cross(float2 a, float2 b)

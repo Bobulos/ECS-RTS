@@ -1,7 +1,7 @@
-using Unity.Entities;
-using Unity.Physics;
 using Unity.Burst;
+using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Physics;
 [BurstCompile]
 public static class UnitOrderUtil
 {
@@ -14,7 +14,7 @@ public static class UnitOrderUtil
             BelongsTo = CollisionFilter.Default.BelongsTo,
             GroupIndex = 0
         };
-        float3 vo = new float3(0,DEPTH_TEST,0);
+        float3 vo = new float3(0, DEPTH_TEST, 0);
         var ray = new RaycastInput
         {
             Start = pos + vo,

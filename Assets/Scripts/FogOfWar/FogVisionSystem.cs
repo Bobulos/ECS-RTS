@@ -76,7 +76,7 @@ public partial class FogSystem : SystemBase
             _visibleTex.Create();
 
             // Hook renderer
-            _fogRender?.SetTexture(_visibleTex,_exploredTex); // show explored by default (or combine in shader)
+            _fogRender?.SetTexture(_visibleTex, _exploredTex); // show explored by default (or combine in shader)
 
             _initialized = true;
             return; // skip first frame after init
@@ -147,7 +147,7 @@ public partial class FogSystem : SystemBase
 
 
         //Debug.Log($"VisibleTex actual size = {_visibleTex.width}x{_visibleTex.height}");
-        
+
         if (_hasMaskUpdate)
         {
             _hasMaskUpdate = false;
@@ -179,7 +179,7 @@ public partial class FogSystem : SystemBase
             _readCount += 1;
         }
         //gpu readback on visiblility texture
-        
+
     }
     int _readCount = 0;
     bool _hasMaskUpdate = false;
@@ -233,8 +233,8 @@ public partial struct LocalVisibilityJob : IJobEntity
     public float2 WorldMin;
     public float CellSize;
     public int GridResolution;
-    [ReadOnly]public NativeArray<int> Mask;
-    [ReadOnly]public BufferLookup<LinkedEntityGroup> Groups;
+    [ReadOnly] public NativeArray<int> Mask;
+    [ReadOnly] public BufferLookup<LinkedEntityGroup> Groups;
     public EntityCommandBuffer ECB;
     public void Execute(Entity e, RefRO<LocalTransform> t, RefRW<LocalVisibility> vis)
     {
@@ -279,7 +279,7 @@ public partial struct LocalVisibilityJob : IJobEntity
         }
 
 
-        
+
         //Debug.Log($"Tres sigma {Mask[index]} at {index} index");
     }
 }

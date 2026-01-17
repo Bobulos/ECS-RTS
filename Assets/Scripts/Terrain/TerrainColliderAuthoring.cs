@@ -1,6 +1,5 @@
-using UnityEngine;
 using Unity.Entities;
-using UnityEditor;
+using UnityEngine;
 
 [RequireComponent(typeof(MeshCollider))]
 public class TerrainColliderAuthoring : MonoBehaviour

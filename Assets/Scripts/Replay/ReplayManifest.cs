@@ -1,7 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using System.Collections.Generic;
-using System;
 
 public static class ReplayFileManager
 {
@@ -54,7 +54,7 @@ public static class ReplayFileManager
         catch (Exception e)
         {
             Debug.LogError($"Failed to load replay manifest: {e.Message}");
-            return new ReplayManifest { replays = new string[0]};
+            return new ReplayManifest { replays = new string[0] };
         }
     }
 

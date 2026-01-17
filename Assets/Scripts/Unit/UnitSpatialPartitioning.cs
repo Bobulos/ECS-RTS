@@ -1,12 +1,9 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Transforms;
-using Unity.Mathematics;
-using UnityEngine;
 using Unity.Jobs;
-using Unity.VisualScripting;
-using System.Linq;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 public struct UnitData
 {
@@ -16,7 +13,7 @@ public struct UnitData
     public int TeamID;
     public Entity Entity;
 }
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)),UpdateBefore(typeof(UnitMovementSystem))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitMovementSystem))]
 [BurstCompile]
 public partial struct UnitSpatialPartitioning : ISystem
 {
@@ -51,9 +48,10 @@ public partial struct UnitSpatialPartitioning : ISystem
     {
         _unitData.Dispose();
         _spatialMap.Dispose();
-//        if (_unitData.IsCreated)
-            
+        //        if (_unitData.IsCreated)
+
     }
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         _unitData.Clear();
@@ -68,10 +66,10 @@ public partial struct UnitSpatialPartitioning : ISystem
             _spatialMap.Capacity = unitCount;
 
         // This is cheap memory-wise because we reuse the list memory every frame.
-        foreach (var (team, mov, transform, entity) in SystemAPI.Query<UnitTeam,UnitMovement,LocalTransform>()
+        foreach (var (team, mov, transform, entity) in SystemAPI.Query<UnitTeam, UnitMovement, LocalTransform>()
         .WithEntityAccess().WithNone<DeadTag>())
         {
-            unitCount ++;
+            unitCount++;
             UnitData ud = new UnitData
             {
                 Entity = entity,
@@ -97,11 +95,11 @@ public partial struct UnitSpatialPartitioning : ISystem
 
         // Schedule the IJobEntity in parallel. We do NOT call Complete() � let the scheduler run it async.
         // The returned JobHandle is stored in state.Dependency so that subsequent jobs/systems respect it.
-        
+
         JobHandle handle = job.ScheduleParallel(state.Dependency);
         state.Dependency = handle;
         handle.Complete();
-        
+
 
         //DO ALL OF THE LOCAL AVOIDANCE DOWN HERE
         var avoidanceJob = new UnitLocalAvoidanceJob

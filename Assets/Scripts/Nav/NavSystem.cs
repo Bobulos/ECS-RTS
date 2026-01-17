@@ -4,9 +4,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine.Experimental.AI; // NavMesh types
-using UnityEngine; // for Debug
-using NUnit;
-using Unity.Entities.UniversalDelegates;
 
 public struct Pather : IComponentData
 {
@@ -46,7 +43,7 @@ public partial struct NavSystem : ISystem
     private EntityQuery _patherQuery;
 
     //To stop too many queries in one update
-    const int MAX_QUERIES = 10000;
+    const int MAX_QUERIES = 100;
 
     public void OnCreate(ref SystemState state)
     {
@@ -71,7 +68,7 @@ public partial struct NavSystem : ISystem
             {
 
             }
-            
+
         }
         _navQueries.Dispose();
     }
@@ -122,7 +119,7 @@ public partial struct NavSystem : ISystem
     /// then write the results into the entity's PatherWayPoint buffer and update the Pather component.
     /// </summary>
     /// [BurstCompile]
-    private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather>pather, float3 fromPosition, EntityCommandBuffer ecb)
+    private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather> pather, float3 fromPosition, EntityCommandBuffer ecb)
     {
         if (!pather.ValueRO.QuerySet) return; // safety
 

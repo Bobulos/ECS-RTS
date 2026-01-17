@@ -1,8 +1,5 @@
-using System;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
-using System.Collections.Generic;
 public class StructureDatabaseAuthoring : MonoBehaviour
 {
     [SerializeField]

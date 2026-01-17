@@ -1,11 +1,11 @@
-﻿using UnityEngine;
-using Unity.Entities;
+﻿using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 using UnityEngine.UI;
-using Unity.Burst;
-using Unity.Jobs;
 public class MinimapRenderer : MonoBehaviour
 {
     public ComputeShader minimapComputeShader;
@@ -34,7 +34,7 @@ public class MinimapRenderer : MonoBehaviour
 
     void Update()
     {
-        minimap.rotation = Quaternion.Euler(0,0,cam.rotation.eulerAngles.y);
+        minimap.rotation = Quaternion.Euler(0, 0, cam.rotation.eulerAngles.y);
         UpdatePlayerIcon();
         // Collect ECS unit positions
     }
@@ -60,7 +60,7 @@ public class MinimapRenderer : MonoBehaviour
     public Vector4[] teamColors;
     public void UpdateMinimap(int team, NativeArray<float2> unitPositions)
     {
-        
+
         int stampKernel = minimapComputeShader.FindKernel("Stamp");
 
         if (positionBuffer != null)
@@ -103,7 +103,7 @@ public partial class CollectUnitsSystem : SystemBase
             minimap = GameObject.FindFirstObjectByType<MinimapRenderer>();
             return;
         }
-        
+
 
         minimap.ClearMinimap();
 

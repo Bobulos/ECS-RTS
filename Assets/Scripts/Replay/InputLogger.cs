@@ -1,9 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
 using Unity.Entities;
-using System;
-using Unity.Entities.UniversalDelegates;
+using UnityEngine;
 
 public class InputLogger : MonoBehaviour
 {
@@ -19,7 +18,7 @@ public class InputLogger : MonoBehaviour
     {
         DateTime now = DateTime.Now;
         string t = now.ToString("yyyyMMddHHmmss");
-        fileName = $"{t.Substring(0,4)}_{t.Substring(4,2)}_{t.Substring(6,2)}_{t.Substring(8,2)}_{t.Substring(10,2)}.bin";
+        fileName = $"{t.Substring(0, 4)}_{t.Substring(4, 2)}_{t.Substring(6, 2)}_{t.Substring(8, 2)}_{t.Substring(10, 2)}.bin";
         ReplayFileManager.AddFile(fileName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 
@@ -39,12 +38,13 @@ public class InputLogger : MonoBehaviour
     uint step;
     void FixedUpdate()
     {
-        step ++;
+        step++;
     }
 
     public void OnConstructWalls(ConstructWallData d, uint team)
     {
-        buffer.Add(new InputRecord {
+        buffer.Add(new InputRecord
+        {
             Step = step,
             Team = team,
             Type = InputType.ConstructWalls,
@@ -197,7 +197,7 @@ public static class InputDecoder
                             record.Wall = new ConstructWallData { start = ReadVector3(reader), end = ReadVector3(reader), constructID = reader.ReadInt32() };
                             break;
                         case InputType.Construct:
-                            record.Structure = new ConstructData { pos = ReadVector3(reader), constructID = reader.ReadInt32()};
+                            record.Structure = new ConstructData { pos = ReadVector3(reader), constructID = reader.ReadInt32() };
                             break;
                     }
                     records.Add(record);
@@ -234,8 +234,8 @@ public static class InputRecordUtil
 {
     public static InputRecord AssembleRecord(ConstructWallData d, uint team)
     {
-        return new InputRecord 
-        { 
+        return new InputRecord
+        {
             Type = InputType.ConstructWalls,
             Team = team,
             Wall = d

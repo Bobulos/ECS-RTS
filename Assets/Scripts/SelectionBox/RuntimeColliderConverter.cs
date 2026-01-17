@@ -1,10 +1,10 @@
-﻿using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using Unity.Physics;
+﻿using System.Collections;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Transforms;
 using UnityEngine;
-using System.Collections;
 public class RuntimeColliderConverter : MonoBehaviour
 {
     private UnityEngine.MeshCollider meshCollider;
@@ -56,8 +56,8 @@ public class RuntimeColliderConverter : MonoBehaviour
         BlobAssetReference<Unity.Physics.Collider> colliderBlob = ConvexCollider.Create(
             vertices.AsArray(),
             ConvexHullGenerationParameters.Default, CollisionFilter.Default
-            //new CollisionFilter { CollidesWith = 0}
-// Or a custom filter
+        //new CollisionFilter { CollidesWith = 0}
+        // Or a custom filter
         );
 
         // 4. Create the Entity Archetype (needs Translation, Rotation, PhysicsCollider)
@@ -74,7 +74,8 @@ public class RuntimeColliderConverter : MonoBehaviour
         // 🌟 Assign the baked collider blob to the entity
         //entityManager.SetComponentData(newEntity, new CollisionFilter { CollidesWith = 0 });
 
-        entityManager.SetComponentData(newEntity, new PhysicsCollider { 
+        entityManager.SetComponentData(newEntity, new PhysicsCollider
+        {
 
             Value = colliderBlob
         });

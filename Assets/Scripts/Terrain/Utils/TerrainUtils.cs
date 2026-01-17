@@ -1,7 +1,6 @@
-using Unity.Entities;
-using Unity.Physics;
-using Unity.Mathematics;
 using Unity.Burst;
+using Unity.Mathematics;
+using Unity.Physics;
 
 [BurstCompile]
 public static class TerrainUtils
@@ -16,7 +15,7 @@ public static class TerrainUtils
             GroupIndex = 0
         };
         hit = float3.zero;
-        float3 vo = new float3(0,DEPTH_TEST,0);
+        float3 vo = new float3(0, DEPTH_TEST, 0);
         var ray = new RaycastInput
         {
             Start = pos + vo,
@@ -25,7 +24,7 @@ public static class TerrainUtils
         };
         if (physicsWorld.CastRay(ray, out var hitTer))
         {
-            
+
             return true;
         }
         return false;

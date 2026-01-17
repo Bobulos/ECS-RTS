@@ -4,11 +4,9 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 [BurstCompile]
-[UpdateInGroup(typeof(SimulationSystemGroup)),UpdateBefore(typeof(UnitSpatialPartitioning))]
+[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(UnitSpatialPartitioning))]
 public partial struct UnitStateSystem : ISystem
 {
     const float STOPPING_DIST_SQ = 1f;
@@ -84,7 +82,7 @@ public partial struct UnitStateMachineJob : IJobEntity
                 break;
 
             case UnitStates.Move:
-                HandleMoveState(uState, mov, transform, distanceToDestSq);
+                HandleMoveState(uState, distanceToDestSq);
                 break;
 
             case UnitStates.Chase:
@@ -128,8 +126,8 @@ public partial struct UnitStateMachineJob : IJobEntity
 
     private void HandleMoveState(
         RefRW<UnitState> uState,
-        RefRW<UnitMovement> mov,
-        RefRO<LocalTransform> transform,
+        /*RefRW<UnitMovement> mov,
+        RefRO<LocalTransform> transform,*/
         float distanceToDestSq)
     {
         if (distanceToDestSq <= STOPPING_DIST_SQ)
@@ -143,7 +141,7 @@ public partial struct UnitStateMachineJob : IJobEntity
             1f / 50f);*/
 
     }
-
+    
     private void HandleChaseState(
         RefRW<Pather> pather,
         RefRW<UnitState> uState,
@@ -307,7 +305,7 @@ public partial struct UnitInitSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        
+
         double count = 0;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var phys = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -324,14 +322,14 @@ public partial struct UnitInitSystem : ISystem
             ecb.RemoveComponent<UnitInitFlag>(entity);
 
             float3 pos = transform.ValueRO.Position;
-            float3 of = + new float3(0, 10, 0);
+            float3 of = +new float3(0, 10, 0);
             targ.ValueRW.Bucket = _targBucket;
             pather.ValueRW.Bucket = _navBucket;
             count += 0.1;
             RaycastInput r = new RaycastInput
-            { 
-                Start = pos+of,
-                End = pos-of,
+            {
+                Start = pos + of,
+                End = pos - of,
                 Filter = COL_FILTER
             };
             if (phys.CastRay(r, out Unity.Physics.RaycastHit hit))

@@ -1,9 +1,5 @@
-using System;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class AssetSingletonAuthoring : MonoBehaviour
 {

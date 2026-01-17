@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject inputLogger;
 
     [Header("Local Playerdata")]
-    public uint localTeam = 1; 
+    public uint localTeam = 1;
     public InputBridge inputBridge;
     public ConstructionBridge constructionBridge;
 
@@ -25,6 +25,8 @@ public class GameManager : MonoBehaviour
             data.TeamID = (int)newTeam;
             //write to it
             if (localData.TryGetSingletonEntity<LocalPlayerData>(out var e)) entityManager.SetComponentData(e, data);
+            inputBridge.team = newTeam;
+            constructionBridge.team = newTeam;
 
         }
     }

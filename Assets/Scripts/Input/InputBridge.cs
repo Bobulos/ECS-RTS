@@ -1,10 +1,7 @@
-﻿
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Physics;
 using UnityEngine;
 
 // ... (usings and class definition) ...
@@ -45,13 +42,14 @@ public class InputBridge : MonoBehaviour
             OnMoveUnits?.Invoke(new MoveUnitsData
             {
                 CurrentRayDirection = -Vector3.up,
-                CurrentRayOrigin = p+new Vector3(0,5,0),
+                CurrentRayOrigin = p + new Vector3(0, 5, 0),
             }, 0);
-        } else if (b == 0 && rig!=null)
+        }
+        else if (b == 0 && rig != null)
         {
             rig.transform.position = p + new Vector3(0, rig.position.y, 0);
         }
-        
+
     }
 
 
@@ -92,18 +90,18 @@ public class InputBridge : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             /*OnSelectUnits?.Invoke(selectionBox.GetColliderEntity(), verts, team);*/
-            buffer.Add(InputRecordUtil.AssembleRecord(verts,team));
+            buffer.Add(InputRecordUtil.AssembleRecord(verts, team));
             isDraggingLeft = false;
             selectionVisual?.EndSelection();
-            
+
         }
         else if (Input.GetMouseButtonDown(1) || Input.GetMouseButtonUp(1))
         {
-/*            OnMoveUnits?.Invoke(new MoveUnitsData
-            {
-                CurrentRayDirection = ray.direction,
-                CurrentRayOrigin = ray.origin,
-            }, team);*/
+            /*            OnMoveUnits?.Invoke(new MoveUnitsData
+                        {
+                            CurrentRayDirection = ray.direction,
+                            CurrentRayOrigin = ray.origin,
+                        }, team);*/
             buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
             {
                 CurrentRayDirection = ray.direction,

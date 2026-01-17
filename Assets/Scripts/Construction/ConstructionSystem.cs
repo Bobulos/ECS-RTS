@@ -16,8 +16,8 @@ public partial class ConstructionSystem : SystemBase
         GroupIndex = 0
     };
 
-/*    int VALID_MAT_ID;
-    int INVALID_MAT_ID;*/
+    /*    int VALID_MAT_ID;
+        int INVALID_MAT_ID;*/
     protected override void OnCreate()
     {
         ConstructionBridge.VisualizeWalls += VisualizeWalls;
@@ -40,12 +40,12 @@ public partial class ConstructionSystem : SystemBase
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         // Query for ALL entities with the WallVisualTag
-        foreach (var (t,e) in SystemAPI.Query<StructureVisualTag>().WithEntityAccess())
+        foreach (var (t, e) in SystemAPI.Query<StructureVisualTag>().WithEntityAccess())
         {
             ecb.DestroyEntity(e);
         }
 
-        
+
 
         // Apply structural changes immediately
         ecb.Playback(EntityManager);
@@ -55,7 +55,7 @@ public partial class ConstructionSystem : SystemBase
     {
         ApplyWallSnap(ref d);
         if (!CheckValidWallPlacement(d)) return;
-        
+
         float3 dir = math.normalize(d.end - d.start);
         float dist = math.distance(d.start, d.end);
         if (dist < 0.01f) return;
@@ -129,7 +129,7 @@ public partial class ConstructionSystem : SystemBase
         if (TryGetStructureFromDB(d.constructData.key, out Entity prefab))
         {
             var e = EntityManager.Instantiate(prefab);
-            EntityManager.SetComponentData(e, new LocalTransform 
+            EntityManager.SetComponentData(e, new LocalTransform
             {
                 Position = d.pos,
                 Rotation = quaternion.identity,
@@ -332,7 +332,7 @@ public partial class ConstructionSystem : SystemBase
         }
         hits.Dispose();
         return true;
-        
+
     }
     //start and end this many units closer
     // Kept at 0f for testing as requested
@@ -378,9 +378,9 @@ public partial class ConstructionSystem : SystemBase
 
         float3 dirNorm = math.normalize(totalDir);
 
-        float3 castStart = a + dirNorm * WALL_CHECK_RADIUS*2;
+        float3 castStart = a + dirNorm * WALL_CHECK_RADIUS * 2;
 
-        float maxDist = totalDist - (2 * WALL_CHECK_RADIUS*2);
+        float maxDist = totalDist - (2 * WALL_CHECK_RADIUS * 2);
 
         if (maxDist <= 0)
         {
