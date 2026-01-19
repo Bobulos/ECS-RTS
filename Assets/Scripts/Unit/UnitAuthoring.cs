@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class UnitAuthoring : MonoBehaviour
 {
-
+    public int selectionKey = 0;
     public int hp = 10;
     public int dmg = 10;
     public float speed = 10f;
@@ -78,6 +78,7 @@ class UnitBaker : Baker<UnitAuthoring>
             //spawnRate = authoring.spawnRate
             //pathBuffer = new DynamicBuffer<PathPosition>(),
         });
+        AddComponent(entity, new SelectionKey {Value = authoring.selectionKey });
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
         AddComponent(entity, new Vision { Level = 3f });

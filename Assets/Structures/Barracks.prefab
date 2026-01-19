@@ -97,6 +97,7 @@ GameObject:
   - component: {fileID: 242075766015938346}
   - component: {fileID: 7587828857718630442}
   - component: {fileID: 273764737506996696}
+  - component: {fileID: 5133408507553233666}
   m_Layer: 8
   m_Name: Barracks
   m_TagString: Untagged
@@ -153,3 +154,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de2c483bea86163489a41920c9db5a78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  selectionKey: 3
+--- !u!114 &5133408507553233666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2234781847415395746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba41a82d498ffe4dad0ada1fad70696, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab0: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab1: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab2: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab3: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab4: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab5: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab6: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
+  prefab7: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}

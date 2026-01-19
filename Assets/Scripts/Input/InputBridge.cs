@@ -18,6 +18,7 @@ public class InputBridge : MonoBehaviour
     public static event Action<Entity, SelectionVertecies, uint> OnSelectUnits;
     public static event Action<MoveUnitsData, uint> OnMoveUnits;
     public static event Action<uint> OnClearUnits;
+    public static event Action OnUpdateGUI;
     // Use Vector2 for screen positions
     private Vector2 startScreenPos;
     //private Vector2 endScreenPos;
@@ -130,6 +131,7 @@ public class InputBridge : MonoBehaviour
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
                 OnSelectUnits.Invoke(selectionBox.GetColliderEntity(), r.Select, team);
+                OnUpdateGUI.Invoke();
                 break;
             case InputType.MoveUnits:
                 OnMoveUnits?.Invoke(new MoveUnitsData
@@ -140,6 +142,7 @@ public class InputBridge : MonoBehaviour
                 break;
             case InputType.ClearUnits:
                 OnClearUnits?.Invoke(r.Team);
+                OnUpdateGUI.Invoke();
                 break;
         }
     }
