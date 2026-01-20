@@ -281,19 +281,20 @@ public partial struct UnitOrderSystem : ISystem
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct UnitInitSystem : ISystem
 {
+    private const int MAX_PER_BUCKET = 100;
     private CollisionFilter COL_FILTER;
-    private uint _targBucket;
-    private uint _maxTargBucket;
-    private uint _navBucket;
-    private uint _maxNavBucket;
+    private int _targBucket;
+    private int _maxTargBucket;
+    private int _navBucket;
+    private int _maxNavBucket;
     public void OnCreate(ref SystemState state)
     {
         //load settings
-        var config = ConfigLoader.Load<SimulationConfig>("SimulationConfig");
+        var config = ConfigLoader.LoadSim();
         _targBucket = 0;
         _navBucket = 0;
-        _maxTargBucket = (uint)config.TargetBucketCount;
-        _maxNavBucket = (uint)config.NavBucketCount;
+        _maxTargBucket = config.targetBucketCount;
+        _maxNavBucket = config.navBucketCount;
 
         COL_FILTER = new CollisionFilter
         {
@@ -305,8 +306,8 @@ public partial struct UnitInitSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-
-        double count = 0;
+        int addedCount = 0;
+        float count = 0;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var phys = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         foreach (var (transform, mov, uState, targ, pather, entity) in
@@ -319,13 +320,15 @@ public partial struct UnitInitSystem : ISystem
                  >().WithEntityAccess()
                  .WithNone<DeadTag>().WithAll<UnitInitFlag>())
         {
+            if (addedCount > MAX_PER_BUCKET) break;
+            addedCount++;
             ecb.RemoveComponent<UnitInitFlag>(entity);
 
             float3 pos = transform.ValueRO.Position;
             float3 of = +new float3(0, 10, 0);
             targ.ValueRW.Bucket = _targBucket;
             pather.ValueRW.Bucket = _navBucket;
-            count += 0.1;
+            count += 0.1f;
             RaycastInput r = new RaycastInput
             {
                 Start = pos + of,

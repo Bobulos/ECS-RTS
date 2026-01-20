@@ -136,7 +136,7 @@ public struct UnitTarget : IComponentData
     public Entity Targ;
     public float DistSq;
     //in one of 16 buckets
-    public uint Bucket;
+    public int Bucket;
 }
 public struct UnitHP : IComponentData
 {

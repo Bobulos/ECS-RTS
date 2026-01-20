@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine.Experimental.AI; // NavMesh types
 
+
 public struct Pather : IComponentData
 {
     public bool NeedsUpdate;
@@ -17,7 +18,7 @@ public struct Pather : IComponentData
 
     public int QueryIndex;
 
-    public uint Bucket;
+    public int Bucket;
 }
 
 [InternalBufferCapacity(32)]
@@ -49,8 +50,8 @@ public partial struct NavSystem : ISystem
     {
         _bucket = 0;
 
-        var config = ConfigLoader.Load<SimulationConfig>("SimulationConfig");
-        _maxBucket = config.TargetBucketCount;
+        var config = ConfigLoader.LoadSim();
+        _maxBucket = config.targetBucketCount;
 
         _navQueries = new NativeList<NavMeshQuery>(Allocator.Persistent);
     }
@@ -92,7 +93,7 @@ public partial struct NavSystem : ISystem
             {
                 int newIndex = _navQueries.Length;
                 // Create a NavMeshQuery with a sane max node capacity (adjust if needed)
-                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024);
+                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024/4);
                 _navQueries.Add(q);
 
                 pather.ValueRW.QuerySet = true;
@@ -105,7 +106,7 @@ public partial struct NavSystem : ISystem
             pather.ValueRW.PathCalculated = true;
 
             // Do the pathfinding synchronously on main thread using the entity's NavMeshQuery
-            TryCalculatePathAndWriteResults(entity, pather, transform.ValueRO.Position, ecb);
+            TryCalculatePathAndWriteResults(entity, pather, transform.ValueRO.Position, ref ecb);
         }
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
@@ -119,7 +120,11 @@ public partial struct NavSystem : ISystem
     /// then write the results into the entity's PatherWayPoint buffer and update the Pather component.
     /// </summary>
     /// [BurstCompile]
-    private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather> pather, float3 fromPosition, EntityCommandBuffer ecb)
+    private void TryCalculatePathNew(Entity entity, RefRW<Pather> pather, float3 fromPosition)
+    {
+        
+    }
+    private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather> pather, float3 fromPosition, ref EntityCommandBuffer ecb)
     {
         if (!pather.ValueRO.QuerySet) return; // safety
 

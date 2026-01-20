@@ -47,7 +47,7 @@ public class SelectionGUIManager : MonoBehaviour
         foreach (var bucket in localSelectedUnits.Buckets)
         {
             var data = manifest.GetData(bucket.Key);
-            Debug.Log($"{bucket.Count} of unit nameof {data.name}");
+            //Debug.Log($"{bucket.Count} of unit nameof {data.name}");
             var e = Instantiate(GUIElement, transform).GetComponent<UnitGUIElement>();
             e.SetData(data, bucket.Count);
         }

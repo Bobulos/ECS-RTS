@@ -9,11 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab20e5178b92c4e913a3490416bd19, type: 3}
-  m_Name: Barracks
+  m_Script: {fileID: 11500000, guid: 5479b243e701d0e4d86474f24bf08dda, type: 3}
+  m_Name: WallNode
   m_EditorClassIdentifier: 
-  mode: 1
-  spacing: 5
-  size: {x: 5, y: 4, z: 5}
-  key: 2
-  secondaryKey: -1
+  key: 0
+  name: Wall
+  icon: {fileID: 21300000, guid: ca45d178d188e034aa96a68aceeef41b, type: 3}
+  description: 

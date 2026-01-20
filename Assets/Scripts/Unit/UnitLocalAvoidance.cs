@@ -7,7 +7,7 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct UnitLocalAvoidanceJob : IJobEntity
 {
-    [ReadOnly] public NativeParallelMultiHashMap<int, UnitData> SpatialMap;
+    [ReadOnly] public NativeParallelMultiHashMap<int, UnitSpatialData> SpatialMap;
 
     public float CellSize;
     public float TimeHorizon;
@@ -35,7 +35,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             {
                 int hash = ((cellX + dx) * 73856093) ^ ((cellZ + dz) * 19349663);
 
-                if (!SpatialMap.TryGetFirstValue(hash, out UnitData other, out var it))
+                if (!SpatialMap.TryGetFirstValue(hash, out UnitSpatialData other, out var it))
                     continue;
 
                 do
@@ -111,7 +111,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
 
 
     }
-    void AddORCALine(float3 pos, float2 vel, float radius, in UnitData other, ref FixedList4096Bytes<Line> lines)
+    void AddORCALine(float3 pos, float2 vel, float radius, in UnitSpatialData other, ref FixedList4096Bytes<Line> lines)
     {
         float2 relPos = new float2(other.Position.x - pos.x, other.Position.z - pos.z);
         float2 relVel = vel - other.Velocity;

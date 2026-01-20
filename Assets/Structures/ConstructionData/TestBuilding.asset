@@ -15,5 +15,5 @@ MonoBehaviour:
   mode: 1
   spacing: 5
   size: {x: 10, y: 10, z: 10}
-  key: 2
+  key: 3
   secondaryKey: -1

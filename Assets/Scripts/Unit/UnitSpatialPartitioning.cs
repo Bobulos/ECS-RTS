@@ -4,8 +4,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-
-public struct UnitData
+public struct UnitSpatialData
 {
     public float3 Position;
     public float2 Velocity;
@@ -18,19 +17,20 @@ public struct UnitData
 public partial struct UnitSpatialPartitioning : ISystem
 {
     // Persistent container reused across frames to avoid per-frame allocations.
-    private NativeList<UnitData> _unitData;
+    private NativeList<UnitSpatialData> _unitData;
     private EntityQuery _query;
-    private NativeParallelMultiHashMap<int, UnitData> _spatialMap;
-    private uint _bucket;
-    private uint _maxBucket;
+    private NativeParallelMultiHashMap<int, UnitSpatialData> _spatialMap;
+    private int _bucket;
+    private int _maxBucket;
+    private float _timeHorizon;
 
     public void OnCreate(ref SystemState state)
     {
 
         //SimulationSettings
-        var config = ConfigLoader.Load<SimulationConfig>("SimulationConfig");
-        _maxBucket = (uint)config.TargetBucketCount;
-
+        var config = ConfigLoader.LoadSim();
+        _maxBucket = config.navBucketCount;
+        _timeHorizon = config.timeHorizon;
         _bucket = 0;
         _query = state.GetEntityQuery(
             ComponentType.ReadOnly<LocalTransform>(),
@@ -40,8 +40,8 @@ public partial struct UnitSpatialPartitioning : ISystem
         );
 
         // Initialize persistent list. Reserve some capacity to reduce resizing churn.
-        _unitData = new NativeList<UnitData>(16, Allocator.Persistent);
-        _spatialMap = new NativeParallelMultiHashMap<int, UnitData>(config.SpatialPartitionTargetCount, Allocator.Persistent);
+        _unitData = new NativeList<UnitSpatialData>(16, Allocator.Persistent);
+        _spatialMap = new NativeParallelMultiHashMap<int, UnitSpatialData>(config.spatialPartitionTargetCount, Allocator.Persistent);
     }
 
     public void OnDestroy(ref SystemState state)
@@ -70,7 +70,7 @@ public partial struct UnitSpatialPartitioning : ISystem
         .WithEntityAccess().WithNone<DeadTag>())
         {
             unitCount++;
-            UnitData ud = new UnitData
+            var ud = new UnitSpatialData
             {
                 Entity = entity,
                 Position = transform.Position,
@@ -106,7 +106,7 @@ public partial struct UnitSpatialPartitioning : ISystem
         {
             SpatialMap = _spatialMap,
             CellSize = SpatialHash.CellSize,
-            TimeHorizon = 2.5f,
+            TimeHorizon = _timeHorizon,
         };
 
         avoidanceJob.Schedule();
@@ -117,10 +117,10 @@ public partial struct UnitSpatialPartitioning : ISystem
 [BurstCompile]
 public partial struct FindTargetsJob : IJobEntity
 {
-    [ReadOnly] public uint Bucket;
+    [ReadOnly] public int Bucket;
     [ReadOnly] public double T;
     //[ReadOnly] public ComponentLookup<DeadTag> DeadLookup;
-    [ReadOnly] public NativeParallelMultiHashMap<int, UnitData> UnitSpatialMap;
+    [ReadOnly] public NativeParallelMultiHashMap<int, UnitSpatialData> UnitSpatialMap;
 
     public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
     {
@@ -141,7 +141,7 @@ public partial struct FindTargetsJob : IJobEntity
                     int nx = cellX + dx;
                     int nz = cellZ + dz;
                     int hashKey = (nx * 73856093) ^ (nz * 19349663);
-                    if (UnitSpatialMap.TryGetFirstValue(hashKey, out UnitData u, out var it))
+                    if (UnitSpatialMap.TryGetFirstValue(hashKey, out UnitSpatialData u, out var it))
                     {
                         do
                         {

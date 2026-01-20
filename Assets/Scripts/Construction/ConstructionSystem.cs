@@ -436,9 +436,9 @@ public partial class ConstructionSystem : SystemBase
 
     private bool TryGetStructureFromDB(int key, out Entity e)
     {
-        if (SystemAPI.TryGetSingletonBuffer<StructureDatabaseElement>(out var structDb))
+        if (SystemAPI.TryGetSingleton<StructureManifest>(out var structDb))
         {
-            e = structDb[key].Value;
+            e = structDb.Manifest[key];
             return true;
         }
         e = Entity.Null; return false;
