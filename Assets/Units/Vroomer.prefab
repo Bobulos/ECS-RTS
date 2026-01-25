@@ -710,7 +710,7 @@ MonoBehaviour:
   hp: 10
   dmg: 1
   speed: 5
-  range: 20
+  range: 20.17
   teamID: 0
   attackRange: 16.29
   attackRate: 0.5

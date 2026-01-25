@@ -93,9 +93,11 @@ public class MinimapRenderer : MonoBehaviour
             positionBuffer.Release();
     }
 }
+
 public partial class CollectUnitsSystem : SystemBase
 {
     private MinimapRenderer minimap; // cached
+    [BurstCompile]
     protected override void OnUpdate()
     {
         if (minimap == null)

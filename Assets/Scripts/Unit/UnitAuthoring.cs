@@ -79,7 +79,7 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent(entity, new SelectionKey {Value = authoring.selectionKey });
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
-        AddComponent(entity, new Vision { Level = 3f });
+        AddComponent(entity, new Vision { Level = math.round(authoring.range) });
         AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = authoring.disableChildren });
     }
 }

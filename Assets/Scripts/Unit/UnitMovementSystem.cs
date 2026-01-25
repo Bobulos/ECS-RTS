@@ -74,7 +74,7 @@ public partial struct UnitMovementSystem : ISystem
             if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) || !pather.PathCalculated)
                 return defaultDestination;
 
-            if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length - 2)
+            if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length)
                 return defaultDestination;
 
             return UpdateWaypointIndex(ref pather, waypoints, currentPosition);

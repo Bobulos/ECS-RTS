@@ -133,6 +133,7 @@ public partial class FogSystem : SystemBase
         _shader.SetFloats("_WorldMin", -extX, 0, -extZ);
         _shader.SetFloats("_WorldMax", extX, 0, extZ);
 
+        // One thread per unit, each thread handles its own radius loop
         int groups = Mathf.CeilToInt(count / 64f);
         _shader.Dispatch(_stampKernel, groups, 1, 1);
 
