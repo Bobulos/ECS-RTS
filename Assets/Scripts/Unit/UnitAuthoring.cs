@@ -13,6 +13,7 @@ public class UnitAuthoring : MonoBehaviour
     public float attackRange = 2f;
     public float attackRate = 0.5f;
     public float radius = 0.5f;
+    public bool disableChildren = true;
 
     //public float3 dir;
 }
@@ -20,9 +21,6 @@ class UnitBaker : Baker<UnitAuthoring>
 {
     public override void Bake(UnitAuthoring authoring)
     {
-        // GetEntity returns an entity that ECS creates from the GameObject using
-        // pre-built ECS baker methods. TransformUsageFlags.Dynamic instructs the
-        // Bake method to add the Transforms.LocalTransform component to the entity.
         var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
 
         var unitMovement = new UnitMovement
@@ -82,7 +80,7 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
         AddComponent(entity, new Vision { Level = 3f });
-        AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = false });
+        AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = authoring.disableChildren });
     }
 }
 public struct UnitInitFlag : IComponentData { }

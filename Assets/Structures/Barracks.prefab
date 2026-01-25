@@ -167,6 +167,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ba41a82d498ffe4dad0ada1fad70696, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spawnOffset: {x: 6, y: 0, z: 0}
   prefab0: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
   prefab1: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}
   prefab2: {fileID: 7705935982607560308, guid: 0217f0f5181923a45916ce9fd5fc0660, type: 3}

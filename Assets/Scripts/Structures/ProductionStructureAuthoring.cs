@@ -1,9 +1,12 @@
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class ProductionStructureAuthoring : MonoBehaviour
 {
+    public Vector3 spawnOffset;
+    [Header("Possible Units")]
     public UnitData prefab0;
     public UnitData prefab1;
     public UnitData prefab2;
@@ -20,8 +23,9 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
         var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
         AddComponent(entity, new ProductionStructure
         {
+            SpawnOffset = authoring.spawnOffset,
             QueueCount = 0,
-            Prefabs = new FixedList4096Bytes<int> {
+            Prefabs = new FixedList512Bytes<int> {
                 authoring.prefab0.Key, 
                 authoring.prefab1.Key, 
                 authoring.prefab2.Key, 
@@ -31,15 +35,16 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
                 authoring.prefab6.Key, 
                 authoring.prefab7.Key,
             },
-            Queue = new FixedList4096Bytes<int> {}
+            Queue = new FixedList512Bytes<int> {}
         });
     }
 }
 public struct ProductionStructure : IComponentData
 {
+    public float3 SpawnOffset;
     public int QueueCount;
     //64 bytes for each unit
-    public FixedList4096Bytes<int> Prefabs;
+    public FixedList512Bytes<int> Prefabs;
     // can hold 512
-    public FixedList4096Bytes<int> Queue;
+    public FixedList512Bytes<int> Queue;
 }

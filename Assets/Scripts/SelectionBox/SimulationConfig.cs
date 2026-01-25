@@ -9,6 +9,7 @@ public class SimulationConfig : ScriptableObject
 
     [Header("Target Finding")]
     public int targetBucketCount;
+    public float cellSize = 10f;
 
     [Header("Navigation Avoidance")]
     public int navBucketCount;

@@ -1,35 +1,36 @@
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+
 public class UnitManifestAuthoring : MonoBehaviour
 {
     [SerializeField]
     public GameObject[] manifest;
-    //public float3 dir;
 }
+
 class UnitManifestBaker : Baker<UnitManifestAuthoring>
 {
     public override void Bake(UnitManifestAuthoring authoring)
     {
-        // GetEntity returns an entity that ECS creates from the GameObject using
-        // pre-built ECS baker methods. TransformUsageFlags.Dynamic instructs the
-        // Bake method to add the Transforms.LocalTransform component to the entity.
-        var entity = GetEntity(authoring, TransformUsageFlags.None);
+        var entity = GetEntity(TransformUsageFlags.None);
 
-        FixedList4096Bytes<Entity> m = new FixedList4096Bytes<Entity>();
+        // AddBuffer creates and returns the buffer - no need for AddComponent
+        var buffer = AddBuffer<UnitManifest>(entity);
+
         foreach (var g in authoring.manifest)
         {
-            m.Add(GetEntity(g, TransformUsageFlags.None));
+            if (g != null)
+            {
+                var prefabEntity = GetEntity(g, TransformUsageFlags.Dynamic);
+                buffer.Add(new UnitManifest { Value = prefabEntity });
+            }
         }
-        AddComponent(entity, new UnitManifest { Manifest = m });
-        //var buffer = AddBuffer<StructureDatabaseElement>(entity);
-
-        //Entity[] e = new Entity[authoring.data.Length]
-        //AddComponent<>
     }
 }
 
-public struct UnitManifest : IComponentData
+// Buffer element should be simple - just hold one entity
+[InternalBufferCapacity(8)] // Number of elements before it allocates to heap
+public struct UnitManifest : IBufferElementData
 {
-    public FixedList4096Bytes<Entity> Manifest;
+    public Entity Value;
 }

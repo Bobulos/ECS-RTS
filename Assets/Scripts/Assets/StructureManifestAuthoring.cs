@@ -1,35 +1,36 @@
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+
 public class StructureManifestAuthoring : MonoBehaviour
 {
     [SerializeField]
     public GameObject[] manifest;
-    //public float3 dir;
 }
+
 class StructureManifestBaker : Baker<StructureManifestAuthoring>
 {
     public override void Bake(StructureManifestAuthoring authoring)
     {
-        // GetEntity returns an entity that ECS creates from the GameObject using
-        // pre-built ECS baker methods. TransformUsageFlags.Dynamic instructs the
-        // Bake method to add the Transforms.LocalTransform component to the entity.
-        var entity = GetEntity(authoring, TransformUsageFlags.None);
+        var entity = GetEntity(TransformUsageFlags.None);
 
-        FixedList4096Bytes<Entity> m = new FixedList4096Bytes<Entity>();
-        foreach(var g in authoring.manifest)
+        // AddBuffer creates and returns the buffer - no need for AddComponent
+        var buffer = AddBuffer<StructureManifest>(entity);
+
+        foreach (var g in authoring.manifest)
         {
-            m.Add(GetEntity(g, TransformUsageFlags.None));
+            if (g != null)
+            {
+                var prefabEntity = GetEntity(g, TransformUsageFlags.Dynamic);
+                buffer.Add(new StructureManifest { Value = prefabEntity });
+            }
         }
-        AddComponent(entity, new StructureManifest { Manifest = m });
-        //var buffer = AddBuffer<StructureDatabaseElement>(entity);
-
-        //Entity[] e = new Entity[authoring.data.Length]
-        //AddComponent<>
     }
 }
 
-public struct StructureManifest : IComponentData
+// Buffer element should be simple - just hold one entity
+[InternalBufferCapacity(8)] // Number of elements before it allocates to heap
+public struct StructureManifest : IBufferElementData
 {
-    public FixedList4096Bytes<Entity> Manifest;
+    public Entity Value;
 }

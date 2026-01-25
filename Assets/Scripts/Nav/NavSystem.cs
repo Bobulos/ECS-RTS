@@ -124,8 +124,10 @@ public partial struct NavSystem : ISystem
     {
         
     }
+    [BurstCompile]
     private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather> pather, float3 fromPosition, ref EntityCommandBuffer ecb)
     {
+        //UnityEngine.Debug.Log("Calculate Path");
         if (!pather.ValueRO.QuerySet) return; // safety
 
         int qIndex = pather.ValueRO.QueryIndex;

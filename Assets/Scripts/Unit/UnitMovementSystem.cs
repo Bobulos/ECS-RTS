@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using TMPro;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -38,6 +39,7 @@ public partial struct UnitMovementSystem : ISystem
         private const float MIN_DIRECTION_LENGTH = 1e-4f;
         private const float MIN_ARRIVE_DISTANCE_SQ = 0.01f;
         private const float GROUND_RAYCAST_OFFSET = 10f;
+        private const float SLERP_SPEED = 4f;
         private const float DEBUG_LINE_LENGTH = 1f;
 
         [ReadOnly] public BufferLookup<PatherWayPoint> WaypointLookup;
@@ -57,7 +59,7 @@ public partial struct UnitMovementSystem : ISystem
 
             UpdatePreferredVelocity(ref mov, currentPosition, targetPosition, pather.IndexDistance);
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
-            GroundUnit(ref transform, transform.Position);
+            GroundUnit(ref transform, pather.Dest);
 
             //                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              DrawDebugDest(mov.Dest, transform.Position);
             //DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
@@ -143,26 +145,35 @@ public partial struct UnitMovementSystem : ISystem
             float3 nextPosition = currentPosition + movement;
 
             // Update rotation to face movement direction
-            UpdateRotation(ref transform, velocity);
+            //UpdateRotation(ref transform, velocity);
 
             transform.Position = nextPosition;
         }
 
-        private void UpdateRotation(ref LocalTransform transform, float2 velocity)
-        {
-            float3 forward = new float3(velocity.x, 0f, velocity.y);
-            float velocitySq = math.lengthsq(forward);
+        /*        private void UpdateRotation(ref LocalTransform transform, float2 velocity)
+                {
+                    float3 forward = new float3(velocity.x, 0f, velocity.y);
+                    float velocitySq = math.lengthsq(forward);
 
-            if (velocitySq > MIN_VELOCITY_SQ)
+                    if (velocitySq > MIN_VELOCITY_SQ)
+                    {
+                        transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+                    }
+                }*/
+
+        private void GroundUnit(
+            ref LocalTransform transform,
+            float3 targetPosition
+)
+        {
+            // Fallback forward if target is basically the same position
+            if (math.distancesq(transform.Position, targetPosition) <= MIN_DIRECTION_LENGTH)
             {
-                transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+                targetPosition = transform.Position + math.forward();
             }
-        }
 
-        private void GroundUnit(ref LocalTransform transform, float3 position)
-        {
-            float3 rayStart = position + new float3(0, GROUND_RAYCAST_OFFSET, 0);
-            float3 rayEnd = position - new float3(0, GROUND_RAYCAST_OFFSET, 0);
+            float3 rayStart = transform.Position + new float3(0, GROUND_RAYCAST_OFFSET, 0);
+            float3 rayEnd = transform.Position - new float3(0, GROUND_RAYCAST_OFFSET, 0);
 
             var raycastInput = new RaycastInput
             {
@@ -173,10 +184,29 @@ public partial struct UnitMovementSystem : ISystem
 
             if (World.CastRay(raycastInput, out RaycastHit hit))
             {
-                position.y = hit.Position.y;
-                transform.Position = position;
+                float3 up = hit.SurfaceNormal;
+
+                float3 toTarget = math.normalize(targetPosition - transform.Position);
+
+                // Project forward onto surface plane
+                float3 forward = math.normalize(
+                    toTarget - up * math.dot(toTarget, up)
+                );
+
+                quaternion targetRotation = quaternion.LookRotation(forward, up);
+
+                // 🔥 Smooth rotation
+                transform.Rotation = math.slerp(
+                    transform.Rotation,
+                    targetRotation,
+                    FIXED_DT * SLERP_SPEED
+                );
+
+                // Snap position to ground (usually fine to snap)
+                transform.Position.y = hit.Position.y;
             }
         }
+
 
         private void DrawDebugVelocities(float3 position, float2 preferredVelocity, float2 actualVelocity)
         {

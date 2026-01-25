@@ -96,7 +96,7 @@ public class InputBridge : MonoBehaviour
             selectionVisual?.EndSelection();
 
         }
-        else if (Input.GetMouseButtonDown(1) || Input.GetMouseButtonUp(1))
+        else if (Input.GetMouseButtonDown(1))
         {
             /*            OnMoveUnits?.Invoke(new MoveUnitsData
                         {

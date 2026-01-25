@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -124,6 +125,8 @@ public partial struct FindTargetsJob : IJobEntity
 
     public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
     {
+        int cellRadius = (int)((target.Range+1) / SpatialHash.CellSize);
+
         if (target.Bucket == Bucket)
         {
             float min = target.Range * target.Range;
@@ -134,9 +137,9 @@ public partial struct FindTargetsJob : IJobEntity
             int cellZ = (int)math.floor(transform.Position.z / SpatialHash.CellSize);
 
             // 3x3 neighborhood
-            for (int dx = -1; dx <= 1; dx++)
+            for (int dx = -cellRadius; dx <= cellRadius; dx++)
             {
-                for (int dz = -1; dz <= 1; dz++)
+                for (int dz = -cellRadius; dz <= cellRadius; dz++)
                 {
                     int nx = cellX + dx;
                     int nz = cellZ + dz;
@@ -175,8 +178,7 @@ public partial struct FindTargetsJob : IJobEntity
 }
 public static class SpatialHash
 {
-    // Define the size of your grid cells (e.g., 10x10 meters)
-    public const float CellSize = 5f;
+    public const float CellSize = 10f;
 
     // Calculates a unique integer key for a 2D position.
     public static int GetHashKey(float3 position)
