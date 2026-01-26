@@ -71,7 +71,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         RefRW<UnitMovement> movement,
         RefRO<UnitTarget> target,
         RefRW<UnitAttack> attack,
-        RefRW<LocalTransform> transform)
+        RefRO<LocalTransform> transform)
     {
         var ctx = new Context
         {
@@ -183,9 +183,8 @@ public partial struct UnitStateMachineJob : IJobEntity
                 HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
             });
         }
-
-
-        if (TryGetTargetPosition(targetEntity, out float3 pos))
+   
+        /*if (TryGetTargetPosition(targetEntity, out float3 pos))
         {
             float3 dir = pos - ctx.Transform.ValueRO.Position;
             dir.y = 0f;
@@ -195,7 +194,7 @@ public partial struct UnitStateMachineJob : IJobEntity
                 ctx.Transform.ValueRW.Rotation =
                     quaternion.LookRotationSafe(math.normalize(dir), math.up());
             }
-        }
+        }*/
 
         // If target exits range (with hysteresis) → chase again
         if (ctx.Target.ValueRO.DistSq >
@@ -279,7 +278,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         public RefRW<UnitMovement> Movement;
         public RefRO<UnitTarget> Target;
         public RefRW<UnitAttack> Attack;
-        public RefRW<LocalTransform> Transform;
+        public RefRO<LocalTransform> Transform;
     }
 }
 
