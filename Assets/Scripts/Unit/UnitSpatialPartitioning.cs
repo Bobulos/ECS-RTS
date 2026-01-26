@@ -21,8 +21,10 @@ public partial struct UnitSpatialPartitioning : ISystem
     private NativeList<UnitSpatialData> _unitData;
     private EntityQuery _query;
     private NativeParallelMultiHashMap<int, UnitSpatialData> _spatialMap;
-    private int _bucket;
-    private int _maxBucket;
+    private int _navBucket;
+    private int _maxNavBucket;
+    private int _maxTargBucket;
+    private int _targBucket;
     private float _timeHorizon;
 
     public void OnCreate(ref SystemState state)
@@ -30,9 +32,12 @@ public partial struct UnitSpatialPartitioning : ISystem
 
         //SimulationSettings
         var config = ConfigLoader.LoadSim();
-        _maxBucket = config.navBucketCount;
+        _maxNavBucket = config.navBucketCount;
         _timeHorizon = config.timeHorizon;
-        _bucket = 0;
+        _navBucket = 0;
+
+        _maxTargBucket = config.targetBucketCount;
+        _targBucket = 0;
         _query = state.GetEntityQuery(
             ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadWrite<UnitTarget>(),
@@ -91,7 +96,7 @@ public partial struct UnitSpatialPartitioning : ISystem
             T = SystemAPI.Time.ElapsedTime,
             //DeadLookup = dedLookup,
             UnitSpatialMap = _spatialMap,
-            Bucket = _bucket,
+            Bucket = _targBucket,
         };
 
         // Schedule the IJobEntity in parallel. We do NOT call Complete() � let the scheduler run it async.
@@ -111,8 +116,10 @@ public partial struct UnitSpatialPartitioning : ISystem
         };
 
         avoidanceJob.Schedule();
-        _bucket += 1;
-        if (_bucket > _maxBucket) { _bucket = 0; }
+        _targBucket += 1;
+        if (_targBucket > _maxTargBucket) { _targBucket = 0; }
+        _navBucket += 1;
+        if (_navBucket > _maxNavBucket) { _navBucket = 0; }
     }
 }
 [BurstCompile]

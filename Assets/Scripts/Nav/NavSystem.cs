@@ -51,7 +51,7 @@ public partial struct NavSystem : ISystem
         _bucket = 0;
 
         var config = ConfigLoader.LoadSim();
-        _maxBucket = config.targetBucketCount;
+        _maxBucket = config.navBucketCount;
 
         _navQueries = new NativeList<NavMeshQuery>(Allocator.Persistent);
     }

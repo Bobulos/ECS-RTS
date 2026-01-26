@@ -50,194 +50,215 @@ public partial struct UnitStateSystem : ISystem
         ecb.Dispose();
     }
 }
+
+
 [BurstCompile]
 [WithNone(typeof(DeadTag))]
 public partial struct UnitStateMachineJob : IJobEntity
 {
+    private const float TARGET_REPATH_THRESH_SQ = 4f;
+    private const float RANGE_EXIT_HYSTERESIS = 1.2f;
+
     [ReadOnly] public float ElapsedTime;
-    public EntityCommandBuffer Ecb;
-    //[ReadOnly] public ComponentLookup<UnitMovement> TransformLookup;
     [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
     [ReadOnly] public ComponentLookup<UnitHP> HpLookup;
-    const float STOPPING_DIST_SQ = 1f;
-    const float RESUME_MOVE_DIST_SQ = 1.5f;
-    const float TARGET_REPATH_THRESH_SQ = 4f;
-    public void Execute(
-    RefRW<Pather> pather,
-    RefRW<UnitState> uState,
-    RefRW<UnitMovement> mov,
-    RefRO<UnitTarget> targ,
-    RefRW<UnitAttack> attack,
-    RefRO<LocalTransform> transform)
-    {
-        var currentState = uState.ValueRO.State;
-        var position = new float2(transform.ValueRO.Position.x, transform.ValueRO.Position.z);
-        var destination = new float2(mov.ValueRO.Dest.x, mov.ValueRO.Dest.z);
-        var distanceToDestSq = math.distancesq(position, destination);
 
-        switch (currentState)
+    public EntityCommandBuffer Ecb;
+
+    public void Execute(
+        RefRW<Pather> pather,
+        RefRW<UnitState> state,
+        RefRW<UnitMovement> movement,
+        RefRO<UnitTarget> target,
+        RefRW<UnitAttack> attack,
+        RefRO<LocalTransform> transform)
+    {
+        var ctx = new Context
+        {
+            Pather = pather,
+            State = state,
+            Movement = movement,
+            Target = target,
+            Attack = attack,
+            Transform = transform
+        };
+
+        switch (state.ValueRO.State)
         {
             case UnitStates.Idle:
-                HandleIdleState(transform, uState, mov, pather, targ, distanceToDestSq);
-                break;
-
-            case UnitStates.Move:
-                HandleMoveState(uState, distanceToDestSq);
+                UpdateIdle(ref ctx);
                 break;
 
             case UnitStates.Chase:
-                HandleChaseState(pather, uState, mov, targ, attack, transform);
+                UpdateChase(ref ctx);
                 break;
 
             case UnitStates.Attack:
-                HandleAttackState(pather, uState, targ, attack, transform);
+                UpdateAttack(ref ctx);
                 break;
         }
     }
 
-    private void HandleIdleState(
-        RefRO<LocalTransform> transform,
-        RefRW<UnitState> uState,
-        RefRW<UnitMovement> mov,
-        RefRW<Pather> pather,
-        RefRO<UnitTarget> targ,
-        float distanceToDestSq)
-    {
-        if (targ.ValueRO.Targ != Entity.Null && IsTargetValid(targ.ValueRO.Targ))
-        {
-            //Debug.Log("I GOO NOE");
-            float3 pos = TransformLookup.GetRefRO(targ.ValueRO.Targ).ValueRO.Position;
-            mov.ValueRW.Dest = pos;
-            pather.ValueRW.Dest = pos;
-            uState.ValueRW.State = UnitStates.Chase;
-        }
-        else if (distanceToDestSq > RESUME_MOVE_DIST_SQ)
-        {
-            uState.ValueRW.State = UnitStates.Move;
-        }
-        else
-        {
-            mov.ValueRW.Dest = transform.ValueRO.Position;
-            /*pather.ValueRW.Dest = transform.ValueRO.Position;
-            pather.ValueRW.NeedsUpdate = true;
-            pather.ValueRW.PathCalculated = false;*/
-        }
-    }
+    // =====================================================================
+    // STATES
+    // =====================================================================
 
-    private void HandleMoveState(
-        RefRW<UnitState> uState,
-        /*RefRW<UnitMovement> mov,
-        RefRO<LocalTransform> transform,*/
-        float distanceToDestSq)
+    private void UpdateIdle(ref Context ctx)
     {
-        if (distanceToDestSq <= STOPPING_DIST_SQ)
+        if (!TryGetTargetPosition(ctx.Target.ValueRO.Targ, out float3 targetPos))
         {
-            uState.ValueRW.State = UnitStates.Idle;
-        }
-        
-        /*UnityEngine.Debug.DrawLine(
-            mov.ValueRO.Dest,
-            transform.ValueRO.Position,
-            Color.cyan,
-            1f / 50f);*/
-
-    }
-    
-    private void HandleChaseState(
-        RefRW<Pather> pather,
-        RefRW<UnitState> uState,
-        RefRW<UnitMovement> mov,
-        RefRO<UnitTarget> targ,
-        RefRW<UnitAttack> attack,
-        RefRO<LocalTransform> transform)
-    {
-        var target = targ.ValueRO.Targ;
-
-        if (!IsTargetValid(target))
-        {
-            uState.ValueRW.State = UnitStates.Idle;
-            mov.ValueRW.Dest = transform.ValueRO.Position;
-            pather.ValueRW.Dest = transform.ValueRO.Position;
+            StopMovement(ref ctx);
             return;
         }
 
-        // Update destination to target's current position
-        float3 targetPos = TransformLookup.GetRefRO(target).ValueRO.Position;
+        // Target exists → start chasing immediately
+        TransitionToChase(ref ctx, targetPos);
+    }
 
-        float3 delta = targetPos - mov.ValueRO.Dest;
-        delta.y = 0;
+    private void UpdateChase(ref Context ctx)
+    {
+        var targetEntity = ctx.Target.ValueRO.Targ;
+
+        if (!TryGetTargetPosition(targetEntity, out float3 targetPos))
+        {
+            TransitionToIdle(ref ctx);
+            return;
+        }
+
+        // In attack range → hard stop and attack
+        if (ctx.Target.ValueRO.DistSq <= ctx.Attack.ValueRO.RangeSq)
+        {
+            StopMovement(ref ctx);
+            ctx.State.ValueRW.State = UnitStates.Attack;
+            return;
+        }
+
+        // Update destination only if target moved enough
+        float3 delta = targetPos - ctx.Movement.ValueRO.Dest;
+        delta.y = 0f;
 
         if (math.lengthsq(delta) > TARGET_REPATH_THRESH_SQ)
         {
-            mov.ValueRW.Dest = targetPos;
-            pather.ValueRW.Dest = targetPos;
-            pather.ValueRW.PathCalculated = false;
-            pather.ValueRW.NeedsUpdate = true;
-        }
-
-        /*UnityEngine.Debug.DrawLine(
-            mov.ValueRO.Dest,
-            transform.ValueRO.Position,
-            Color.magenta,
-            1f / 50f);*/
-
-        // Transition to attack if within range
-        if (targ.ValueRO.DistSq < attack.ValueRO.RangeSq)
-        {
-            uState.ValueRW.State = UnitStates.Attack;
+            SetDestination(ref ctx, targetPos);
         }
     }
 
-    private void HandleAttackState(
-        RefRW<Pather> pather,
-        RefRW<UnitState> uState,
-        RefRO<UnitTarget> targ,
-        RefRW<UnitAttack> attack,
-        RefRO<LocalTransform> transform)
+    private void UpdateAttack(ref Context ctx)
     {
-        var target = targ.ValueRO.Targ;
+        var targetEntity = ctx.Target.ValueRO.Targ;
 
-        if (!IsTargetValid(target))
+        if (!TryGetTargetHP(targetEntity, out UnitHP targetHP))
         {
-            uState.ValueRW.State = UnitStates.Idle;
+            TransitionToIdle(ref ctx);
             return;
         }
 
-        var targetHP = HpLookup.GetRefRO(target);
-        if (targetHP.ValueRO.HP <= 0)
+        if (targetHP.HP <= 0)
         {
-            uState.ValueRW.State = UnitStates.Idle;
+            TransitionToIdle(ref ctx);
             return;
         }
 
-        // Process attack on cooldown
-        if (attack.ValueRO.Last + attack.ValueRO.Rate < ElapsedTime)
-        {
-            attack.ValueRW.Last = ElapsedTime;
+        // ATTACK STATE OWNS MOVEMENT
+        StopMovement(ref ctx);
 
-            Ecb.SetComponent(target, new UnitHP
+        // Execute attack
+        if (attackReady(ctx.Attack.ValueRO))
+        {
+            ctx.Attack.ValueRW.Last = ElapsedTime;
+
+            Ecb.SetComponent(targetEntity, new UnitHP
             {
-                HP = targetHP.ValueRO.HP - attack.ValueRO.Dmg
+                HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
             });
         }
 
-        // Transition back to chase if target moves out of range (with hysteresis)
-        const float RANGE_HYSTERESIS = 1.2f;
-        if (targ.ValueRO.DistSq > attack.ValueRO.RangeSq * RANGE_HYSTERESIS)
+        // If target exits range (with hysteresis) → chase again
+        if (ctx.Target.ValueRO.DistSq >
+            ctx.Attack.ValueRO.RangeSq * RANGE_EXIT_HYSTERESIS)
         {
-            uState.ValueRW.State = UnitStates.Chase;
-            pather.ValueRW.PathCalculated = false;
+            ctx.State.ValueRW.State = UnitStates.Chase;
+            ctx.Pather.ValueRW.PathCalculated = false;
+            ctx.Pather.ValueRW.NeedsUpdate = true;
         }
     }
-    private bool IsTargetValid(Entity target)
+
+    // =====================================================================
+    // TRANSITIONS / HELPERS
+    // =====================================================================
+
+    private void TransitionToIdle(ref Context ctx)
     {
+        ctx.State.ValueRW.State = UnitStates.Idle;
+        StopMovement(ref ctx);
+    }
+
+    private void TransitionToChase(ref Context ctx, float3 targetPos)
+    {
+        ctx.State.ValueRW.State = UnitStates.Chase;
+        SetDestination(ref ctx, targetPos);
+    }
+
+    private void SetDestination(ref Context ctx, float3 dest)
+    {
+        ctx.Movement.ValueRW.Dest = dest;
+        ctx.Pather.ValueRW.Dest = dest;
+        ctx.Pather.ValueRW.PathCalculated = false;
+        ctx.Pather.ValueRW.NeedsUpdate = true;
+    }
+
+    private void StopMovement(ref Context ctx)
+    {
+        float3 pos = ctx.Transform.ValueRO.Position;
+        ctx.Movement.ValueRW.Dest = pos;
+        ctx.Pather.ValueRW.Dest = pos;
+    }
+
+    private bool attackReady(in UnitAttack atk)
+    {
+        return atk.Last + atk.Rate < ElapsedTime;
+    }
+
+    private bool TryGetTargetPosition(Entity target, out float3 pos)
+    {
+        pos = default;
+
         if (target == Entity.Null)
             return false;
 
-        return TransformLookup.HasComponent(target)
-            && HpLookup.HasComponent(target);
+        if (!TransformLookup.HasComponent(target) || !HpLookup.HasComponent(target))
+            return false;
+
+        pos = TransformLookup.GetRefRO(target).ValueRO.Position;
+        return true;
+    }
+
+    private bool TryGetTargetHP(Entity target, out UnitHP hp)
+    {
+        hp = default;
+
+        if (!HpLookup.HasComponent(target))
+            return false;
+
+        hp = HpLookup.GetRefRO(target).ValueRO;
+        return true;
+    }
+
+    // =====================================================================
+    // CONTEXT
+    // =====================================================================
+
+    private struct Context
+    {
+        public RefRW<Pather> Pather;
+        public RefRW<UnitState> State;
+        public RefRW<UnitMovement> Movement;
+        public RefRO<UnitTarget> Target;
+        public RefRW<UnitAttack> Attack;
+        public RefRO<LocalTransform> Transform;
     }
 }
+
 /// <summary>
 /// This system handles incomming orders for units
 /// </summary>
@@ -334,7 +355,7 @@ public partial struct UnitInitSystem : ISystem
             };
             if (phys.CastRay(r, out Unity.Physics.RaycastHit hit))
             {
-                ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
+                //ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
                 //UnityEngine.Debug.Log("HEYEYEYEYYE");
             }
             _navBucket += 1;

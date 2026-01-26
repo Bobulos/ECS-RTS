@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   selectionKey: 6
-  hp: 135
+  hp: 500
   dmg: 135
   speed: 10.5
   range: 20
