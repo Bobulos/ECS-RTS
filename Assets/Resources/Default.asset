@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   timeHorizon: 1
   spatialPartitionTargetCount: 16
-  targetBucketCount: 16
+  targetBucketCount: 4
+  cellSize: 10
   navBucketCount: 16

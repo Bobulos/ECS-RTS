@@ -125,7 +125,7 @@ public partial struct FindTargetsJob : IJobEntity
 
     public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
     {
-        int cellRadius = (int)((target.Range+1) / SpatialHash.CellSize);
+        int cellRadius = (int)math.ceil((target.Range + SpatialHash.CellSize) / SpatialHash.CellSize);
 
         if (target.Bucket == Bucket)
         {

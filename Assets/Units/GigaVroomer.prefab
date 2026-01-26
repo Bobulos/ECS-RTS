@@ -54,7 +54,7 @@ MonoBehaviour:
   range: 20
   teamID: 0
   attackRange: 20
-  attackRate: 0.05
+  attackRate: 0.5
   radius: 5.85
   disableChildren: 1
 --- !u!136 &-6262978346429900799

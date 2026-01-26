@@ -59,14 +59,20 @@ public partial struct DestroyDeadUnitsSystem : ISystem
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecbD = ecbSys.CreateCommandBuffer(state.WorldUnmanaged);
-        var c = SystemAPI.GetComponentLookup<PhysicsCollider>(true);
+        //var c = SystemAPI.GetComponentLookup<PhysicsCollider>(true);
+
+        var b = SystemAPI.GetBufferLookup<LinkedEntityGroup>(true);
 
         foreach (var (t, d, e) in SystemAPI.Query<RefRW<LocalTransform>, RefRO<DeadTag>>().WithEntityAccess())
         {
-            if (c.HasComponent(e))
+            if (b.TryGetBuffer(e, out var l))
             {
-                ecb.DestroyEntity(e);
+                foreach (var i in l)
+                {
+                    ecb.DestroyEntity(i.Value);
+                }
             }
+            ecb.DestroyEntity(e);
         }
 
         ecb.Playback(state.EntityManager);

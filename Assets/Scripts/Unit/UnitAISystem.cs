@@ -134,6 +134,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         {
             uState.ValueRW.State = UnitStates.Idle;
         }
+        
         /*UnityEngine.Debug.DrawLine(
             mov.ValueRO.Dest,
             transform.ValueRO.Position,
