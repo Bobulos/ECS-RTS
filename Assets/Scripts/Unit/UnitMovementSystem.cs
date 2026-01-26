@@ -51,8 +51,7 @@ public partial struct UnitMovementSystem : ISystem
             Entity entity,
             ref UnitMovement mov,
             ref LocalTransform transform,
-            ref Pather pather,
-            ref UnitState unitState)
+            ref Pather pather)
         {
             float3 currentPosition = transform.Position;
             float3 targetPosition = GetTargetPosition(entity, ref pather, currentPosition, currentPosition);

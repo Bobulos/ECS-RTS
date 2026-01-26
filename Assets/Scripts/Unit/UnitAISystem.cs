@@ -71,7 +71,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         RefRW<UnitMovement> movement,
         RefRO<UnitTarget> target,
         RefRW<UnitAttack> attack,
-        RefRO<LocalTransform> transform)
+        RefRW<LocalTransform> transform)
     {
         var ctx = new Context
         {
@@ -88,7 +88,9 @@ public partial struct UnitStateMachineJob : IJobEntity
             case UnitStates.Idle:
                 UpdateIdle(ref ctx);
                 break;
-
+            case UnitStates.Move:
+                UpdateMove(ref ctx);
+                break;
             case UnitStates.Chase:
                 UpdateChase(ref ctx);
                 break;
@@ -102,7 +104,16 @@ public partial struct UnitStateMachineJob : IJobEntity
     // =====================================================================
     // STATES
     // =====================================================================
-
+    private void UpdateMove(ref Context ctx)
+    {
+        if (BMath.DistXZsq(ctx.Transform.ValueRO.Position, ctx.Pather.ValueRO.Dest) < ctx.Pather.ValueRO.IndexDistance)
+        {
+            //made it to the dest got to idele
+            StopMovement(ref ctx);
+            ctx.State.ValueRW.State = UnitStates.Idle;
+            return;
+        }
+    }
     private void UpdateIdle(ref Context ctx)
     {
         if (!TryGetTargetPosition(ctx.Target.ValueRO.Targ, out float3 targetPos))
@@ -163,7 +174,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         StopMovement(ref ctx);
 
         // Execute attack
-        if (attackReady(ctx.Attack.ValueRO))
+        if (AttackReady(ctx.Attack.ValueRO))
         {
             ctx.Attack.ValueRW.Last = ElapsedTime;
 
@@ -171,6 +182,19 @@ public partial struct UnitStateMachineJob : IJobEntity
             {
                 HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
             });
+        }
+
+
+        if (TryGetTargetPosition(targetEntity, out float3 pos))
+        {
+            float3 dir = pos - ctx.Transform.ValueRO.Position;
+            dir.y = 0f;
+
+            if (math.lengthsq(dir) > 0.0001f)
+            {
+                ctx.Transform.ValueRW.Rotation =
+                    quaternion.LookRotationSafe(math.normalize(dir), math.up());
+            }
         }
 
         // If target exits range (with hysteresis) → chase again
@@ -214,7 +238,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         ctx.Pather.ValueRW.Dest = pos;
     }
 
-    private bool attackReady(in UnitAttack atk)
+    private bool AttackReady(in UnitAttack atk)
     {
         return atk.Last + atk.Rate < ElapsedTime;
     }
@@ -255,7 +279,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         public RefRW<UnitMovement> Movement;
         public RefRO<UnitTarget> Target;
         public RefRW<UnitAttack> Attack;
-        public RefRO<LocalTransform> Transform;
+        public RefRW<LocalTransform> Transform;
     }
 }
 

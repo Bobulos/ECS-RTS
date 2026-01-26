@@ -67,6 +67,7 @@ public partial struct DestroyDeadUnitsSystem : ISystem
         {
             if (b.TryGetBuffer(e, out var l))
             {
+                UnityEngine.Debug.Log("Has linked group");
                 foreach (var i in l)
                 {
                     ecb.DestroyEntity(i.Value);
