@@ -55,7 +55,7 @@ public partial struct UnitMovementSystem : ISystem
             ref UnitState unitState)
         {
             float3 currentPosition = transform.Position;
-            float3 targetPosition = GetTargetPosition(entity, ref pather, mov.Dest, currentPosition);
+            float3 targetPosition = GetTargetPosition(entity, ref pather, currentPosition, currentPosition);
 
             UpdatePreferredVelocity(ref mov, currentPosition, targetPosition, pather.IndexDistance);
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
@@ -71,12 +71,19 @@ public partial struct UnitMovementSystem : ISystem
             float3 defaultDestination,
             float3 currentPosition)
         {
-            if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) || !pather.PathCalculated)
-                return defaultDestination;
+            /*            if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) || !pather.PathCalculated)
+                            return defaultDestination;
 
-            if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length)
+                        if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length)
+                            return defaultDestination;*/
+            if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) 
+                || waypoints.Length == 0
+                || !pather.PathCalculated)
+            {
+                //UnityEngine.Debug.Log("Default");
                 return defaultDestination;
-
+            }
+                
             return UpdateWaypointIndex(ref pather, waypoints, currentPosition);
         }
 
@@ -89,7 +96,7 @@ public partial struct UnitMovementSystem : ISystem
             float waypointDistanceSq = pather.IndexDistance * pather.IndexDistance;
 
             // Check if we've reached current waypoint
-            if (math.distancesq(currentPosition, currentWaypoint) <= waypointDistanceSq)
+            if (BMath.DistXZsq(currentPosition, currentWaypoint) <= waypointDistanceSq)
             {
                 // Advance to next waypoint if available
                 if (pather.WaypointIndex < waypoints.Length - 1)

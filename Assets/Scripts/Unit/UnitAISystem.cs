@@ -281,7 +281,6 @@ public partial struct UnitOrderSystem : ISystem
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct UnitInitSystem : ISystem
 {
-    private const int MAX_PER_BUCKET = 100;
     private CollisionFilter COL_FILTER;
     private int _targBucket;
     private int _maxTargBucket;
@@ -306,7 +305,6 @@ public partial struct UnitInitSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        int addedCount = 0;
         float count = 0;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var phys = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -320,8 +318,6 @@ public partial struct UnitInitSystem : ISystem
                  >().WithEntityAccess()
                  .WithNone<DeadTag>().WithAll<UnitInitFlag>())
         {
-            if (addedCount > MAX_PER_BUCKET) break;
-            addedCount++;
             ecb.RemoveComponent<UnitInitFlag>(entity);
 
             float3 pos = transform.ValueRO.Position;
@@ -337,7 +333,7 @@ public partial struct UnitInitSystem : ISystem
             };
             if (phys.CastRay(r, out Unity.Physics.RaycastHit hit))
             {
-                //ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
+                ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
                 //UnityEngine.Debug.Log("HEYEYEYEYYE");
             }
             _navBucket += 1;

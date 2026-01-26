@@ -1,6 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -12,12 +13,15 @@ public partial struct UnitDeadTagSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
+        Entity explosion = SystemAPI.GetSingleton<FXManifest>().Explosion;
         //var l = SystemAPI.GetComponentLookup<UnitHP>();
-        foreach (var (hp, e) in SystemAPI.Query<RefRO<UnitHP>>().WithNone<DeadTag>().WithEntityAccess())
+        foreach (var (hp, transform, e) in SystemAPI.Query<RefRO<UnitHP>, RefRO<LocalTransform>>().WithNone<DeadTag>().WithEntityAccess())
         {
             if (hp.ValueRO.HP <= 0)
             {
                 ecb.AddComponent<DeadTag>(e);
+                var d = ecb.Instantiate(explosion);
+                ecb.SetComponent(d, new LocalTransform { Position = transform.ValueRO.Position, Rotation = quaternion.identity, Scale = 1f });
             }
         }
 
@@ -52,15 +56,6 @@ public partial struct DestroyDeadUnitsSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        /*        return;
-                var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-                var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
-
-                state.Dependency = new DestroyDeadJob
-                {
-                    ECB = ecb
-                }.ScheduleParallel(state.Dependency);*/
-        //float dt = SystemAPI.Time.DeltaTime;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecbD = ecbSys.CreateCommandBuffer(state.WorldUnmanaged);

@@ -6,6 +6,7 @@ public class AssetSingletonAuthoring : MonoBehaviour
     public GameObject selectedVisual;
     public GameObject validPlacement;
     public GameObject invalidPlacement;
+    
 }
 class AssetSingletonBaker : Baker<AssetSingletonAuthoring>
 {
