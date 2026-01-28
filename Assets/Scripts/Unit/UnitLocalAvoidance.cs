@@ -40,7 +40,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
 
                 do
                 {
-                    if (count >= 500) break;
+                    if (count >= 254) break;
                     if (other.Entity == entity)
                         continue;
                     count++;

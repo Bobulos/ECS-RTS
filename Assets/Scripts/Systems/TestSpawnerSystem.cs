@@ -5,33 +5,52 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
-using Random = Unity.Mathematics.Random;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitStateSystem))]
-[UpdateAfter(typeof(PhysicsSystemGroup))] // Ensure physics world is built
+[UpdateAfter(typeof(PhysicsSystemGroup))]
 public partial struct TestSpawnerSystem : ISystem
 {
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // This system only runs if there is at least one TestSpawner
-        state.RequireForUpdate<TestSpawner>();
-        state.RequireForUpdate<PhysicsWorldSingleton>();
+        _done = true;
     }
-
+    bool _done;
+    const float sqr_radius = 80f;
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        Random currentRandom = new Random((uint)SystemAPI.Time.ElapsedTime + 1);
-        var collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld.CollisionWorld;
+        if (_done) { return; }
+        _done = true;
+        /*        var ecb = SystemAPI
+                    .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                    .CreateCommandBuffer(state.WorldUnmanaged);
 
-        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
-        var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-        // 4. Create the job instance
-        var job = new SpawnerJob
+        */
+
+        var prefab = SystemAPI.GetSingletonBuffer<UnitManifest>()[4].Value;
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        ecb.Instantiate(prefab);
+        for (float x = -sqr_radius; x < sqr_radius;  x+=1.5f)
+        {
+            for (float z = -sqr_radius; z < sqr_radius; z += 1.5f)
+            {
+                var e = ecb.Instantiate(prefab);
+                ecb.SetComponent(e, new LocalTransform
+                {
+                    Position = new float3(x,0,z),
+                    Rotation = quaternion.identity,
+                    Scale = 1f
+                });
+            }
+        }
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+
+
+
+  /*      var job = new SpawnerJob
         {
             Filter = new CollisionFilter
             {
@@ -39,79 +58,78 @@ public partial struct TestSpawnerSystem : ISystem
                 BelongsTo = CollisionFilter.Default.BelongsTo,
                 GroupIndex = 0
             },
-            World = world,
-            ECB = ecb,
-            Random = currentRandom,
             CollisionWorld = collisionWorld,
-            CurrentTime = SystemAPI.Time.ElapsedTime,
+            ECB = ecb,
+            CurrentTime = SystemAPI.Time.ElapsedTime
         };
 
-        state.Dependency = job.ScheduleParallel(state.Dependency);
-
-        state.Dependency.Complete();
+   
+        state.Dependency = job.Schedule(state.Dependency);
+        state.Dependency.Complete();*/
     }
+
     [BurstCompile]
     private partial struct SpawnerJob : IJobEntity
     {
         public CollisionFilter Filter;
-        [ReadOnly] public PhysicsWorldSingleton World;
-        public EntityCommandBuffer.ParallelWriter ECB;
-        public Random Random; // Must be public (or ref) and non-readonly to be writable back
         [ReadOnly] public CollisionWorld CollisionWorld;
+        public EntityCommandBuffer ECB;
         [ReadOnly] public double CurrentTime;
 
         void Execute(
             Entity entity,
-            [ChunkIndexInQuery] int sortKey,
             ref LocalTransform transform,
             ref TestSpawner spawner)
         {
-            // Check timer and count
-            if (spawner.LastTime + spawner.Rate < CurrentTime &&
-                spawner.Count < spawner.MaxCount)
+            if (spawner.Count >= spawner.MaxCount)
+                return;
+
+            if (spawner.LastTime + spawner.Rate > CurrentTime)
+                return;
+
+            spawner.LastTime = CurrentTime;
+
+            float3 offset = new float3(0, 10, 0);
+
+            int gridX = (int)math.ceil(math.sqrt(spawner.Per));
+            int gridZ = (int)math.ceil((float)spawner.Per / gridX);
+
+            float spacingX = gridX > 1 ? (2f * spawner.Radius) / (gridX - 1) : 0;
+            float spacingZ = gridZ > 1 ? (2f * spawner.Radius) / (gridZ - 1) : 0;
+
+            int spawnedThisTick = 0;
+
+            for (int z = 0; z < gridZ && spawnedThisTick < spawner.Per; z++)
             {
-                float3 offset = new float3(0, 10, 0);
-
-                spawner.LastTime = CurrentTime;
-
-                // Calculate grid dimensions
-                int gridSize = (int)math.ceil(math.sqrt(spawner.Per));
-                float spacing = (2f * spawner.Radius) / math.max(1, gridSize - 1);
-
-                int spawned = 0;
-                for (int x = 0; x < gridSize && spawned < spawner.Per; x++)
+                for (int x = 0; x < gridX && spawnedThisTick < spawner.Per; x++)
                 {
-                    for (int z = 0; z < gridSize && spawned < spawner.Per; z++)
+                    if (spawner.Count >= spawner.MaxCount)
+                        return;
+
+                    float xPos = -spawner.Radius + (x * spacingX);
+                    float zPos = -spawner.Radius + (z * spacingZ);
+
+                    float3 pos = transform.Position + new float3(xPos, 0, zPos);
+
+                    var ray = new RaycastInput
                     {
-                        // Calculate grid position relative to center
-                        float xPos = -spawner.Radius + (x * spacing);
-                        float zPos = -spawner.Radius + (z * spacing);
+                        Start = pos + offset,
+                        End = pos - offset,
+                        Filter = Filter
+                    };
 
-                        // Check if position is within radius (circular boundary)
-                        float distFromCenter = math.sqrt(xPos * xPos + zPos * zPos);
-                        if (distFromCenter > spawner.Radius)
-                            continue;
+                    if (!CollisionWorld.CastRay(ray, out var hit))
+                        continue;
 
-                        float3 pos = transform.Position + new float3(xPos, 0, zPos);
-                        var ray = new RaycastInput
-                        {
-                            Start = pos + offset,
-                            End = pos - offset,
-                            Filter = Filter
-                        };
+                    if (hit.Position.y > 1.5f)
+                        continue;
 
-                        if (World.CastRay(ray, out var hit))
-                        {
-                            if (hit.Position.y > 1.5f) continue;
-                            Entity e = ECB.Instantiate(sortKey, spawner.Prefab);
-                            // Set the position of the newly spawned entity
-                            ECB.SetComponent(sortKey, e, LocalTransform.FromPosition(hit.Position));
-                            ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position });
+                    Entity e = ECB.Instantiate(spawner.Prefab);
+                    ECB.SetComponent(e, LocalTransform.FromPosition(hit.Position));
+                    ECB.AddComponent(e, new UnitMoveOrder { Dest = hit.Position });
 
-                            spawned++;
-                            spawner.Count++;
-                        }
-                    }
+                    spawner.Count++;
+                    spawnedThisTick++;
                 }
             }
         }

@@ -188,7 +188,7 @@ public partial struct FindTargetsJob : IJobEntity
 }
 public static class SpatialHash
 {
-    public const float CellSize = 10f;
+    public const float CellSize = 5f;
 
     // Calculates a unique integer key for a 2D position.
     public static int GetHashKey(float3 position)

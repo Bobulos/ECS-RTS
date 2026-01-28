@@ -27,7 +27,149 @@ public struct PatherWayPoint : IBufferElementData
     public float3 Position;
 }
 
+
 [BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+public partial struct NavSystem : ISystem
+{
+    private NavMeshWorld _navWorld;
+    private NavMeshQuery _query;
+
+    // hard cap so nav never spikes a frame
+    private const int MAX_PATHS_PER_FRAME = 4;
+
+    public void OnCreate(ref SystemState state)
+    {
+        _navWorld = NavMeshWorld.GetDefaultWorld();
+        _query = new NavMeshQuery(_navWorld, Allocator.Persistent, 2048);
+    }
+
+    public void OnDestroy(ref SystemState state)
+    {
+        _query.Dispose();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        int processed = 0;
+
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        foreach (var (pather, transform, entity) in
+                 SystemAPI.Query<RefRW<Pather>, RefRO<LocalTransform>>()
+                          .WithEntityAccess())
+        {
+            if (processed >= MAX_PATHS_PER_FRAME)
+                break;
+
+            if (!pather.ValueRO.NeedsUpdate)
+                continue;
+
+            pather.ValueRW.NeedsUpdate = false;
+
+            TryCalculatePath(entity, ref pather.ValueRW, transform.ValueRO.Position, ref ecb);
+            processed++;
+        }
+
+        if (processed > 0)
+            ecb.Playback(state.EntityManager);
+
+        ecb.Dispose();
+    }
+
+    // ============================================================
+    // PATH CALCULATION
+    // ============================================================
+    private void TryCalculatePath(
+        Entity entity,
+        ref Pather pather,
+        float3 fromPosition,
+        ref EntityCommandBuffer ecb)
+    {
+        float3 toPosition = pather.Dest;
+        float3 extents = new float3(1f, 2f, 1f);
+
+        var fromLoc = _query.MapLocation(fromPosition, extents, 0);
+        var toLoc = _query.MapLocation(toPosition, extents, 0);
+
+        if (!_query.IsValid(fromLoc) || !_query.IsValid(toLoc))
+        {
+            pather.PathCalculated = false;
+            return;
+        }
+
+        if (_query.BeginFindPath(fromLoc, toLoc) != PathQueryStatus.InProgress)
+        {
+            pather.PathCalculated = false;
+            return;
+        }
+
+        var status = _query.UpdateFindPath(512, out _);
+        if (status != PathQueryStatus.Success && status != PathQueryStatus.InProgress)
+        {
+            pather.PathCalculated = false;
+            return;
+        }
+
+        if (_query.EndFindPath(out int pathSize) != PathQueryStatus.Success || pathSize == 0)
+        {
+            pather.PathCalculated = false;
+            return;
+        }
+
+        var polys = new NativeArray<PolygonId>(pathSize + 1, Allocator.Temp);
+        _query.GetPathResult(polys);
+
+        var straight = new NativeArray<NavMeshLocation>(pathSize + 1, Allocator.Temp);
+        var flags = new NativeArray<StraightPathFlags>(pathSize + 1, Allocator.Temp);
+        var sides = new NativeArray<float>(pathSize + 1, Allocator.Temp);
+
+        int straightCount = 0;
+
+        var straightStatus = PathUtils.FindStraightPath(
+            _query,
+            fromPosition,
+            toPosition,
+            polys,
+            pathSize,
+            ref straight,
+            ref flags,
+            ref sides,
+            ref straightCount,
+            straight.Length
+        );
+
+        polys.Dispose();
+
+        if (straightStatus != PathQueryStatus.Success || straightCount == 0)
+        {
+            straight.Dispose();
+            flags.Dispose();
+            sides.Dispose();
+            pather.PathCalculated = false;
+            return;
+        }
+
+        // clear + write waypoints
+        ecb.SetBuffer<PatherWayPoint>(entity);
+
+        for (int i = 0; i < straightCount; i++)
+        {
+            float3 pos = straight[i].position;
+            ecb.AppendToBuffer(entity, new PatherWayPoint { Position = pos });
+        }
+
+        straight.Dispose();
+        flags.Dispose();
+        sides.Dispose();
+
+        pather.PathCalculated = true;
+        pather.WaypointIndex = 0;
+    }
+}
+
+/*//[BurstCompile]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct NavSystem : ISystem
 {
@@ -45,14 +187,13 @@ public partial struct NavSystem : ISystem
 
     //To stop too many queries in one update
     const int MAX_QUERIES = 100;
-
     public void OnCreate(ref SystemState state)
     {
         _bucket = 0;
 
         var config = ConfigLoader.LoadSim();
         _maxBucket = config.navBucketCount;
-
+        _navMeshWorld = NavMeshWorld.GetDefaultWorld();
         _navQueries = new NativeList<NavMeshQuery>(Allocator.Persistent);
     }
 
@@ -73,17 +214,17 @@ public partial struct NavSystem : ISystem
         }
         _navQueries.Dispose();
     }
-    [BurstCompile]
+    //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
         int count = 0;
         // Ensure nav world handle is valid
-        _navMeshWorld = NavMeshWorld.GetDefaultWorld();
+        
         foreach (var (pather, transform, entity) in SystemAPI.Query<RefRW<Pather>, RefRO<LocalTransform>>().WithEntityAccess())
         {
             //if (count >= MAX_QUERIES) break;
-            count++;
+            continue;
             // Skip if nothing to do
             if (!pather.ValueRO.NeedsUpdate || _bucket != pather.ValueRO.Bucket)
                 continue;
@@ -107,7 +248,9 @@ public partial struct NavSystem : ISystem
 
             // Do the pathfinding synchronously on main thread using the entity's NavMeshQuery
             TryCalculatePathAndWriteResults(entity, pather, transform.ValueRO.Position, ref ecb);
+            count++;
         }
+        UnityEngine.Debug.Log($"Calculated {count} paths.");
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
         _bucket += 1;
@@ -124,7 +267,7 @@ public partial struct NavSystem : ISystem
     {
         
     }
-    [BurstCompile]
+    //[BurstCompile]
     private void TryCalculatePathAndWriteResults(Entity entity, RefRW<Pather> pather, float3 fromPosition, ref EntityCommandBuffer ecb)
     {
         //UnityEngine.Debug.Log("Calculate Path");
@@ -223,3 +366,4 @@ public partial struct NavSystem : ISystem
         vertexSide.Dispose();
     }
 }
+*/

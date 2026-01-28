@@ -29,6 +29,7 @@ public partial struct NavJob : IJobEntity
 
     public void Execute(Entity entity, RefRW<Pather> pather, RefRO<LocalTransform> transform)
     {
+        return;
         //make sure agent needs it
         if (QueryCount > MAX_QUERIES || !pather.ValueRO.NeedsUpdate ||
         pather.ValueRO.Bucket != Bucket) return;

@@ -152,13 +152,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         }
 
         // Update destination only if target moved enough
-        float3 delta = targetPos - ctx.Movement.ValueRO.Dest;
-        delta.y = 0f;
-
-        if (math.lengthsq(delta) > TARGET_REPATH_THRESH_SQ)
-        {
-            SetDestination(ref ctx, targetPos);
-        }
+        SetDestination(ref ctx, targetPos);
     }
 
     private void UpdateAttack(ref Context ctx)
@@ -216,7 +210,7 @@ targetPos, UnityEngine.Color.red, 1 / 50f);*/
             ctx.Attack.ValueRO.RangeSq * RANGE_EXIT_HYSTERESIS)
         {
             ctx.State.ValueRW.State = UnitStates.Chase;
-            SetDestination(ref ctx, targetPos);
+            //SetDestination(ref ctx, targetPos);
         }
     }
 
