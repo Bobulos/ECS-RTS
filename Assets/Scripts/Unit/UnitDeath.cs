@@ -13,21 +13,25 @@ public partial struct UnitDeadTagSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
-        Entity explosion = SystemAPI.GetSingleton<FXManifest>().Explosion;
-        //var l = SystemAPI.GetComponentLookup<UnitHP>();
-        foreach (var (hp, transform, e) in SystemAPI.Query<RefRO<UnitHP>, RefRO<LocalTransform>>().WithNone<DeadTag>().WithEntityAccess())
+        if (SystemAPI.TryGetSingleton<FXManifest>(out var m))
         {
-            if (hp.ValueRO.HP <= 0)
-            {
-                ecb.AddComponent<DeadTag>(e);
-                var d = ecb.Instantiate(explosion);
-                ecb.AddComponent(d, new TempFX { Life = 0});
-                ecb.SetComponent(d, new LocalTransform { Position = transform.ValueRO.Position, Rotation = quaternion.identity, Scale = 1f });
-            }
-        }
+            Entity explosion = m.Explosion;
+            //var l = SystemAPI.GetComponentLookup<UnitHP>();
+            foreach (var (hp, transform, e) in SystemAPI.Query<RefRO<UnitHP>, RefRO<LocalTransform>>().WithNone<DeadTag>().WithEntityAccess())
+                {
+                    if (hp.ValueRO.HP <= 0)
+                    {
+                        ecb.AddComponent<DeadTag>(e);
+                        var d = ecb.Instantiate(explosion);
+                        ecb.AddComponent(d, new TempFX { Life = 0 });
+                        ecb.SetComponent(d, new LocalTransform { Position = transform.ValueRO.Position, Rotation = quaternion.identity, Scale = 1f });
+                    }
+                }
 
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
+                ecb.Playback(state.EntityManager);
+                ecb.Dispose();
+            }
+
     }
 }
 

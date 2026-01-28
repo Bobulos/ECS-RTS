@@ -18,7 +18,10 @@ public partial struct UnitStateSystem : ISystem
     {
         var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
         var hpLookup = SystemAPI.GetComponentLookup<UnitHP>(false);
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+        var ecbSystem =
+            SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
 
         float elapsedTime = (float)SystemAPI.Time.ElapsedTime;
 
@@ -37,18 +40,19 @@ public partial struct UnitStateSystem : ISystem
         var job = new UnitStateMachineJob
         {
             EntityInfo = state.GetEntityStorageInfoLookup(),
-            Ecb = ecb,
+            Ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged),
             ElapsedTime = elapsedTime,
             HpLookup = hpLookup,
             TransformLookup = transformLookup
         };
+        // = job;
 
-        var handle = job.Schedule(state.Dependency);
-        handle.Complete();
+        state.Dependency = job.Schedule(state.Dependency);
+        //handle.Complete();
 
 
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
+        //ecb.Playback(state.EntityManager);
+        //ecb.Dispose();
     }
 }
 
