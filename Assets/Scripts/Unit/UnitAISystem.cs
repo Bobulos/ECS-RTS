@@ -304,7 +304,7 @@ targetPos, UnityEngine.Color.red, 1 / 50f);*/
 /// <summary>
 /// This system handles incomming orders for units
 /// </summary>
-[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateInGroup(typeof(SimulationSystemGroup)),UpdateAfter(typeof(NavSystem))]
 public partial struct UnitOrderSystem : ISystem
 {
     [BurstCompile]
@@ -335,6 +335,7 @@ public partial struct UnitOrderSystem : ISystem
             pather.ValueRW.NeedsUpdate = true;
 
             // Remove the order now that it's been handled
+            //UnityEngine.Debug.Log("Go");
             ecb.RemoveComponent<UnitMoveOrder>(entity);
         }
 
