@@ -216,8 +216,7 @@ targetPos, UnityEngine.Color.red, 1 / 50f);*/
             ctx.Attack.ValueRO.RangeSq * RANGE_EXIT_HYSTERESIS)
         {
             ctx.State.ValueRW.State = UnitStates.Chase;
-            ctx.Pather.ValueRW.PathCalculated = false;
-            ctx.Pather.ValueRW.NeedsUpdate = true;
+            SetDestination(ref ctx, targetPos);
         }
     }
 

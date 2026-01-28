@@ -73,32 +73,46 @@ public partial struct TestSpawnerSystem : ISystem
                 float3 offset = new float3(0, 10, 0);
 
                 spawner.LastTime = CurrentTime;
-                for (int i = 0; i < spawner.Per; i++)
+
+                // Calculate grid dimensions
+                int gridSize = (int)math.ceil(math.sqrt(spawner.Per));
+                float spacing = (2f * spawner.Radius) / math.max(1, gridSize - 1);
+
+                int spawned = 0;
+                for (int x = 0; x < gridSize && spawned < spawner.Per; x++)
                 {
-                    float3 pos = transform.Position + Random.NextFloat3(new float3(-spawner.Radius, 0, -spawner.Radius), new float3(spawner.Radius, 0, spawner.Radius));
-                    var ray = new RaycastInput
+                    for (int z = 0; z < gridSize && spawned < spawner.Per; z++)
                     {
-                        Start = pos + offset,
-                        End = pos - offset,
-                        Filter = Filter
-                    };
-                    if (World.CastRay(ray, out var hit))
-                    {
-                        if (hit.Position.y > 1.5f) continue;
-                        Entity e = ECB.Instantiate(sortKey, spawner.Prefab);
-                        // Set the position of the newly spawned entity
-                        ECB.SetComponent(sortKey, e, LocalTransform.FromPosition(hit.Position));
-                        ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position });
+                        // Calculate grid position relative to center
+                        float xPos = -spawner.Radius + (x * spacing);
+                        float zPos = -spawner.Radius + (z * spacing);
+
+                        // Check if position is within radius (circular boundary)
+                        float distFromCenter = math.sqrt(xPos * xPos + zPos * zPos);
+                        if (distFromCenter > spawner.Radius)
+                            continue;
+
+                        float3 pos = transform.Position + new float3(xPos, 0, zPos);
+                        var ray = new RaycastInput
+                        {
+                            Start = pos + offset,
+                            End = pos - offset,
+                            Filter = Filter
+                        };
+
+                        if (World.CastRay(ray, out var hit))
+                        {
+                            if (hit.Position.y > 1.5f) continue;
+                            Entity e = ECB.Instantiate(sortKey, spawner.Prefab);
+                            // Set the position of the newly spawned entity
+                            ECB.SetComponent(sortKey, e, LocalTransform.FromPosition(hit.Position));
+                            ECB.AddComponent(sortKey, e, new UnitMoveOrder { Dest = hit.Position });
+
+                            spawned++;
+                            spawner.Count++;
+                        }
                     }
-                    spawner.Count++;
-                    // 5. Instantiate and Configure the New Entity
-
                 }
-
-
-                // Set initial state and target (using the job's random state for simplicity)
-                //ECB.SetComponent(sortKey, e, new UnitTarget { Targ = Entity.Null, Last = CurrentTime });
-                //ECB.SetComponent(sortKey, e, new UnitState { State = UnitStates.Idle });
             }
         }
     }

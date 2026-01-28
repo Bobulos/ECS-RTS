@@ -179,7 +179,7 @@ public partial struct UnitMovementSystem : ISystem
             // Fallback forward if target is basically the same position
             if (math.distancesq(transform.Position, targetPosition) <= MIN_DIRECTION_LENGTH)
             {
-                targetPosition = transform.Position + math.forward();
+                targetPosition = transform.Position + transform.Forward();
             }
 
             float3 rayStart = transform.Position + new float3(0, GROUND_RAYCAST_OFFSET, 0);
@@ -197,10 +197,6 @@ public partial struct UnitMovementSystem : ISystem
                 // Snap position to ground
                 transform.Position.y = hit.Position.y;
 
-                if (BMath.DistXZsq(transform.Position, targetPosition) < MIN_ARRIVE_DISTANCE_SQ)
-                {
-                    return;
-                }
 
                 float3 up = hit.SurfaceNormal;
 

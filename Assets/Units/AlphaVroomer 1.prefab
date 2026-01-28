@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3629596289361102607}
   - component: {fileID: 8384289856299996079}
   m_Layer: 6
-  m_Name: AlphaVroomer
+  m_Name: AlphaVroomer 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -52,7 +52,7 @@ MonoBehaviour:
   dmg: 135
   speed: 21
   range: 26.5
-  teamID: 0
+  teamID: 1
   attackRange: 20
   attackRate: 0.5
   radius: 1

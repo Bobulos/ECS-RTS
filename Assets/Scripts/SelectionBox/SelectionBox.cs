@@ -62,7 +62,7 @@ public class SelectionBox : MonoBehaviour
     /// <param name="cam">The camera to cast rays from.</param>
     /// <param name="screenStart">The screen start point of the drag.</param>
     /// <param name="screenEnd">The screen end point of the drag.</param>
-    public SelectionVertecies UpdatePerspectiveSelection(Camera cam, Vector2 screenStart, Vector2 screenEnd)
+    public SelectionData UpdatePerspectiveSelection(Camera cam, Vector2 screenStart, Vector2 screenEnd)
     {
         // 1. Get the 4 screen corners of the drag box
         Vector2 min = Vector2.Min(screenStart, screenEnd);
@@ -145,9 +145,9 @@ public class SelectionBox : MonoBehaviour
         // Finalize mesh
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-        return new SelectionVertecies(vertices);
+        return new SelectionData(vertices);
     }
-    public void UpdatePerspectiveSelection(SelectionVertecies verticies)
+    public void UpdatePerspectiveSelection(SelectionData verticies)
     {
         if (verticies == null || verticies.value == null) return;
         // 4. Assign to mesh
@@ -195,10 +195,10 @@ public class SelectionBox : MonoBehaviour
         selectionMesh.Clear();
     }
 }
-public class SelectionVertecies
+public class SelectionData
 {
     public Vector3[] value = new Vector3[8];
-    public SelectionVertecies(Vector3[] vertices)
+    public SelectionData(Vector3[] vertices)
     {
         value = vertices;
     }

@@ -34,13 +34,24 @@ public class InputLogger : MonoBehaviour
         InputBridge.OnMoveUnits += OnMoveUnits;
         InputBridge.OnClearUnits += OnClearUnits;
         InputBridge.OnSelectUnits += OnSelectUnits;
+        InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
     }
     uint step;
     void FixedUpdate()
     {
         step++;
     }
-
+    public void OnCodeSelectUnits(byte code, uint team)
+    {
+        buffer.Add(new InputRecord
+        {
+            Step = step,
+            Team = team,
+            Type = InputType.CodeSelectUnits,
+            CodeSelect = code
+        });
+        TryFlush();
+    }
     public void OnConstructWalls(ConstructWallData d, uint team)
     {
         buffer.Add(new InputRecord
@@ -73,7 +84,8 @@ public class InputLogger : MonoBehaviour
         });
         TryFlush();
     }
-    public void OnSelectUnits(Entity unused, SelectionVertecies vertecies, uint team)
+    //0 is reg 1 is all
+    public void OnSelectUnits(Entity _, SelectionData vertecies, uint team)
     {
         if (vertecies == null || vertecies.value.Length < 8) { return; }
         buffer.Add(new InputRecord
@@ -101,6 +113,7 @@ public class InputLogger : MonoBehaviour
         InputBridge.OnMoveUnits -= OnMoveUnits;
         InputBridge.OnClearUnits -= OnClearUnits;
         InputBridge.OnSelectUnits -= OnSelectUnits;
+        InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
 
         /*List<InputRecord> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
         foreach (InputRecord r in record)
@@ -126,6 +139,7 @@ public class InputLogger : MonoBehaviour
                     WriteVector3(r.Move.CurrentRayDirection);
                     break;
                 case InputType.SelectUnits:
+                    //writer.Write(r.Select.code);
                     // FIX: We must always write exactly 8 vectors to match the Reader's array
                     for (int i = 0; i < 8; i++)
                     {
@@ -188,9 +202,10 @@ public static class InputDecoder
                             record.Move = new MoveUnitsData { CurrentRayOrigin = ReadVector3(reader), CurrentRayDirection = ReadVector3(reader) };
                             break;
                         case InputType.SelectUnits:
+                            //byte code = reader.ReadByte();
                             Vector3[] verts = new Vector3[8];
                             for (int i = 0; i < 8; i++) verts[i] = ReadVector3(reader);
-                            record.Select = new SelectionVertecies(verts);
+                            record.Select = new SelectionData(verts);
                             break;
                         case InputType.ConstructWalls:
                             //Debug.Log("LOGLOGLOGLOGLOG");
@@ -217,6 +232,7 @@ public enum InputType : byte
     Construct,
     MoveUnits,
     SelectUnits,
+    CodeSelectUnits,
     ClearUnits
 }
 public struct InputRecord
@@ -228,10 +244,20 @@ public struct InputRecord
     public ConstructWallData Wall;
     public ConstructData Structure;
     public MoveUnitsData Move;
-    public SelectionVertecies Select;
+    public SelectionData Select;
+    public byte CodeSelect;
 }
 public static class InputRecordUtil
 {
+    public static InputRecord AssembleRecord(byte d, uint team)
+    {
+        return new InputRecord
+        {
+            Type = InputType.CodeSelectUnits,
+            Team = team,
+            CodeSelect = d
+        };
+    }
     public static InputRecord AssembleRecord(ConstructWallData d, uint team)
     {
         return new InputRecord
@@ -259,7 +285,8 @@ public static class InputRecordUtil
             Move = d
         };
     }
-    public static InputRecord AssembleRecord(SelectionVertecies d, uint team)
+    
+    public static InputRecord AssembleRecord(SelectionData d, uint team)
     {
         return new InputRecord
         {
@@ -269,7 +296,7 @@ public static class InputRecordUtil
         };
     }
     //dataless like clear units
-    public static InputRecord AssembleRecord(InputType t, uint team)
+    public static InputRecord AssembleDatalessRecord(InputType t, uint team)
     {
         switch (t)
         {

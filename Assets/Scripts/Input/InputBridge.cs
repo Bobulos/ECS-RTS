@@ -15,7 +15,8 @@ public class InputBridge : MonoBehaviour
     public SelectionBox selectionBox;
 
     // Action<SelectActionData> is the signature.
-    public static event Action<Entity, SelectionVertecies, uint> OnSelectUnits;
+    public static event Action<Entity, SelectionData, uint> OnSelectUnits;
+    public static event Action<byte, uint> OnCodeSelectUnits;
     public static event Action<MoveUnitsData, uint> OnMoveUnits;
     public static event Action<uint> OnClearUnits;
     public static event Action OnUpdateGUI;
@@ -54,7 +55,7 @@ public class InputBridge : MonoBehaviour
     }
 
 
-    SelectionVertecies verts;
+    SelectionData selectionData;
     //fix in a seccond
     void Update()
     {
@@ -67,10 +68,14 @@ public class InputBridge : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             selectionBox.gameObject.SetActive(true);
-            verts = selectionBox.UpdatePerspectiveSelection(mainCamera, startScreenPos, Input.mousePosition);
+            selectionData = selectionBox.UpdatePerspectiveSelection(mainCamera, startScreenPos, Input.mousePosition);
         }
 
-
+        //Specail selection
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            buffer.Add(InputRecordUtil.AssembleRecord(0, team));
+        }
 
         // LEFT CLICK DOWN (Start Drag/Single Select)
         if (Input.GetMouseButtonDown(0))
@@ -78,7 +83,7 @@ public class InputBridge : MonoBehaviour
             if (!Input.GetKey(KeyCode.LeftShift))
             {
                 /*OnClearUnits?.Invoke(team);*/
-                buffer.Add(InputRecordUtil.AssembleRecord(InputType.ClearUnits, team));
+                buffer.Add(InputRecordUtil.AssembleDatalessRecord(InputType.ClearUnits, team));
             }
 
             // Capture the screen position
@@ -91,18 +96,13 @@ public class InputBridge : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             /*OnSelectUnits?.Invoke(selectionBox.GetColliderEntity(), verts, team);*/
-            buffer.Add(InputRecordUtil.AssembleRecord(verts, team));
+            buffer.Add(InputRecordUtil.AssembleRecord(selectionData, team));
             isDraggingLeft = false;
             selectionVisual?.EndSelection();
 
         }
         else if (Input.GetMouseButtonDown(1))
         {
-            /*            OnMoveUnits?.Invoke(new MoveUnitsData
-                        {
-                            CurrentRayDirection = ray.direction,
-                            CurrentRayOrigin = ray.origin,
-                        }, team);*/
             buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
             {
                 CurrentRayDirection = ray.direction,
@@ -128,6 +128,9 @@ public class InputBridge : MonoBehaviour
     {
         switch (r.Type)
         {
+            case InputType.CodeSelectUnits:
+                OnCodeSelectUnits.Invoke(r.CodeSelect, r.Team);
+                break;
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
                 OnSelectUnits.Invoke(selectionBox.GetColliderEntity(), r.Select, team);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Security.Principal;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -24,6 +25,7 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnClearUnits += OnClearSelection;
         InputBridge.OnMoveUnits += OnMoveUnits;
         InputBridge.OnSelectUnits += HandleUnitSelect;
+        InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
 
         //DEPRECATED
         /*        var t = GameObject.FindFirstObjectByType<Terrain>();
@@ -40,8 +42,25 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnClearUnits -= OnClearSelection;
         InputBridge.OnMoveUnits -= OnMoveUnits;
         InputBridge.OnSelectUnits -= HandleUnitSelect;
+        InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
     }
-    private void HandleUnitSelect(Entity selectionEntity, SelectionVertecies unused, uint t)
+    private void OnCodeSelectUnits(byte code, uint team)
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var assetSingleton = SystemAPI.GetSingleton<AssetSingleton>();
+        //0 is all others are command groups
+        foreach (var (t, e) in SystemAPI.Query<RefRO<UnitTeam>>().WithEntityAccess())
+        {
+            if (t.ValueRO.TeamID == team)
+            {
+                AddSelection(ref ecb, e, assetSingleton);
+            }
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+    private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, uint t)
     {
         if (selectionEntity == Entity.Null) { return; }
         //UnityEngine.Debug.Log("Events working properly");
