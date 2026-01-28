@@ -139,6 +139,7 @@ public partial struct FindTargetsJob : IJobEntity
             float min = target.Range * target.Range;
             float sqrRange = min;
             Entity closest = Entity.Null;
+            float3 cPos = float3.zero;
 
             int cellX = (int)math.floor(transform.Position.x / SpatialHash.CellSize);
             int cellZ = (int)math.floor(transform.Position.z / SpatialHash.CellSize);
@@ -163,6 +164,7 @@ public partial struct FindTargetsJob : IJobEntity
 
                             if (d <= sqrRange && d < min)
                             {
+                                cPos = u.Position;
                                 min = d;
                                 closest = u.Entity;
                             }
@@ -173,6 +175,7 @@ public partial struct FindTargetsJob : IJobEntity
             }
 
             target.Targ = closest;
+            target.TargetPos = cPos;
             target.DistSq = min;
         }
     }

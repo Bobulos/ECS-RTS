@@ -36,6 +36,7 @@ public partial struct UnitStateSystem : ISystem
                 }*/
         var job = new UnitStateMachineJob
         {
+            EntityInfo = state.GetEntityStorageInfoLookup(),
             Ecb = ecb,
             ElapsedTime = elapsedTime,
             HpLookup = hpLookup,
@@ -59,6 +60,7 @@ public partial struct UnitStateMachineJob : IJobEntity
     private const float TARGET_REPATH_THRESH_SQ = 4f;
     private const float RANGE_EXIT_HYSTERESIS = 1.2f;
 
+    [ReadOnly] public EntityStorageInfoLookup EntityInfo;
     [ReadOnly] public float ElapsedTime;
     [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
     [ReadOnly] public ComponentLookup<UnitHP> HpLookup;
@@ -106,6 +108,8 @@ public partial struct UnitStateMachineJob : IJobEntity
     // =====================================================================
     private void UpdateMove(ref Context ctx)
     {
+/*        UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
+    ctx.Movement.ValueRO.Dest, UnityEngine.Color.blue, 1 / 50f);*/
         if (BMath.DistXZsq(ctx.Transform.ValueRO.Position, ctx.Pather.ValueRO.Dest) < ctx.Pather.ValueRO.IndexDistance)
         {
             //made it to the dest got to idele
@@ -116,6 +120,8 @@ public partial struct UnitStateMachineJob : IJobEntity
     }
     private void UpdateIdle(ref Context ctx)
     {
+        /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position, 
+            ctx.Transform.ValueRO.Position + math.up() * 3f, UnityEngine.Color.cyan, 1/50f);*/
         if (!TryGetTargetPosition(ctx.Target.ValueRO.Targ, out float3 targetPos))
         {
             StopMovement(ref ctx);
@@ -135,7 +141,8 @@ public partial struct UnitStateMachineJob : IJobEntity
             TransitionToIdle(ref ctx);
             return;
         }
-
+/*        UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
+    targetPos, UnityEngine.Color.greenYellow, 1 / 50f);*/
         // In attack range → hard stop and attack
         if (ctx.Target.ValueRO.DistSq <= ctx.Attack.ValueRO.RangeSq)
         {
@@ -156,9 +163,15 @@ public partial struct UnitStateMachineJob : IJobEntity
 
     private void UpdateAttack(ref Context ctx)
     {
+        StopMovement(ref ctx);
         var targetEntity = ctx.Target.ValueRO.Targ;
 
         if (!TryGetTargetHP(targetEntity, out UnitHP targetHP))
+        {
+            TransitionToIdle(ref ctx);
+            return;
+        }
+        if (!TryGetTargetPosition(targetEntity, out float3 targetPos))
         {
             TransitionToIdle(ref ctx);
             return;
@@ -171,7 +184,7 @@ public partial struct UnitStateMachineJob : IJobEntity
         }
 
         // ATTACK STATE OWNS MOVEMENT
-        StopMovement(ref ctx);
+        
 
         // Execute attack
         if (AttackReady(ctx.Attack.ValueRO))
@@ -182,6 +195,8 @@ public partial struct UnitStateMachineJob : IJobEntity
             {
                 HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
             });
+            /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
+targetPos, UnityEngine.Color.red, 1 / 50f);*/
         }
    
         /*if (TryGetTargetPosition(targetEntity, out float3 pos))
@@ -209,7 +224,10 @@ public partial struct UnitStateMachineJob : IJobEntity
     // =====================================================================
     // TRANSITIONS / HELPERS
     // =====================================================================
-
+    private bool IsEntityValid(Entity e)
+    {
+        return e != Entity.Null && EntityInfo.Exists(e);
+    }
     private void TransitionToIdle(ref Context ctx)
     {
         ctx.State.ValueRW.State = UnitStates.Idle;
@@ -221,13 +239,17 @@ public partial struct UnitStateMachineJob : IJobEntity
         ctx.State.ValueRW.State = UnitStates.Chase;
         SetDestination(ref ctx, targetPos);
     }
-
+    const float REPATH_DIST_SQ = 1f;
     private void SetDestination(ref Context ctx, float3 dest)
     {
+        if (BMath.DistXZsq(ctx.Movement.ValueRW.Dest, dest) > REPATH_DIST_SQ)
+        {
+            ctx.Pather.ValueRW.PathCalculated = false;
+            ctx.Pather.ValueRW.NeedsUpdate = true;
+        }
         ctx.Movement.ValueRW.Dest = dest;
         ctx.Pather.ValueRW.Dest = dest;
-        ctx.Pather.ValueRW.PathCalculated = false;
-        ctx.Pather.ValueRW.NeedsUpdate = true;
+        
     }
 
     private void StopMovement(ref Context ctx)
@@ -246,7 +268,7 @@ public partial struct UnitStateMachineJob : IJobEntity
     {
         pos = default;
 
-        if (target == Entity.Null)
+        if (target == Entity.Null || !IsEntityValid(target))
             return false;
 
         if (!TransformLookup.HasComponent(target) || !HpLookup.HasComponent(target))

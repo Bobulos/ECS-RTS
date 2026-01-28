@@ -133,6 +133,7 @@ public struct UnitTarget : IComponentData
     public float Range;
     public Entity Targ;
     public float DistSq;
+    public float3 TargetPos;
     //in one of 16 buckets
     public int Bucket;
 }

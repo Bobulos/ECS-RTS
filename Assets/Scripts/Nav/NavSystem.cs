@@ -82,7 +82,7 @@ public partial struct NavSystem : ISystem
         _navMeshWorld = NavMeshWorld.GetDefaultWorld();
         foreach (var (pather, transform, entity) in SystemAPI.Query<RefRW<Pather>, RefRO<LocalTransform>>().WithEntityAccess())
         {
-            if (count >= MAX_QUERIES) break;
+            //if (count >= MAX_QUERIES) break;
             count++;
             // Skip if nothing to do
             if (!pather.ValueRO.NeedsUpdate || _bucket != pather.ValueRO.Bucket)
@@ -93,7 +93,7 @@ public partial struct NavSystem : ISystem
             {
                 int newIndex = _navQueries.Length;
                 // Create a NavMeshQuery with a sane max node capacity (adjust if needed)
-                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024/4);
+                var q = new NavMeshQuery(_navMeshWorld, Allocator.Persistent, 1024);
                 _navQueries.Add(q);
 
                 pather.ValueRW.QuerySet = true;

@@ -51,10 +51,11 @@ public partial struct UnitMovementSystem : ISystem
             Entity entity,
             ref UnitMovement mov,
             ref LocalTransform transform,
-            ref Pather pather)
+            ref Pather pather,
+            ref UnitState state)
         {
             float3 currentPosition = transform.Position;
-            float3 targetPosition = GetTargetPosition(entity, ref pather, currentPosition, currentPosition);
+            float3 targetPosition = GetTargetPosition(entity, ref pather, ref state, currentPosition, currentPosition);
 
             UpdatePreferredVelocity(ref mov, currentPosition, targetPosition, pather.IndexDistance);
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
@@ -67,6 +68,7 @@ public partial struct UnitMovementSystem : ISystem
         private float3 GetTargetPosition(
             Entity entity,
             ref Pather pather,
+            ref UnitState state,
             float3 defaultDestination,
             float3 currentPosition)
         {
@@ -75,7 +77,9 @@ public partial struct UnitMovementSystem : ISystem
 
                         if (waypoints.Length <= 1 || pather.WaypointIndex >= waypoints.Length)
                             return defaultDestination;*/
-            if (!WaypointLookup.TryGetBuffer(entity, out var waypoints) 
+            if (state.State == UnitStates.Idle 
+                || state.State == UnitStates.Attack
+                ||!WaypointLookup.TryGetBuffer(entity, out var waypoints) 
                 || waypoints.Length == 0
                 || !pather.PathCalculated)
             {
@@ -190,6 +194,14 @@ public partial struct UnitMovementSystem : ISystem
 
             if (World.CastRay(raycastInput, out RaycastHit hit))
             {
+                // Snap position to ground
+                transform.Position.y = hit.Position.y;
+
+                if (BMath.DistXZsq(transform.Position, targetPosition) < MIN_ARRIVE_DISTANCE_SQ)
+                {
+                    return;
+                }
+
                 float3 up = hit.SurfaceNormal;
 
                 float3 toTarget = math.normalize(targetPosition - transform.Position);
@@ -198,18 +210,15 @@ public partial struct UnitMovementSystem : ISystem
                 float3 forward = math.normalize(
                     toTarget - up * math.dot(toTarget, up)
                 );
-
                 quaternion targetRotation = quaternion.LookRotation(forward, up);
 
-                // 🔥 Smooth rotation
                 transform.Rotation = math.slerp(
                     transform.Rotation,
                     targetRotation,
                     FIXED_DT * SLERP_SPEED
                 );
 
-                // Snap position to ground (usually fine to snap)
-                transform.Position.y = hit.Position.y;
+                
             }
         }
 

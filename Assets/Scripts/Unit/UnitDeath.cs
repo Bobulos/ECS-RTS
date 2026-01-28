@@ -21,6 +21,7 @@ public partial struct UnitDeadTagSystem : ISystem
             {
                 ecb.AddComponent<DeadTag>(e);
                 var d = ecb.Instantiate(explosion);
+                ecb.AddComponent(d, new TempFX { Life = 0});
                 ecb.SetComponent(d, new LocalTransform { Position = transform.ValueRO.Position, Rotation = quaternion.identity, Scale = 1f });
             }
         }
@@ -67,7 +68,7 @@ public partial struct DestroyDeadUnitsSystem : ISystem
         {
             if (b.TryGetBuffer(e, out var l))
             {
-                UnityEngine.Debug.Log("Has linked group");
+                //UnityEngine.Debug.Log("Has linked group");
                 foreach (var i in l)
                 {
                     ecb.DestroyEntity(i.Value);
