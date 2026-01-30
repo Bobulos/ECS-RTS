@@ -152,6 +152,7 @@ public struct NavQueryJob : IJob
     private const int MAXIT = 512/2;
 
     //[ReadOnly] public NavMeshWorld World; 
+    [BurstCompile]
     public void Execute()
     {
         //UnityEngine.Debug.Log($"Index of {index}");
@@ -160,12 +161,13 @@ public struct NavQueryJob : IJob
         RPather.WaypointIndex = 0;
         RPather.PathCalculated = true;
         RPather.NeedsUpdate = false;
-        UnityEngine.Debug.Log($"Path calculated {calculated }");
+       //UnityEngine.Debug.Log($"Path calculated {calculated }");
 
         //straight path addition
         if (!calculated && !inValid)
         {
-            Ecb.AppendToBuffer(REntity, new PatherWayPoint { Position = ToPos });
+            Ecb.SetBuffer<PatherWayPoint>(REntity);
+            Ecb.AppendToBuffer<PatherWayPoint>(REntity, new PatherWayPoint { Position = ToPos });
         }
         
         Ecb.SetComponent(REntity, RPather);
@@ -177,6 +179,7 @@ public struct NavQueryJob : IJob
 
         //Index.Value = index+1;
     }
+    [BurstCompile]
     private void TryCalculatePath(
     Entity entity,
     out bool calculated,

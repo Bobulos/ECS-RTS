@@ -104,7 +104,7 @@ public partial struct UnitSpatialPartitioning : ISystem
 
         JobHandle handle = job.ScheduleParallel(state.Dependency);
         state.Dependency = handle;
-        handle.Complete();
+        //handle.Complete();
 
 
         //DO ALL OF THE LOCAL AVOIDANCE DOWN HERE
@@ -132,10 +132,13 @@ public partial struct FindTargetsJob : IJobEntity
 
     public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
     {
-        int cellRadius = (int)math.ceil((target.Range + SpatialHash.CellSize) / SpatialHash.CellSize);
+        
 
+        int cellRadius = (int)math.ceil((target.Range + SpatialHash.CellSize) / SpatialHash.CellSize);
+        
         if (target.Bucket == Bucket)
         {
+            target.Targ = Entity.Null;
             float min = target.Range * target.Range;
             float sqrRange = min;
             Entity closest = Entity.Null;

@@ -35,9 +35,9 @@ public partial struct UnitMovementSystem : ISystem
     private partial struct MovementJob : IJobEntity
     {
         private const float FIXED_DT = 1f / 50f;
-        private const float MIN_VELOCITY_SQ = 1e-6f;
+        //private const float MIN_VELOCITY_SQ = 1e-6f;
         private const float MIN_DIRECTION_LENGTH = 1e-4f;
-        private const float MIN_ARRIVE_DISTANCE_SQ = 0.01f;
+        private const float MIN_ARRIVE_DISTANCE_SQ = 0.5f;
         private const float GROUND_RAYCAST_OFFSET = 10f;
         private const float SLERP_SPEED = 4f;
         private const float DEBUG_LINE_LENGTH = 1f;
@@ -176,10 +176,12 @@ public partial struct UnitMovementSystem : ISystem
             float3 targetPosition
 )
         {
+            bool applyRotation = true;
             // Fallback forward if target is basically the same position
-            if (math.distancesq(transform.Position, targetPosition) <= MIN_DIRECTION_LENGTH)
+            if (math.distancesq(transform.Position, targetPosition) <= MIN_ARRIVE_DISTANCE_SQ)
             {
-                targetPosition = transform.Position + transform.Forward();
+                applyRotation = false;
+                //targetPosition = transform.Position + transform.Forward();
             }
 
             float3 rayStart = transform.Position + new float3(0, GROUND_RAYCAST_OFFSET, 0);
@@ -197,6 +199,8 @@ public partial struct UnitMovementSystem : ISystem
                 // Snap position to ground
                 transform.Position.y = hit.Position.y;
 
+
+                if (!applyRotation) return;
 
                 float3 up = hit.SurfaceNormal;
 
