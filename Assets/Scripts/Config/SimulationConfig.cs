@@ -13,5 +13,6 @@ public class SimulationConfig : ScriptableObject
 
     [Header("Navigation Avoidance")]
     public int navBucketCount;
+    public int maxNavQueries = 1024 * 12;
     
 }

@@ -21,6 +21,7 @@ public partial struct UnitDeadTagSystem : ISystem
             {
                 if (hp.ValueRO.HP <= 0)
                 {
+                    
                     ecb.AddComponent<DeadTag>(e);
                     var d = ecb.Instantiate(explosion);
                     ecb.AddComponent(d, new TempFX { Life = 0 });

@@ -130,6 +130,7 @@ public class InputBridge : MonoBehaviour
         {
             case InputType.CodeSelectUnits:
                 OnCodeSelectUnits.Invoke(r.CodeSelect, r.Team);
+                OnUpdateGUI.Invoke();
                 break;
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
