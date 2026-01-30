@@ -67,7 +67,7 @@ public partial struct NavSystem : ISystem
             {
                 _queryUsed[i] = 1;
                 _queries[i] = new NavMeshQuery(_navWorld, Allocator.Persistent, 1024);
-                ecb.AddComponent(e, new PatherCleanup { QuerieIndex = p.ValueRO.QueryIndex });
+                ecb.AddComponent(e, new PatherCleanup { QuerieIndex = i });
                 return i;
             }
         }
