@@ -15,6 +15,9 @@ public partial class InputHandlerSystem : SystemBase
     const float FORMATION_SPACING = 2f;
     const float UNIT_RADIUS_MULTIPLIER = 0.9f;
 
+
+    //private EntityQuery _assetQuery;
+
     //DEPRECATED
     /*private Terrain terrain;
     private TerrainData terrainData;
@@ -26,7 +29,9 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnMoveUnits += OnMoveUnits;
         InputBridge.OnSelectUnits += HandleUnitSelect;
         InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
-
+        
+        RequireForUpdate(new EntityQueryBuilder(Allocator.Persistent)
+            .WithAll<AssetSingleton>().Build(this));
         //DEPRECATED
         /*        var t = GameObject.FindFirstObjectByType<Terrain>();
                 if (t != null)
@@ -39,6 +44,7 @@ public partial class InputHandlerSystem : SystemBase
     }
     protected override void OnDestroy()
     {
+        //_assetQuery.Dispose();
         InputBridge.OnClearUnits -= OnClearSelection;
         InputBridge.OnMoveUnits -= OnMoveUnits;
         InputBridge.OnSelectUnits -= HandleUnitSelect;

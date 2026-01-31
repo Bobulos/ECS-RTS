@@ -10,6 +10,7 @@ public class SceneLoader : MonoBehaviour
 
     void Start()
     {
+        sceneToLoad = GameSettings.MapSceneName;
         if (string.IsNullOrEmpty(GameSettings.MapSceneName) || SceneUtility.GetBuildIndexByScenePath(GameSettings.MapSceneName) == -1) { SceneManager.LoadScene("MainMenue"); }
         // Start the background loading process
         StartCoroutine(LoadAsyncOperation());
@@ -18,7 +19,7 @@ public class SceneLoader : MonoBehaviour
     IEnumerator LoadAsyncOperation()
     {
         // 1. Start loading the scene in the background
-        AsyncOperation gameLevel = SceneManager.LoadSceneAsync(sceneToLoad);
+        AsyncOperation gameLevel = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Additive);
 
         // 2. Prevent the scene from activating immediately so we can see the bar hit 100%
         gameLevel.allowSceneActivation = false;

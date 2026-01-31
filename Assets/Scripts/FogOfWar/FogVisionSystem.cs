@@ -41,8 +41,9 @@ public partial class FogSystem : SystemBase
         if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
         if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();
 
-        if (_fogRender != null)
+        if (_fogRender != null && !_fogRender.set)
             _fogRender.SetTexture(_visibleTex, _exploredTex);
+
 
         if (!_initialized)
         {
@@ -277,10 +278,6 @@ public partial struct LocalVisibilityJob : IJobEntity
                 }
             }
         }
-
-
-
-        //Debug.Log($"Tres sigma {Mask[index]} at {index} index");
     }
 }
 public struct LocalVisibility : IComponentData
