@@ -20,7 +20,7 @@ public partial class FogSystem : SystemBase
     private int _accumKernel;
 
     private bool _initialized = false;
-    private const int MAX_UNITS = 20000;
+    private const int MAX_UNITS = 1024*8;
 
     private BufferLookup<LinkedEntityGroup> _linkedEntitys;
     // persistent reusable array (no alloc each frame)
@@ -35,10 +35,15 @@ public partial class FogSystem : SystemBase
         _mask.Dispose();
     }
     private FogOfWarRendering _fogRender;
+
     protected override void OnUpdate()
     {
-        if (!SystemAPI.TryGetSingleton<MapData>(out MapData settings)) return;
+        if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
         if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();
+
+        if (_fogRender != null)
+            _fogRender.SetTexture(_visibleTex, _exploredTex);
+
         if (!_initialized)
         {
             _shader = Resources.Load<ComputeShader>("FogOfWar");
@@ -84,9 +89,7 @@ public partial class FogSystem : SystemBase
 
         if (!_initialized || _shader == null) return;
 
-        // ---------------------------
-        // Gather units into persistent array (no allocations)
-        // ---------------------------
+        // Gather units into persistent array
         int idx = 0;
         var playerData = SystemAPI.GetSingleton<LocalPlayerData>();
         foreach (var (vision, transform, team) in SystemAPI.Query<RefRO<Vision>, RefRO<LocalTransform>, RefRO<UnitTeam>>())
@@ -113,9 +116,7 @@ public partial class FogSystem : SystemBase
         int extX = settings.Size.x / 2;
         int extZ = settings.Size.y / 2;
 
-        // --------------------------------
-        // 1) Clear the visible texture
-        // --------------------------------
+        //Clear the visible texture
         _shader.SetTexture(_clearKernel, "_Visible", _visibleTex);
         _shader.SetInt("_FogWidth", _visibleTex.width);
         _shader.SetInt("_FogHeight", _visibleTex.height);
@@ -123,9 +124,7 @@ public partial class FogSystem : SystemBase
         int clearY = Mathf.CeilToInt((float)_visibleTex.height / 8f);
         _shader.Dispatch(_clearKernel, clearX, clearY, 1);
 
-        // --------------------------------
-        // 2) StampVisible: stamp offsets into visible texture
-        // --------------------------------
+        //StampVisible: stamp offsets into visible texture
         _shader.SetTexture(_stampKernel, "_Visible", _visibleTex);
         _shader.SetBuffer(_stampKernel, "_Units", _unitBuffer);
         _shader.SetInt("_UnitCount", count);
@@ -138,7 +137,7 @@ public partial class FogSystem : SystemBase
         _shader.Dispatch(_stampKernel, groups, 1, 1);
 
 
-        // 3) Accumulate into persistent explored texture
+        //Accumulate into persistent explored texture
         _shader.SetTexture(_accumKernel, "_Visible", _visibleTex);
         _shader.SetTexture(_accumKernel, "_Explored", _exploredTex);
 

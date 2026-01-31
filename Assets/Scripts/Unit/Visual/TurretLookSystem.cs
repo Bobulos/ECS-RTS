@@ -3,7 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Collections;
-[UpdateAfter(typeof(UnitDeadTagSystem))]
+//[UpdateAfter(typeof(UnitDeadTagSystem))]
 partial struct TurretLookSystem : ISystem
 {
     private ComponentLookup<UnitTarget> _targetLookup;

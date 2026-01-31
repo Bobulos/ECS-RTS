@@ -60,7 +60,7 @@ public class MinimapRenderer : MonoBehaviour
     public Vector4[] teamColors;
     public void UpdateMinimap(int team, NativeArray<float2> unitPositions)
     {
-
+        if (unitPositions.Length == 0) return;
         int stampKernel = minimapComputeShader.FindKernel("Stamp");
 
         if (positionBuffer != null)
@@ -96,70 +96,59 @@ public class MinimapRenderer : MonoBehaviour
 
 public partial class CollectUnitsSystem : SystemBase
 {
-    private MinimapRenderer minimap; // cached
-    [BurstCompile]
+    public const int MAX_ALLOC_UNITS = 1024 * 4;
+    private MinimapRenderer _minimap; // cached
+
+    private NativeList<float2> _friendly;
+    private NativeList<float2> _enemy;
+
+    private float2 _wMin;
+    protected override void OnCreate()
+    {
+        _friendly = new NativeList<float2>(MAX_ALLOC_UNITS, Allocator.Persistent);
+        _enemy = new NativeList<float2>(MAX_ALLOC_UNITS, Allocator.Persistent);
+    }
+    protected override void OnDestroy()
+    {
+        _friendly.Dispose();
+        _enemy.Dispose();
+    }
     protected override void OnUpdate()
     {
-        if (minimap == null)
+        if (_minimap == null)
         {
-            minimap = GameObject.FindFirstObjectByType<MinimapRenderer>();
+            _minimap = GameObject.FindFirstObjectByType<MinimapRenderer>();
             return;
         }
+        _friendly.Clear(); _enemy.Clear();
+
+        _minimap.ClearMinimap();
 
 
-        minimap.ClearMinimap();
 
-        if (SystemAPI.TryGetSingleton<LocalPlayerData>(out LocalPlayerData playerData))
+        if (SystemAPI.TryGetSingleton(out LocalPlayerData playerData))
         {
             var map = SystemAPI.GetSingleton<MapData>();
 
             float2 wMin = new float2(-map.Size.x * 0.5f, -map.Size.y * 0.5f);
             float2 wMax = new float2(map.Size.x * 0.5f, map.Size.y * 0.5f);
 
-            // Allocations (TempJob so Burst can use them)
-            var friendlyPos = new NativeList<float2>(10000, Allocator.TempJob);
+            float2 worldSize = wMax - wMin;
+            //float2 invSize = 1f / worldSize;
 
-            var friendly = new CollectUnitsJob
+            var job = new CollectUnitsJob
             {
-                InverseTeam = false,
                 TeamID = playerData.TeamID,
                 WorldMin = wMin,
-                WorldMax = wMax,
-                Positions = friendlyPos.AsParallelWriter(),
+                WorldSize = wMax - wMin,
+                Friendly = _friendly.AsParallelWriter(),
+                Enemy = _enemy.AsParallelWriter(),
             };
-
-            JobHandle handle = friendly.ScheduleParallel(Dependency);
-            Dependency = handle; // must set Dependency inside SystemBase
-
+            var handle = job.Schedule(Dependency);
             handle.Complete();
 
-            // Only update minimap if results exist
-            if (!friendlyPos.IsEmpty)
-                minimap.UpdateMinimap(0, friendlyPos.AsArray());
-
-
-            var enemyPos = new NativeList<float2>(10000, Allocator.TempJob);
-
-            var enemy = new CollectUnitsJob
-            {
-                InverseTeam = true,
-                TeamID = playerData.TeamID,
-                WorldMin = wMin,
-                WorldMax = wMax,
-                Positions = enemyPos.AsParallelWriter(),
-            };
-
-            handle = enemy.ScheduleParallel(Dependency);
-            Dependency = handle; // must set Dependency inside SystemBase
-
-            handle.Complete();
-
-            // Only update minimap if results exist
-            if (!enemyPos.IsEmpty)
-                minimap.UpdateMinimap(1, enemyPos.AsArray());
-
-            enemyPos.Dispose();
-            friendlyPos.Dispose();
+            _minimap.UpdateMinimap(0, _friendly.AsArray());
+            _minimap.UpdateMinimap(1, _enemy.AsArray());
         }
     }
 }
@@ -171,33 +160,25 @@ public partial struct CollectUnitsJob : IJobEntity
     public bool InverseTeam;
     public int TeamID;
     public float2 WorldMin;
-    public float2 WorldMax;
+    public float2 WorldSize;
 
-    public NativeList<float2>.ParallelWriter Positions;
+    public NativeList<float2>.ParallelWriter Friendly;
+    public NativeList<float2>.ParallelWriter Enemy;
     [BurstCompile]
-    void Execute(RefRO<LocalTransform> transform, RefRO<UnitTeam> team, RefRO<LocalVisibility> vis)
+    void Execute(RefRO<LocalTransform> transform,
+             RefRO<UnitTeam> team,
+             RefRO<LocalVisibility> vis)
     {
         if (!vis.ValueRO.IsVisible) return;
-        if (InverseTeam)
-        {
-            if (team.ValueRO.TeamID != TeamID)
-            {
-                float2 pos;
-                pos.x = math.clamp((transform.ValueRO.Position.x - WorldMin.x) / (WorldMax.x - WorldMin.x), 0, 1);
-                pos.y = math.clamp((transform.ValueRO.Position.z - WorldMin.y) / (WorldMax.y - WorldMin.y), 0, 1);
-                Positions.AddNoResize(pos);
-            }
-        }
+
+        float2 pos;
+        pos.x = math.clamp((transform.ValueRO.Position.x - WorldMin.x) / WorldSize.x, 0, 1);
+        pos.y = math.clamp((transform.ValueRO.Position.z - WorldMin.y) / WorldSize.y, 0, 1);
+
+        if (team.ValueRO.TeamID == TeamID)
+            Friendly.AddNoResize(pos);
         else
-        {
-            if (team.ValueRO.TeamID == TeamID)
-            {
-                float2 pos;
-                pos.x = math.clamp((transform.ValueRO.Position.x - WorldMin.x) / (WorldMax.x - WorldMin.x), 0, 1);
-                pos.y = math.clamp((transform.ValueRO.Position.z - WorldMin.y) / (WorldMax.y - WorldMin.y), 0, 1);
-                Positions.AddNoResize(pos);
-            }
-        }
+            Enemy.AddNoResize(pos);
     }
 }
 

@@ -5,54 +5,6 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
-[BurstCompile]
-public partial struct UnitDeadTagSystem : ISystem
-{
-    // Run this system after other logic that reduces HP
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
-        if (SystemAPI.TryGetSingleton<FXManifest>(out var m))
-        {
-            Entity explosion = m.Explosion;
-            //var l = SystemAPI.GetComponentLookup<UnitHP>();
-            foreach (var (hp, transform, e) in SystemAPI.Query<RefRO<UnitHP>, RefRO<LocalTransform>>().WithNone<DeadTag>().WithEntityAccess())
-            {
-                if (hp.ValueRO.HP <= 0)
-                {
-                    
-                    ecb.AddComponent<DeadTag>(e);
-                    var d = ecb.Instantiate(explosion);
-                    ecb.AddComponent(d, new TempFX { Life = 0 });
-                    ecb.SetComponent(d, new LocalTransform { Position = transform.ValueRO.Position, Rotation = quaternion.identity, Scale = 1f });
-                }
-            }
-
-
-        }
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-
-    }
-}
-
-[BurstCompile]
-public partial struct TagDeadUnitsJob : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ECB;
-    public int sortKey;
-
-    // Automatically queries all entities with UnitHP
-    void Execute(ref UnitHP hp, Entity entity)
-    {
-        if (hp.HP <= 0)
-        {
-            // Add a DeadTag safely in parallel
-            ECB.AddComponent<DeadTag>(sortKey, entity);
-        }
-    }
-}
 
 // Separate system to destroy entities with DeadTag
 [BurstCompile]
@@ -63,40 +15,40 @@ public partial struct DestroyDeadUnitsSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        if (!SystemAPI.TryGetSingleton<FXManifest>(out var m)) return;
+
         var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecbD = ecbSys.CreateCommandBuffer(state.WorldUnmanaged);
+
         //var c = SystemAPI.GetComponentLookup<PhysicsCollider>(true);
-
-        var b = SystemAPI.GetBufferLookup<LinkedEntityGroup>(true);
-
-        foreach (var (t, d, e) in SystemAPI.Query<RefRW<LocalTransform>, RefRO<DeadTag>>().WithEntityAccess())
+        
+        var job = new DestroyAndTagDeadJob
         {
-            if (b.TryGetBuffer(e, out var l))
-            {
-                //UnityEngine.Debug.Log("Has linked group");
-                foreach (var i in l)
-                {
-                    ecb.DestroyEntity(i.Value);
-                }
-            }
-            ecb.DestroyEntity(e);
-        }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
+            Ecb = ecbSys.CreateCommandBuffer(state.WorldUnmanaged),
+            Explosion = m.Explosion,
+        };
+        state.Dependency = job.Schedule(state.Dependency);
     }
 }
-
 [BurstCompile]
-public partial struct DestroyDeadJob : IJobEntity
+public partial struct DestroyAndTagDeadJob : IJobEntity
 {
-    public EntityCommandBuffer.ParallelWriter ECB;
-
-    void Execute([ChunkIndexInQuery] int sortKey, Entity entity, in DeadTag dead)
+    public Entity Explosion;
+    public EntityCommandBuffer Ecb;
+    void Execute(Entity entity, RefRO<LocalTransform> transform, RefRO<UnitHP> hp)
     {
+        if (!(hp.ValueRO.HP <= 0)) return;
+
+        var e = Ecb.Instantiate(Explosion);
+        Ecb.SetComponent(e, new LocalTransform
+        {
+            Position = transform.ValueRO.Position,
+            Rotation = quaternion.identity,
+            Scale = 1f
+        });
+
+        Ecb.AddComponent<DeadTag>(entity);
         // Destroy the entity safely at the end of the frame
-        ECB.DestroyEntity(sortKey, entity);
+        Ecb.DestroyEntity(entity);
     }
 }
 

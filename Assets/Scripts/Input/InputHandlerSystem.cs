@@ -78,7 +78,7 @@ public partial class InputHandlerSystem : SystemBase
 
         // Build an input for OverlapCollider
         float3 pos = EntityManager.GetComponentData<LocalTransform>(selectionEntity).Position;
-        var input = new ColliderCastInput(collider.Value, pos, pos + new float3(0.1f, 0, 0), quaternion.identity);
+        var input = new ColliderCastInput(collider.Value, pos, pos + new float3(0.01f, 0, 0), quaternion.identity);
         // Collect results
         var hits = new NativeList<ColliderCastHit>(Allocator.Temp);
 

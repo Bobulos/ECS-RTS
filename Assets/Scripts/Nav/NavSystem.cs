@@ -66,7 +66,7 @@ public partial struct NavSystem : ISystem
             if (_queryUsed[i] == 0)
             {
                 _queryUsed[i] = 1;
-                _queries[i] = new NavMeshQuery(_navWorld, Allocator.Persistent, 1024);
+                _queries[i] = new NavMeshQuery(_navWorld, Allocator.Persistent, 512);
                 ecb.AddComponent(e, new PatherCleanup { QuerieIndex = i });
                 return i;
             }
@@ -108,7 +108,9 @@ public partial struct NavSystem : ISystem
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
 
         foreach (var (transform, p, e) in
-            SystemAPI.Query<RefRO<LocalTransform>, RefRW<Pather>>().WithEntityAccess())
+            SystemAPI.Query<RefRO<LocalTransform>, 
+            RefRW<Pather>>()
+            .WithEntityAccess())
         {
             if (!p.ValueRO.QuerySet)
             {
@@ -136,14 +138,18 @@ public partial struct NavSystem : ISystem
             state.Dependency = job.Schedule(state.Dependency);
         }
 
-        foreach (var p in SystemAPI.Query<PatherCleanup>())
+        foreach (var (p,e) in SystemAPI.Query<PatherCleanup>()
+            .WithEntityAccess()
+            .WithNone<Pather>())
         {
             FreeQuery(p.QuerieIndex);
+            ecb.DestroyEntity(e);
         }
         //ecbSystem.AddJobHandleForProducer(state.Dependency);
     }
 
 }
+
 [BurstCompile]
 public struct NavQueryJob : IJob
 {
@@ -157,6 +163,7 @@ public struct NavQueryJob : IJob
     public Entity REntity;
 
     public NavMeshQuery Query;
+    
     public EntityCommandBuffer Ecb;
 
 
