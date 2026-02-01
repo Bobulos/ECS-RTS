@@ -52,8 +52,10 @@ public partial class InputHandlerSystem : SystemBase
     }
     private void OnCodeSelectUnits(byte code, uint team)
     {
+
+        if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
+
         var ecb = new EntityCommandBuffer(Allocator.Temp);
-        var assetSingleton = SystemAPI.GetSingleton<AssetSingleton>();
         //0 is all others are command groups
         foreach (var (t, e) in SystemAPI.Query<RefRO<UnitTeam>>().WithEntityAccess())
         {
@@ -68,6 +70,8 @@ public partial class InputHandlerSystem : SystemBase
     }
     private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, uint t)
     {
+        if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
+
         if (selectionEntity == Entity.Null) { return; }
         //UnityEngine.Debug.Log("Events working properly");
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
@@ -94,7 +98,6 @@ public partial class InputHandlerSystem : SystemBase
         bool onlyStructures = true;
         NativeList<Entity> hitStructures = new NativeList<Entity>(16, Allocator.Temp);
 
-        var assetSingleton = SystemAPI.GetSingleton<AssetSingleton>();
 
         // --- Process results ---
         foreach (var h in hits)

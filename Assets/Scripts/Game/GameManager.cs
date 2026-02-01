@@ -13,29 +13,14 @@ public class GameManager : MonoBehaviour
     public ConstructionBridge constructionBridge;
 
     private EntityManager entityManager;
-    private void Awake()
+
+    private bool initialized = false;
+    private void Start()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-    }
-    public void OnChangeTeam(uint newTeam)
-    {
-        localTeam = newTeam;
-        if (localData.TryGetSingleton(out LocalPlayerData data))
-        {
-            data.TeamID = (int)newTeam;
-            //write to it
-            if (localData.TryGetSingletonEntity<LocalPlayerData>(out var e)) entityManager.SetComponentData(e, data);
-            inputBridge.team = newTeam;
-            constructionBridge.team = newTeam;
 
-        }
-    }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    private EntityQuery localData;
-    void Start()
-    {
         localData = entityManager.CreateEntityQuery(typeof(LocalPlayerData));
-        OnChangeTeam(localTeam);
+        
         if (GameSettings.InReplayMode)
         {
             var p = Instantiate(inputPlayback).GetComponent<InputPlayback>();
@@ -46,6 +31,30 @@ public class GameManager : MonoBehaviour
             Instantiate(inputLogger);
         }
     }
+    private void Update()
+    {
+        if (!initialized)
+        {
+            OnChangeTeam(localTeam);
+        }
+    }
+    public void OnChangeTeam(uint newTeam)
+    {
+        localTeam = newTeam;
+        if (localData.TryGetSingleton(out LocalPlayerData data))
+        {
+            initialized = true;
+            data.TeamID = (int)newTeam;
+            //write to it
+            if (localData.TryGetSingletonEntity<LocalPlayerData>(out var e)) entityManager.SetComponentData(e, data);
+            inputBridge.team = newTeam;
+            constructionBridge.team = newTeam;
+
+        }
+    }
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private EntityQuery localData;
+
     public void EndGame()
     {
         GameSettings.InReplayMode = false;

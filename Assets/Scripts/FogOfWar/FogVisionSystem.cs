@@ -1,8 +1,10 @@
-﻿using Unity.Burst;
+﻿using Mono.Cecil;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
+using Unity.Scenes;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,6 +12,7 @@ using UnityEngine.Rendering;
 
 public partial class FogSystem : SystemBase
 {
+    private Material _material;
     private ComputeShader _shader;
     private RenderTexture _visibleTex;   // cleared each frame
     private RenderTexture _exploredTex;  // persistent, accumulative
@@ -34,23 +37,34 @@ public partial class FogSystem : SystemBase
         _exploredTex?.Release();
         _mask.Dispose();
     }
-    private FogOfWarRendering _fogRender;
-
+    //private FogOfWarRendering _fogRender;
     protected override void OnUpdate()
     {
-        if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
-        if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();
 
-        if (_fogRender != null && !_fogRender.set)
-            _fogRender.SetTexture(_visibleTex, _exploredTex);
+
+        if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
+        //if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();
+
+/*        if (_fogRender != null && !_fogRender.set)
+            _fogRender.SetTexture(_visibleTex, _exploredTex);*/
 
 
         if (!_initialized)
         {
+
             _shader = Resources.Load<ComputeShader>("FogOfWar");
+            _material = Resources.Load<Material>("Fog");
+
+
             if (_shader == null)
             {
                 Debug.LogError("FogOfWar compute shader missing.");
+                Enabled = false;
+                return;
+            }
+            if (_material == null)
+            {
+                Debug.LogError("FogOf war shader missing");
                 Enabled = false;
                 return;
             }
@@ -81,19 +95,28 @@ public partial class FogSystem : SystemBase
             };
             _visibleTex.Create();
 
-            // Hook renderer
-            _fogRender?.SetTexture(_visibleTex, _exploredTex); // show explored by default (or combine in shader)
+            /*// Hook renderer
+            _fogRender?.SetTexture(_visibleTex, _exploredTex); // show explored by default (or combine in shader)*/
+
+            _material.SetTexture("_Visible", _visibleTex);
+            _material.SetTexture("_Explored", _exploredTex);
 
             _initialized = true;
             return; // skip first frame after init
         }
 
+        if (_shader == null) UnityEngine.Debug.Log("Couldn't load shader");
+
         if (!_initialized || _shader == null) return;
+
+        //UnityEngine.Debug.Log("Initialized");
+        
+        if (!SystemAPI.TryGetSingleton<LocalPlayerData>(out var playerData)) return;
 
         // Gather units into persistent array
         int idx = 0;
-        var playerData = SystemAPI.GetSingleton<LocalPlayerData>();
-        foreach (var (vision, transform, team) in SystemAPI.Query<RefRO<Vision>, RefRO<LocalTransform>, RefRO<UnitTeam>>())
+        foreach (var (vision, transform, team) in 
+            SystemAPI.Query<RefRO<Vision>, RefRO<LocalTransform>, RefRO<UnitTeam>>())
         {
             if (idx >= MAX_UNITS) break;
 
@@ -104,7 +127,6 @@ public partial class FogSystem : SystemBase
                 _unitArray[idx] = new float3(p.x, p.z, vision.ValueRO.Level);
                 idx++;
             }
-
         }
 
         int count = math.min(idx, MAX_UNITS);
@@ -220,6 +242,8 @@ public partial class FogSystem : SystemBase
         _hasMaskUpdate = true;
     }
     NativeArray<int> _mask;
+    private bool _worldIsReady;
+    private SceneSystem _sceneSystem;
     protected override void OnCreate()
     {
         _mask = new NativeArray<int>(512 * 512, Allocator.Persistent);

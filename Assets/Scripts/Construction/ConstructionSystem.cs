@@ -5,7 +5,7 @@ using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
 //using UnityEngine;
-
+[UpdateBefore(typeof(TurretLookSystem))]
 public partial class ConstructionSystem : SystemBase
 {
     const float SEGEMENT_SIZE_OFFSET = 1f;
