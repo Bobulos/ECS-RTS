@@ -38,84 +38,100 @@ public struct PatherCleanup : ICleanupComponentData
 public partial struct NavSystem : ISystem
 {
     private NavMeshWorld _navWorld;
-    //private NavMeshQuery _query;
-
-    // hard cap so nav never spikes a frame
-    private const int MAX_PATHS_PER_FRAME = 4;
-    private int _bucket;
-    private int _maxBucket;
-
-
     private NativeArray<NavMeshQuery> _queries;
-    private NativeArray<bool> _queryUsed;
+    private NativeList<int> _freeIndices;  // Track free slots explicitly
     private int _maxQueries;
-    //[BurstCompile]
+
     public void OnCreate(ref SystemState state)
     {
         _navWorld = NavMeshWorld.GetDefaultWorld();
-
         _maxQueries = ConfigLoader.LoadSim().maxNavQueries;
+
         _queries = new NativeArray<NavMeshQuery>(_maxQueries, Allocator.Persistent);
-        _queryUsed = new NativeArray<bool>(_maxQueries, Allocator.Persistent);
+        _freeIndices = new NativeList<int>(_maxQueries, Allocator.Persistent);
+
+        // Initialize all as free
+        for (int i = 0; i < _maxQueries; i++)
+        {
+            _freeIndices.Add(i);
+        }
     }
+
     [BurstCompile]
     private int AllocateQuery(ref EntityCommandBuffer ecb, Entity e)
     {
-        for (int i = 0; i < _maxQueries; i++)
+        if (_freeIndices.Length == 0)
         {
-            if (_queryUsed[i] == false)
-            {
-                _queryUsed[i] = true;
-                _queries[i] = new NavMeshQuery(_navWorld, Allocator.Persistent, 512);
-                ecb.AddComponent(e, new PatherCleanup { QuerieIndex = i });
-                return i;
-            }
+            UnityEngine.Debug.LogError("Out of NavMeshQueries!");
+            return -1;
         }
 
-        UnityEngine.Debug.LogError("Out of NavMeshQueries!");
-        return -1;
+        // Get a free index
+        int index = _freeIndices[_freeIndices.Length - 1];
+        _freeIndices.RemoveAt(_freeIndices.Length - 1);
+
+        // Create the query
+        _queries[index] = new NavMeshQuery(_navWorld, Allocator.Persistent, 512);
+        ecb.AddComponent(e, new PatherCleanup { QuerieIndex = index });
+
+        return index;
     }
+
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
+        // Dispose ALL queries that were ever allocated
         for (int i = 0; i < _maxQueries; i++)
         {
-            if (_queryUsed[i] == true)
+            // Check if this index is NOT in the free list (meaning it's allocated)
+            bool isFree = false;
+            for (int j = 0; j < _freeIndices.Length; j++)
+            {
+                if (_freeIndices[j] == i)
+                {
+                    isFree = true;
+                    break;
+                }
+            }
+
+            if (!isFree)
             {
                 _queries[i].Dispose();
             }
         }
 
         _queries.Dispose();
-        _queryUsed.Dispose();
+        _freeIndices.Dispose();
     }
+
     [BurstCompile]
     private void FreeQuery(int index)
     {
-        if (_queryUsed[index] == true)
-        {
-            _queries[index].Dispose();
-            _queryUsed[index] = false;
-        }
+        // Dispose the query
+        _queries[index].Dispose();
+
+        // Add index back to free list
+        _freeIndices.Add(index);
     }
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-
-        var ecbSystem =
-            SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-
+        var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
-        foreach (var (p, e) in SystemAPI.Query<PatherCleanup>()
+
+        // Handle cleanup
+        foreach (var (cleanup, e) in SystemAPI.Query<RefRO<PatherCleanup>>()
             .WithEntityAccess()
             .WithNone<Pather>())
         {
-            FreeQuery(p.QuerieIndex);
-            ecb.DestroyEntity(e);
+            FreeQuery(cleanup.ValueRO.QuerieIndex);
+            ecb.RemoveComponent<PatherCleanup>(e);
         }
+
+        // Handle path requests
         foreach (var (transform, p, e) in
-            SystemAPI.Query<RefRO<LocalTransform>, 
-            RefRW<Pather>>()
+            SystemAPI.Query<RefRO<LocalTransform>, RefRW<Pather>>()
             .WithEntityAccess())
         {
             if (!p.ValueRO.QuerySet)
@@ -143,11 +159,7 @@ public partial struct NavSystem : ISystem
 
             state.Dependency = job.Schedule(state.Dependency);
         }
-
-
-        //ecbSystem.AddJobHandleForProducer(state.Dependency);
     }
-
 }
 
 [BurstCompile]
