@@ -140,7 +140,7 @@ public class InputLogger : MonoBehaviour
         InputBridge.OnClearUnits -= OnClearUnits;
         InputBridge.OnSelectUnits -= OnSelectUnits;
         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
-
+        UnitActionManager.OnAction -= OnAction;
         /*List<InputRecord> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
         foreach (InputRecord r in record)
         {
