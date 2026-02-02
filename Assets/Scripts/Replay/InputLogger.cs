@@ -33,6 +33,7 @@ public class InputLogger : MonoBehaviour
         writer.Write(FILE_VERSION);
 
         ConstructionBridge.ConstructWalls += OnConstructWalls;
+        ConstructionBridge.ConstructStructure += OnConstructStructure;
         InputBridge.OnMoveUnits += OnMoveUnits;
         InputBridge.OnClearUnits += OnClearUnits;
         InputBridge.OnSelectUnits += OnSelectUnits;
@@ -73,6 +74,17 @@ public class InputLogger : MonoBehaviour
             Team = team,
             Type = InputType.ConstructWalls,
             Wall = d,
+        });
+        TryFlush();
+    }
+    public void OnConstructStructure(ConstructData d, int team)
+    {
+        buffer.Add(new InputRecord
+        {
+            Step = step,
+            Team = team,
+            Type = InputType.Construct,
+            Structure = d,
         });
         TryFlush();
     }
@@ -123,6 +135,7 @@ public class InputLogger : MonoBehaviour
 
         // Unsubscribe to prevent memory leaks
         ConstructionBridge.ConstructWalls -= OnConstructWalls;
+        ConstructionBridge.ConstructStructure -= OnConstructStructure;
         InputBridge.OnMoveUnits -= OnMoveUnits;
         InputBridge.OnClearUnits -= OnClearUnits;
         InputBridge.OnSelectUnits -= OnSelectUnits;
