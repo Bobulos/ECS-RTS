@@ -171,7 +171,7 @@ public class ConstructionBridge : MonoBehaviour
                 ConstructStructure?.Invoke(new ConstructData
                 {
                     pos = r.Structure.pos,
-                    constructData = r.Structure.constructData,
+                    constructData = constructs[r.Structure.constructID],
                     constructID = 0,
                 }, team);
                 break;
