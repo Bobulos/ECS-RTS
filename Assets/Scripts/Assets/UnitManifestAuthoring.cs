@@ -22,7 +22,7 @@ class UnitManifestBaker : Baker<UnitManifestAuthoring>
             if (g != null)
             {
                 var prefabEntity = GetEntity(g, TransformUsageFlags.Dynamic);
-                buffer.Add(new UnitManifest { Value = prefabEntity });
+                buffer.Add(new UnitManifest { Unit = prefabEntity, TrainingTime = 3f});
             }
         }
     }
@@ -32,5 +32,6 @@ class UnitManifestBaker : Baker<UnitManifestAuthoring>
 [InternalBufferCapacity(8)] // Number of elements before it allocates to heap
 public struct UnitManifest : IBufferElementData
 {
-    public Entity Value;
+    public Entity Unit;
+    public float TrainingTime;
 }

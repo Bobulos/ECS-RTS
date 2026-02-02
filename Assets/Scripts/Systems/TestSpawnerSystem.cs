@@ -29,7 +29,7 @@ public partial struct TestSpawnerSystem : ISystem
 
         */
 
-        var prefab = SystemAPI.GetSingletonBuffer<UnitManifest>()[4].Value;
+        var prefab = SystemAPI.GetSingletonBuffer<UnitManifest>()[4].Unit;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         ecb.Instantiate(prefab);
         for (float x = -sqr_radius; x < sqr_radius;  x+=1.5f)

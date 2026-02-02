@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class ProductionStructureAuthoring : MonoBehaviour
 {
+    public int queueSize = 10;
     public Vector3 spawnOffset;
     [Header("Possible Units")]
     public ProductionKey prefab0;
@@ -35,6 +36,7 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
                 authoring.prefab6.Key, 
                 authoring.prefab7.Key,
             },
+            QueueSize = authoring.queueSize,
             Queue = new FixedList512Bytes<int> {}
         });
     }
@@ -43,6 +45,9 @@ public struct ProductionStructure : IComponentData
 {
     public float3 SpawnOffset;
     public int QueueCount;
+    public int QueueSize;
+    public float StartTime;
+    
     //64 bytes for each unit
     public FixedList512Bytes<int> Prefabs;
     // can hold 512
