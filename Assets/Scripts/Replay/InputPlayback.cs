@@ -57,8 +57,10 @@ public class InputPlayback : MonoBehaviour
             case InputType.ClearUnits:
                 input.PlaybackInput(r);
                 break;
+            case InputType.Construct:
+                construction.PlaybackInput(r);
+                break;
             case InputType.ConstructWalls:
-                //1Debug.Log("BUILD WALLLSLSLSLLSLSLSL");
                 construction.PlaybackInput(r);
                 break;
 

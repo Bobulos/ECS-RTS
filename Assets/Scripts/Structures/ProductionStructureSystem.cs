@@ -19,9 +19,9 @@ public partial class ProductionStructureHandler : SystemBase
     protected override void OnUpdate()
     {
     }
-    public void AddUnitToQueue(InputRecord record)
+    public void AddUnitToQueue(UnitAction action, int te)
     {
-        if (record.Action.ActionType != ActionType.AddUnitToQueue) return;
+        if (action.ActionType != ActionType.AddUnitToQueue) return;
 
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
 
@@ -30,7 +30,7 @@ public partial class ProductionStructureHandler : SystemBase
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (transform, team, key, prod) in SystemAPI.Query<
+        foreach (var (transform, t, key, prod) in SystemAPI.Query<
             RefRO<LocalTransform>,
             RefRO<Team>,
             RefRO<SelectionKey>,
@@ -41,7 +41,7 @@ public partial class ProductionStructureHandler : SystemBase
             if (prod.ValueRO.QueueCount <= prod.ValueRO.QueueSize)
 
             prod.ValueRW.QueueCount++;
-            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[record.Action.ActionIndex]);
+            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.ActionIndex]);
 
             //if it is the first in list need to start cycle
             if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;

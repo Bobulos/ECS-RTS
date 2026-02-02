@@ -1,3 +1,4 @@
+using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,11 +37,22 @@ public class InputLogger : MonoBehaviour
         InputBridge.OnClearUnits += OnClearUnits;
         InputBridge.OnSelectUnits += OnSelectUnits;
         InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
+        UnitActionManager.OnAction += OnAction;
     }
     uint step;
     void FixedUpdate()
     {
         step++;
+    }
+    public void OnAction(UnitAction action, int team)
+    {
+        buffer.Add(new InputRecord { 
+            Step = step, 
+            Team = team, 
+            Type = InputType.Action, 
+            Action = action
+        });
+        TryFlush();
     }
     public void OnCodeSelectUnits(byte code, int team)
     {

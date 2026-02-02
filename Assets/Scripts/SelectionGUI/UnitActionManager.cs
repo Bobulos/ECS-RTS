@@ -19,7 +19,7 @@ public class UnitActionManager : MonoBehaviour
 
     private UnitGUIManifest manifest;
 
-    public static Action<InputRecord> OnAction;
+    public static Action<UnitAction, int> OnAction;
 
     public int team = 0;
     public List<UnitAction> buffer = new List<UnitAction>();
@@ -38,7 +38,7 @@ public class UnitActionManager : MonoBehaviour
 
     public void PlaybackInput(InputRecord r)
     {
-        OnAction.Invoke(r);
+        OnAction.Invoke(r.Action, r.Team);
     }
     public void OnElementAction(UnitGUIData d, byte actionIndex)
     {
