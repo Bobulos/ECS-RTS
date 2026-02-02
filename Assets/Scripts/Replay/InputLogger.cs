@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
 public class InputLogger : MonoBehaviour
@@ -18,7 +19,7 @@ public class InputLogger : MonoBehaviour
     {
         DateTime now = DateTime.Now;
         string t = now.ToString("yyyyMMddHHmmss");
-        fileName = $"{t.Substring(0, 4)}_{t.Substring(4, 2)}_{t.Substring(6, 2)}_{t.Substring(8, 2)}_{t.Substring(10, 2)}.bin";
+        fileName = $"{t.Substring(0, 4)}_{t.Substring(4, 2)}_{t.Substring(6, 2)}_{t.Substring(8, 2)}.bin";
         ReplayFileManager.AddFile(fileName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 
@@ -41,7 +42,7 @@ public class InputLogger : MonoBehaviour
     {
         step++;
     }
-    public void OnCodeSelectUnits(byte code, uint team)
+    public void OnCodeSelectUnits(byte code, int team)
     {
         buffer.Add(new InputRecord
         {
@@ -52,7 +53,7 @@ public class InputLogger : MonoBehaviour
         });
         TryFlush();
     }
-    public void OnConstructWalls(ConstructWallData d, uint team)
+    public void OnConstructWalls(ConstructWallData d, int team)
     {
         buffer.Add(new InputRecord
         {
@@ -63,7 +64,7 @@ public class InputLogger : MonoBehaviour
         });
         TryFlush();
     }
-    public void OnMoveUnits(MoveUnitsData d, uint team)
+    public void OnMoveUnits(MoveUnitsData d, int team)
     {
         buffer.Add(new InputRecord
         {
@@ -74,7 +75,7 @@ public class InputLogger : MonoBehaviour
         });
         TryFlush();
     }
-    public void OnClearUnits(uint team)
+    public void OnClearUnits(int team)
     {
         buffer.Add(new InputRecord
         {
@@ -85,7 +86,7 @@ public class InputLogger : MonoBehaviour
         TryFlush();
     }
     //0 is reg 1 is all
-    public void OnSelectUnits(Entity _, SelectionData vertecies, uint team)
+    public void OnSelectUnits(Entity _, SelectionData vertecies, int team)
     {
         if (vertecies == null || vertecies.value.Length < 8) { return; }
         buffer.Add(new InputRecord
@@ -134,6 +135,10 @@ public class InputLogger : MonoBehaviour
 
             switch (r.Type)
             {
+                case InputType.Action:
+                    writer.Write((byte)r.Action.ActionType);
+                    writer.Write(r.Action.ActionIndex);
+                    break;
                 case InputType.MoveUnits:
                     WriteVector3(r.Move.CurrentRayOrigin);
                     WriteVector3(r.Move.CurrentRayDirection);
@@ -149,6 +154,9 @@ public class InputLogger : MonoBehaviour
                             WriteVector3(Vector3.zero); // Padding to maintain alignment
                     }
                     break;
+                case InputType.CodeSelectUnits:
+                    writer.Write(r.CodeSelect);
+                    break;
                 case InputType.ClearUnits:
                     // Already wrote Type, Step, and Team. Nothing else needed.
                     break;
@@ -159,7 +167,7 @@ public class InputLogger : MonoBehaviour
                     break;
                 case InputType.Construct:
                     WriteVector3(r.Structure.pos);
-                    writer.Write(r.Wall.constructID);
+                    writer.Write(r.Structure.constructID);
                     break;
             }
         }
@@ -194,10 +202,14 @@ public static class InputDecoder
                     InputRecord record = new InputRecord();
                     record.Type = (InputType)reader.ReadByte();
                     record.Step = reader.ReadUInt32(); // Matches writer.Write(uint)
-                    record.Team = reader.ReadUInt32();
+                    record.Team = reader.ReadInt32();
 
                     switch (record.Type)
                     {
+                        case InputType.Action:
+                            record.Action.ActionType = (ActionType)reader.ReadByte();
+                            record.Action.ActionIndex = reader.ReadByte();
+                            break;
                         case InputType.MoveUnits:
                             record.Move = new MoveUnitsData { CurrentRayOrigin = ReadVector3(reader), CurrentRayDirection = ReadVector3(reader) };
                             break;
@@ -206,6 +218,12 @@ public static class InputDecoder
                             Vector3[] verts = new Vector3[8];
                             for (int i = 0; i < 8; i++) verts[i] = ReadVector3(reader);
                             record.Select = new SelectionData(verts);
+                            break;
+                        case InputType.CodeSelectUnits:
+                            record.CodeSelect = reader.ReadByte();
+                            break;
+                        case InputType.ClearUnits:
+                            // No additional data to read
                             break;
                         case InputType.ConstructWalls:
                             //Debug.Log("LOGLOGLOGLOGLOG");
@@ -233,14 +251,16 @@ public enum InputType : byte
     MoveUnits,
     SelectUnits,
     CodeSelectUnits,
+    Action,
     ClearUnits
 }
 public struct InputRecord
 {
     public InputType Type;
     public uint Step;
-    public uint Team;
+    public int Team;
     // data
+    public UnitAction Action;
     public ConstructWallData Wall;
     public ConstructData Structure;
     public MoveUnitsData Move;
@@ -249,7 +269,7 @@ public struct InputRecord
 }
 public static class InputRecordUtil
 {
-    public static InputRecord AssembleRecord(byte d, uint team)
+    public static InputRecord AssembleRecord(byte d, int team)
     {
         return new InputRecord
         {
@@ -258,7 +278,16 @@ public static class InputRecordUtil
             CodeSelect = d
         };
     }
-    public static InputRecord AssembleRecord(ConstructWallData d, uint team)
+    public static InputRecord AssembleActionRecord(UnitAction d, int team)
+    {
+        return new InputRecord
+        {
+            Type = InputType.Action,
+            Team = team,
+            Action = d
+        };
+    }
+    public static InputRecord AssembleRecord(ConstructWallData d, int team)
     {
         return new InputRecord
         {
@@ -267,7 +296,7 @@ public static class InputRecordUtil
             Wall = d
         };
     }
-    public static InputRecord AssembleRecord(ConstructData d, uint team)
+    public static InputRecord AssembleRecord(ConstructData d, int team)
     {
         return new InputRecord
         {
@@ -276,7 +305,7 @@ public static class InputRecordUtil
             Structure = d
         };
     }
-    public static InputRecord AssembleRecord(MoveUnitsData d, uint team)
+    public static InputRecord AssembleRecord(MoveUnitsData d, int team)
     {
         return new InputRecord
         {
@@ -286,7 +315,7 @@ public static class InputRecordUtil
         };
     }
     
-    public static InputRecord AssembleRecord(SelectionData d, uint team)
+    public static InputRecord AssembleRecord(SelectionData d, int team)
     {
         return new InputRecord
         {
@@ -296,7 +325,7 @@ public static class InputRecordUtil
         };
     }
     //dataless like clear units
-    public static InputRecord AssembleDatalessRecord(InputType t, uint team)
+    public static InputRecord AssembleDatalessRecord(InputType t, int team)
     {
         switch (t)
         {

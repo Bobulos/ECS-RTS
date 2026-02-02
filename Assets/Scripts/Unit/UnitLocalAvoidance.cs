@@ -16,7 +16,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
     void Execute(
         ref UnitMovement mov,
         in LocalTransform transform,
-        in UnitTeam team,
+        in Team team,
         in Entity entity)
     {
         FixedList4096Bytes<Line> lines = new FixedList4096Bytes<Line>();

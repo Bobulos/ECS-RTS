@@ -8,13 +8,13 @@ public class ConstructionBridge : MonoBehaviour
     public static event Action<ConstructWallData> VisualizeWalls;
     public static event Action<ConstructData> VisualizeStructure;
     public static event Action CancelContrstruction;
-    public static event Action<ConstructWallData, uint> ConstructWalls;
-    public static event Action<ConstructData, uint> ConstructStructure;
+    public static event Action<ConstructWallData, int> ConstructWalls;
+    public static event Action<ConstructData, int> ConstructStructure;
 
     public LayerMask terrainMask;
     public ConstructionData constructData;
 
-    public uint team;
+    public int team;
 
     public void UpdateConstructionData(ConstructionData d)
     {
@@ -26,10 +26,10 @@ public class ConstructionBridge : MonoBehaviour
     void Start()
     {
         cam = Camera.main;
-        if (GameSettings.InReplayMode) { this.enabled = false; }
+        if (GameSettings.InReplayMode) { this.enabled = false;  }
     }
     float3 startBuildPos;
-    float3 endBuildPos;
+
     bool startBuild = false;
     void Update()
     {
@@ -44,80 +44,75 @@ public class ConstructionBridge : MonoBehaviour
             CancelContrstruction.Invoke();
             startBuild = false;
         }
-        if (constructData != null)
+        if (constructData == null) { return; }
+        if (UIUtility.IsPointerOverUI()) { return; }
+        if (!Physics.Raycast(camRay, out UnityEngine.RaycastHit hit, 600f, terrainMask)) {  return;}
+
+        if (constructData.mode == ConstructionMode.Wall)
         {
-            if (!UIUtility.IsPointerOverUI() && Physics.Raycast(camRay, out UnityEngine.RaycastHit hit, 100f, terrainMask))
+            if (Input.GetMouseButtonDown(0))
             {
-
-                if (constructData.mode == ConstructionMode.Wall)
+                startBuild = !startBuild;
+                if (startBuild)
                 {
-                    if (Input.GetMouseButtonDown(0))
-                    {
-                        startBuild = !startBuild;
-                        if (startBuild)
-                        {
-                            startBuildPos = hit.point;
+                    startBuildPos = hit.point;
 
-                        }
-                        //build walls command
-                        else
-                        {
-                            buffer.Add(InputRecordUtil.AssembleRecord(new ConstructWallData
-                            {
-                                start = startBuildPos,
-                                end = hit.point,
-                                constructData = constructData,
-                                isSingleVis = false
-                            }, team));
-                            CancelContrstruction?.Invoke();
-                        }
-
-                    }
-                    else if (startBuild)
-                    {
-                        VisualizeWalls?.Invoke(new ConstructWallData
-                        {
-                            start = startBuildPos,
-                            end = hit.point,
-                            constructData = constructData,
-                            isSingleVis = false
-                        });
-                    }
-                    else
-                    {
-                        VisualizeWalls?.Invoke(new ConstructWallData
-                        {
-                            start = hit.point,
-                            end = hit.point,
-                            constructData = constructData,
-                            isSingleVis = true
-                        });
-                    }
                 }
-                else if (constructData.mode == ConstructionMode.Structure)
+                //build walls command
+                else
                 {
-                    if (Input.GetMouseButtonDown(0))
+                    buffer.Add(InputRecordUtil.AssembleRecord(new ConstructWallData
                     {
-
-                        buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData
-                        {
-                            constructData = constructData,
-                            pos = hit.point,
-                        }, team));
-                    }
-                    //visualize
-                    else
-                    {
-                        VisualizeStructure?.Invoke(new ConstructData
-                        {
-                            constructData = constructData,
-                            pos = hit.point,
-                        });
-                    }
+                        start = startBuildPos,
+                        end = hit.point,
+                        constructData = constructData,
+                        isSingleVis = false
+                    }, team));
+                    CancelContrstruction?.Invoke();
                 }
 
             }
+            else if (startBuild)
+            {
+                VisualizeWalls?.Invoke(new ConstructWallData
+                {
+                    start = startBuildPos,
+                    end = hit.point,
+                    constructData = constructData,
+                    isSingleVis = false
+                });
+            }
+            else
+            {
+                VisualizeWalls?.Invoke(new ConstructWallData
+                {
+                    start = hit.point,
+                    end = hit.point,
+                    constructData = constructData,
+                    isSingleVis = true
+                });
+            }
+        }
+        else if (constructData.mode == ConstructionMode.Structure)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
 
+                buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData
+                {
+                    constructData = constructData,
+                    pos = hit.point,
+                }, team));
+            }
+            //visualize
+            else
+            {
+                VisualizeStructure?.Invoke(new ConstructData
+                {
+                    constructData = constructData,
+                    pos = hit.point,
+                });
+            }
         }
     }
     private void FixedUpdate()

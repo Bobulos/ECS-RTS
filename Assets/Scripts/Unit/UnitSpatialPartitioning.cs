@@ -41,7 +41,7 @@ public partial struct UnitSpatialPartitioning : ISystem
         _query = state.GetEntityQuery(
             ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadWrite<UnitTarget>(),
-            ComponentType.ReadOnly<UnitTeam>(),
+            ComponentType.ReadOnly<Team>(),
             ComponentType.ReadOnly<UnitMovement>()
         );
 
@@ -72,7 +72,7 @@ public partial struct UnitSpatialPartitioning : ISystem
             _spatialMap.Capacity = unitCount;
 
         // This is cheap memory-wise because we reuse the list memory every frame.
-        foreach (var (team, mov, transform, entity) in SystemAPI.Query<UnitTeam, UnitMovement, LocalTransform>()
+        foreach (var (team, mov, transform, entity) in SystemAPI.Query<Team, UnitMovement, LocalTransform>()
         .WithEntityAccess().WithNone<DeadTag>())
         {
             unitCount++;
@@ -130,7 +130,7 @@ public partial struct FindTargetsJob : IJobEntity
     //[ReadOnly] public ComponentLookup<DeadTag> DeadLookup;
     [ReadOnly] public NativeParallelMultiHashMap<int, UnitSpatialData> UnitSpatialMap;
 
-    public void Execute(Entity entity, ref LocalTransform transform, in UnitTeam team, ref UnitTarget target)
+    public void Execute(Entity entity, ref LocalTransform transform, in Team team, ref UnitTarget target)
     {
         
 

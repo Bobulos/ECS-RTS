@@ -166,7 +166,7 @@ public partial struct CollectUnitsJob : IJobEntity
     public NativeList<float2>.ParallelWriter Enemy;
     [BurstCompile]
     void Execute(RefRO<LocalTransform> transform,
-             RefRO<UnitTeam> team,
+             RefRO<Team> team,
              RefRO<LocalVisibility> vis)
     {
         if (!vis.ValueRO.IsVisible) return;

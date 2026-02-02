@@ -1,5 +1,4 @@
-﻿using Mono.Cecil;
-using Unity.Burst;
+﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -116,7 +115,7 @@ public partial class FogSystem : SystemBase
         // Gather units into persistent array
         int idx = 0;
         foreach (var (vision, transform, team) in 
-            SystemAPI.Query<RefRO<Vision>, RefRO<LocalTransform>, RefRO<UnitTeam>>())
+            SystemAPI.Query<RefRO<Vision>, RefRO<LocalTransform>, RefRO<Team>>())
         {
             if (idx >= MAX_UNITS) break;
 
@@ -124,7 +123,7 @@ public partial class FogSystem : SystemBase
             {
                 // Imp mov threshold
                 float3 p = transform.ValueRO.Position;
-                _unitArray[idx] = new float3(p.x, p.z, vision.ValueRO.Level);
+                _unitArray[idx] = new float3(p.x, p.z, vision.ValueRO.Radius);
                 idx++;
             }
         }

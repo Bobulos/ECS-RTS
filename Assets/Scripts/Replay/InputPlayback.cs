@@ -9,12 +9,15 @@ public class InputPlayback : MonoBehaviour
     //bridges
     public InputBridge input;
     public ConstructionBridge construction;
+    public UnitActionManager action;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     bool playing = false;
     public void StartReplay(string file)
     {
         input = GameObject.FindFirstObjectByType<InputBridge>();
         construction = GameObject.FindFirstObjectByType<ConstructionBridge>();
+        action = GameObject.FindFirstObjectByType<UnitActionManager>();
+
         playing = true;
         record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, file));
     }
@@ -40,8 +43,13 @@ public class InputPlayback : MonoBehaviour
         switch (r.Type)
         {
             case InputType.SelectUnits:
-                //add team
                 input.PlaybackInput(r);
+                break;
+            case InputType.Action:
+                action.PlaybackInput(r);
+                break;
+            case InputType.CodeSelectUnits:
+                input.PlaybackInput(r); 
                 break;
             case InputType.MoveUnits:
                 input.PlaybackInput(r);

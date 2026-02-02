@@ -8,15 +8,20 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject inputLogger;
 
     [Header("Local Playerdata")]
-    public uint localTeam = 1;
+    public int localTeam = 1;
     public InputBridge inputBridge;
     public ConstructionBridge constructionBridge;
+    public UnitActionManager unitActionManager;
 
     private EntityManager entityManager;
 
     private bool initialized = false;
     private void Start()
     {
+        inputBridge = GameObject.FindFirstObjectByType<InputBridge>();
+        constructionBridge = GameObject.FindFirstObjectByType<ConstructionBridge>();
+        unitActionManager = GameObject.FindFirstObjectByType<UnitActionManager>();
+
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         localData = entityManager.CreateEntityQuery(typeof(LocalPlayerData));
@@ -38,17 +43,18 @@ public class GameManager : MonoBehaviour
             OnChangeTeam(localTeam);
         }
     }
-    public void OnChangeTeam(uint newTeam)
+    public void OnChangeTeam(int newTeam)
     {
         localTeam = newTeam;
         if (localData.TryGetSingleton(out LocalPlayerData data))
         {
             initialized = true;
-            data.TeamID = (int)newTeam;
+            data.TeamID = newTeam;
             //write to it
             if (localData.TryGetSingletonEntity<LocalPlayerData>(out var e)) entityManager.SetComponentData(e, data);
             inputBridge.team = newTeam;
             constructionBridge.team = newTeam;
+            unitActionManager.team = newTeam;
 
         }
     }

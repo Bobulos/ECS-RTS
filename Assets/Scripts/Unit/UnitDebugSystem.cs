@@ -16,7 +16,7 @@ public partial struct UnitDebugSystem : ISystem
         _query = state.GetEntityQuery(
             ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadWrite<UnitTarget>(),
-            ComponentType.ReadOnly<UnitTeam>()
+            ComponentType.ReadOnly<Team>()
         );
 
     }

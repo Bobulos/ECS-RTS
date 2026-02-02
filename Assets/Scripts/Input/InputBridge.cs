@@ -15,10 +15,10 @@ public class InputBridge : MonoBehaviour
     public SelectionBox selectionBox;
 
     // Action<SelectActionData> is the signature.
-    public static event Action<Entity, SelectionData, uint> OnSelectUnits;
-    public static event Action<byte, uint> OnCodeSelectUnits;
-    public static event Action<MoveUnitsData, uint> OnMoveUnits;
-    public static event Action<uint> OnClearUnits;
+    public static event Action<Entity, SelectionData, int> OnSelectUnits;
+    public static event Action<byte, int> OnCodeSelectUnits;
+    public static event Action<MoveUnitsData, int> OnMoveUnits;
+    public static event Action<int> OnClearUnits;
     public static event Action OnUpdateGUI;
     // Use Vector2 for screen positions
     private Vector2 startScreenPos;
@@ -26,7 +26,7 @@ public class InputBridge : MonoBehaviour
     private Camera mainCamera;
     public Transform rig;
 
-    public uint team;
+    public int team;
     private void Awake()
     {
         if (GameSettings.InReplayMode) { this.enabled = false; }

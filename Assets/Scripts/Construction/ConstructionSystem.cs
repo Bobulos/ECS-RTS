@@ -4,8 +4,9 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
+using static UnityEngine.Rendering.HableCurve;
 //using UnityEngine;
-[UpdateBefore(typeof(TurretLookSystem))]
+[UpdateAfter(typeof(TurretLookSystem))]
 public partial class ConstructionSystem : SystemBase
 {
     const float SEGEMENT_SIZE_OFFSET = 1f;
@@ -51,7 +52,7 @@ public partial class ConstructionSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
-    void ConstructWalls(ConstructWallData d, uint team)
+    void ConstructWalls(ConstructWallData d, int team)
     {
         ApplyWallSnap(ref d);
         if (!CheckValidWallPlacement(d)) return;
@@ -81,7 +82,11 @@ public partial class ConstructionSystem : SystemBase
                 Rotation = quaternion.identity,
                 Scale = 1f
             });
-
+            EntityManager.SetComponentData(node, new Team
+            {
+                TeamID = team,
+                UnitID = 0,
+            });
             if (hasPrev &&
                 TryGetStructureFromDB(d.constructData.secondaryKey, out Entity segmentPrefab))
             {
@@ -97,7 +102,11 @@ public partial class ConstructionSystem : SystemBase
                     Rotation = quaternion.LookRotationSafe(forward, math.up()),
                     Scale = 1f
                 });
-
+                EntityManager.SetComponentData(segment, new Team
+                {
+                    TeamID = team,
+                    UnitID = 0,
+                });
                 if (EntityManager.HasComponent<PhysicsCollider>(segment))
                 {
                     var col = BoxCollider.Create(new BoxGeometry
@@ -123,7 +132,7 @@ public partial class ConstructionSystem : SystemBase
             hasPrev = true;
         }
     }
-    void ConstructStructure(ConstructData d, uint team)
+    void ConstructStructure(ConstructData d, int team)
     {
         ApplySnap(ref d);
         if (TryGetStructureFromDB(d.constructData.key, out Entity prefab))
@@ -134,6 +143,11 @@ public partial class ConstructionSystem : SystemBase
                 Position = d.pos,
                 Rotation = quaternion.identity,
                 Scale = 1f
+            });
+            EntityManager.SetComponentData(e, new Team
+            {
+                TeamID = team,
+                UnitID = 0,
             });
         }
     }
@@ -215,6 +229,8 @@ public partial class ConstructionSystem : SystemBase
                 });
                 EntityManager.AddComponent<StructureVisualTag>(e);
                 EntityManager.RemoveComponent<PhysicsCollider>(e);
+                if (EntityManager.HasComponent<ProductionStructure>(e)) 
+                { EntityManager.RemoveComponent<ProductionStructure>(e); }
                 SetValidMat(e, true);
             }
         }
@@ -474,37 +490,6 @@ public partial class ConstructionSystem : SystemBase
 
 }
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-public partial struct ColliderCleanupSystem : ISystem
-{
-    public void OnUpdate(ref SystemState state)
-    {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
-
-        // Find all entities that have our cleanup tag but NO LocalTransform 
-        // (This means the entity was "destroyed", but the cleanup tag keeps it alive)
-        foreach (var (cleanup, entity) in SystemAPI.Query<ColliderCleanup>()
-                     .WithNone<LocalTransform>()
-                     .WithEntityAccess())
-        {
-            // 1. Properly dispose the unmanaged Blob Asset memory
-            if (cleanup.ColliderRef.IsCreated)
-            {
-                cleanup.ColliderRef.Dispose();
-            }
-
-            // 2. Remove the cleanup component so the Entity finally disappears
-            ecb.RemoveComponent<ColliderCleanup>(entity);
-        }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-    }
-}
-public struct ColliderCleanup : ICleanupComponentData
-{
-    public BlobAssetReference<Unity.Physics.Collider> ColliderRef;
-}
 
 //public struct WallVisualTag : IComponentData {}
 public struct StructureVisualTag : IComponentData { }

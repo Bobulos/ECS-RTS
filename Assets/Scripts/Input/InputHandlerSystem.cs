@@ -50,14 +50,14 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnSelectUnits -= HandleUnitSelect;
         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
     }
-    private void OnCodeSelectUnits(byte code, uint team)
+    private void OnCodeSelectUnits(byte code, int team)
     {
 
         if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
 
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         //0 is all others are command groups
-        foreach (var (t, e) in SystemAPI.Query<RefRO<UnitTeam>>().WithEntityAccess())
+        foreach (var (t, e) in SystemAPI.Query<RefRO<Team>>().WithEntityAccess())
         {
             if (t.ValueRO.TeamID == team)
             {
@@ -68,7 +68,7 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
-    private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, uint t)
+    private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, int t)
     {
         if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
 
@@ -81,7 +81,7 @@ public partial class InputHandlerSystem : SystemBase
 
         var tag = SystemAPI.GetComponentLookup<UnitTag>(true);
         var structureTag = SystemAPI.GetComponentLookup<StructureTag>(true);
-        var team = SystemAPI.GetComponentLookup<UnitTeam>(true);
+        var team = SystemAPI.GetComponentLookup<Team>(true);
 
         // Get collider from your selection entity
         var collider = EntityManager.GetComponentData<PhysicsCollider>(selectionEntity);
@@ -149,7 +149,7 @@ public partial class InputHandlerSystem : SystemBase
         terrainSize = terrainData.size;
     }*/
     [BurstCompile]
-    private void OnMoveUnits(MoveUnitsData m, uint team)
+    private void OnMoveUnits(MoveUnitsData m, int team)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -227,7 +227,7 @@ public partial class InputHandlerSystem : SystemBase
     }
 
     [BurstCompile]
-    private void OnClearSelection(uint team)
+    private void OnClearSelection(int team)
     {
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);

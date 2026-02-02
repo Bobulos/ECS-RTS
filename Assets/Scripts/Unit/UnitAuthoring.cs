@@ -35,7 +35,7 @@ class UnitBaker : Baker<UnitAuthoring>
         {
             HP = authoring.hp,
         };
-        var unitTeam = new UnitTeam
+        var unitTeam = new Team
         {
             TeamID = authoring.teamID,
             UnitID = -1,
@@ -79,7 +79,7 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent(entity, new SelectionKey {Value = authoring.selectionKey });
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
-        AddComponent(entity, new Vision { Level = math.round(authoring.range) });
+        AddComponent(entity, new Vision { Radius = math.round(authoring.range) });
         AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = authoring.disableChildren });
     }
 }
@@ -100,7 +100,7 @@ public struct UnitMovement : IComponentData
     public float Radius;
     public float3 Dest;
 }
-public struct UnitTeam : IComponentData
+public struct Team : IComponentData
 {
     public int TeamID;
     public int UnitID;
@@ -119,7 +119,7 @@ public enum UnitStates
 }
 public struct Vision : IComponentData
 {
-    public float Level;
+    public float Radius;
 }
 public struct UnitTag : IComponentData
 {

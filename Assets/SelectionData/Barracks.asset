@@ -16,3 +16,14 @@ MonoBehaviour:
   name: Barracks
   icon: {fileID: 21300000, guid: 4d6a99baee23b654f9e4bb672ae0b438, type: 3}
   description: 
+  actions: 000000000000000000
+  actionIcons:
+  - {fileID: 21300000, guid: c66d33a287cd60b4eaaf3406c55a1fc4, type: 3}
+  - {fileID: 21300000, guid: e9d4143c19529834981ac6821a04aecd, type: 3}
+  - {fileID: 21300000, guid: f73f68fe6815f5548a6c2a61b9e49add, type: 3}
+  - {fileID: 21300000, guid: f26fa8880b3aeef4b8516c82dc12f2a5, type: 3}
+  - {fileID: 21300000, guid: 480144379cc9c7d47a8e19f58b0e6ee3, type: 3}
+  - {fileID: 21300000, guid: 047b929beb10565479851d39b452dfb6, type: 3}
+  - {fileID: 21300000, guid: 1ab331a196bae1046b7a75ed7e3f6b46, type: 3}
+  - {fileID: 21300000, guid: 480144379cc9c7d47a8e19f58b0e6ee3, type: 3}
+  - {fileID: 21300000, guid: 4d6a99baee23b654f9e4bb672ae0b438, type: 3}

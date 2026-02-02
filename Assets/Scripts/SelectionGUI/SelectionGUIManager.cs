@@ -22,13 +22,13 @@ public class SelectionGUIManager : MonoBehaviour
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
 
         //subscribe to events
-        InputBridge.OnUpdateGUI += UpdateGUI;
+        InputBridge.OnUpdateGUI += OnUpdateGUI;
     }
     private void OnDestroy()
     {
-        InputBridge.OnUpdateGUI -= UpdateGUI;
+        InputBridge.OnUpdateGUI -= OnUpdateGUI;
     }
-    public void UpdateGUI()
+    public void OnUpdateGUI()
     {
         List<GameObject> list = new List<GameObject>();
         for (int i = 0; i < transform.childCount; i++)
@@ -41,10 +41,10 @@ public class SelectionGUIManager : MonoBehaviour
 
     void ReadSelection()
     {
-        if (!query.TryGetSingleton(out LocalSelectedUnits localSelectedUnits))
+        if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
             return;
 
-        foreach (var bucket in localSelectedUnits.Buckets)
+        foreach (var bucket in selectedUnits.Buckets)
         {
             var data = manifest.GetData(bucket.Key);
             //Debug.Log($"{bucket.Count} of unit nameof {data.name}");
@@ -77,7 +77,7 @@ public partial struct SelectionGUIManagerSystem : ISystem
         int teamID = data.TeamID;
 
         foreach (var (team, key) in SystemAPI
-            .Query<UnitTeam, SelectionKey>()
+            .Query<Team, SelectionKey>()
             .WithAll<UnitSelecetedTag>())
         {
             if (team.TeamID != teamID)

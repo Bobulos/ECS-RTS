@@ -16,7 +16,7 @@ class WallBaker : Baker<WallAuthoring>
             ID = authoring.id
         });
         AddComponent(entity, new LocalVisibility { IsVisible = true, DisableChildren = true });
-        AddComponent(entity, new UnitTeam { TeamID = 0, UnitID = -1 });
+        AddComponent(entity, new Team { TeamID = 0, UnitID = -1 });
     }
 }
 public struct WallNode : IComponentData

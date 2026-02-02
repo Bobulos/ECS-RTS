@@ -47,7 +47,7 @@ public partial struct NavSystem : ISystem
 
 
     private NativeArray<NavMeshQuery> _queries;
-    private NativeArray<byte> _queryUsed;
+    private NativeArray<bool> _queryUsed;
     private int _maxQueries;
     //[BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -56,16 +56,16 @@ public partial struct NavSystem : ISystem
 
         _maxQueries = ConfigLoader.LoadSim().maxNavQueries;
         _queries = new NativeArray<NavMeshQuery>(_maxQueries, Allocator.Persistent);
-        _queryUsed = new NativeArray<byte>(_maxQueries, Allocator.Persistent);
+        _queryUsed = new NativeArray<bool>(_maxQueries, Allocator.Persistent);
     }
     [BurstCompile]
     private int AllocateQuery(ref EntityCommandBuffer ecb, Entity e)
     {
         for (int i = 0; i < _maxQueries; i++)
         {
-            if (_queryUsed[i] == 0)
+            if (_queryUsed[i] == false)
             {
-                _queryUsed[i] = 1;
+                _queryUsed[i] = true;
                 _queries[i] = new NavMeshQuery(_navWorld, Allocator.Persistent, 512);
                 ecb.AddComponent(e, new PatherCleanup { QuerieIndex = i });
                 return i;
@@ -80,7 +80,7 @@ public partial struct NavSystem : ISystem
     {
         for (int i = 0; i < _maxQueries; i++)
         {
-            if (_queryUsed[i] == 1)
+            if (_queryUsed[i] == true)
             {
                 _queries[i].Dispose();
             }
@@ -92,10 +92,10 @@ public partial struct NavSystem : ISystem
     [BurstCompile]
     private void FreeQuery(int index)
     {
-        if (_queryUsed[index] == 1)
+        if (_queryUsed[index] == true)
         {
             _queries[index].Dispose();
-            _queryUsed[index] = 0;
+            _queryUsed[index] = false;
         }
     }
     [BurstCompile]
@@ -106,7 +106,13 @@ public partial struct NavSystem : ISystem
             SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
 
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
-
+        foreach (var (p, e) in SystemAPI.Query<PatherCleanup>()
+            .WithEntityAccess()
+            .WithNone<Pather>())
+        {
+            FreeQuery(p.QuerieIndex);
+            ecb.DestroyEntity(e);
+        }
         foreach (var (transform, p, e) in
             SystemAPI.Query<RefRO<LocalTransform>, 
             RefRW<Pather>>()
@@ -138,13 +144,7 @@ public partial struct NavSystem : ISystem
             state.Dependency = job.Schedule(state.Dependency);
         }
 
-        foreach (var (p,e) in SystemAPI.Query<PatherCleanup>()
-            .WithEntityAccess()
-            .WithNone<Pather>())
-        {
-            FreeQuery(p.QuerieIndex);
-            ecb.DestroyEntity(e);
-        }
+
         //ecbSystem.AddJobHandleForProducer(state.Dependency);
     }
 

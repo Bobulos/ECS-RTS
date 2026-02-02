@@ -7,14 +7,14 @@ public class ProductionStructureAuthoring : MonoBehaviour
 {
     public Vector3 spawnOffset;
     [Header("Possible Units")]
-    public UnitData prefab0;
-    public UnitData prefab1;
-    public UnitData prefab2;
-    public UnitData prefab3;
-    public UnitData prefab4;
-    public UnitData prefab5;
-    public UnitData prefab6;
-    public UnitData prefab7;
+    public ProductionKey prefab0;
+    public ProductionKey prefab1;
+    public ProductionKey prefab2;
+    public ProductionKey prefab3;
+    public ProductionKey prefab4;
+    public ProductionKey prefab5;
+    public ProductionKey prefab6;
+    public ProductionKey prefab7;
 }
 class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
 {
