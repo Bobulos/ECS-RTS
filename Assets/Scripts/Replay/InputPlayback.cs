@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEngine;
 
 public class InputPlayback : MonoBehaviour
@@ -40,30 +41,39 @@ public class InputPlayback : MonoBehaviour
     void ProcessRecord(InputRecord r)
     {
         if (r.Step != step) return;
-        switch (r.Type)
+    
+        try
         {
-            case InputType.SelectUnits:
-                input.PlaybackInput(r);
-                break;
-            case InputType.Action:
-                action.PlaybackInput(r);
-                break;
-            case InputType.CodeSelectUnits:
-                input.PlaybackInput(r); 
-                break;
-            case InputType.MoveUnits:
-                input.PlaybackInput(r);
-                break;
-            case InputType.ClearUnits:
-                input.PlaybackInput(r);
-                break;
-            case InputType.Construct:
-                construction.PlaybackInput(r);
-                break;
-            case InputType.ConstructWalls:
-                construction.PlaybackInput(r);
-                break;
-
+            switch (r.Type)
+            {
+                case InputType.SelectUnits:
+                    input.PlaybackInput(r);
+                    break;
+                case InputType.Action:
+                    action.PlaybackInput(r);
+                    break;
+                case InputType.CodeSelectUnits:
+                    input.PlaybackInput(r); 
+                    break;
+                case InputType.MoveUnits:
+                    input.PlaybackInput(r);
+                    break;
+                case InputType.ClearUnits:
+                    input.PlaybackInput(r);
+                    break;
+                case InputType.Construct:
+                    construction.PlaybackInput(r);
+                    break;
+                case InputType.ConstructWalls:
+                    construction.PlaybackInput(r);
+                    break;
+            }
         }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Invalid entity during playback at step {step}: {ex.Message}");
+            // Skip this command and continue
+        }
+        
     }
 }

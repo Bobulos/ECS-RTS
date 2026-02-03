@@ -147,6 +147,8 @@ public class ConstructionBridge : MonoBehaviour
                 {
                     pos = r.Structure.pos,
                     constructData = r.Structure.constructData,
+
+                    //for replay mabeye check if in range
                     constructID = Array.IndexOf(constructs, r.Structure.constructData),
                 }, team);
                 break;

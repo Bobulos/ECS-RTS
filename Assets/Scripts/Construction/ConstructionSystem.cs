@@ -61,6 +61,9 @@ public partial class ConstructionSystem : SystemBase
         float dist = math.distance(d.start, d.end);
         if (dist < 0.01f) return;
 
+        //keep entitymanager readonly
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
         int segmentCount = math.max(1, (int)math.ceil(dist / d.constructData.spacing));
         float actualSpacing = dist / segmentCount;
 
@@ -74,19 +77,20 @@ public partial class ConstructionSystem : SystemBase
             if (!TryGetStructureFromDB(d.constructData.key, out Entity nodePrefab))
                 continue;
 
-            var node = EntityManager.Instantiate(nodePrefab);
+            var node = ecb.Instantiate(nodePrefab);
 
-            EntityManager.SetComponentData(node, new LocalTransform
+            ecb.SetComponent(node, new LocalTransform
             {
                 Position = pos,
                 Rotation = quaternion.identity,
                 Scale = 1f
             });
-            EntityManager.SetComponentData(node, new Team
+            ecb.SetComponent(node, new Team
             {
                 TeamID = team,
                 UnitID = 0,
             });
+            //build it
             if (hasPrev &&
                 TryGetStructureFromDB(d.constructData.secondaryKey, out Entity segmentPrefab))
             {
@@ -96,13 +100,13 @@ public partial class ConstructionSystem : SystemBase
 
                 var segment = EntityManager.Instantiate(segmentPrefab);
 
-                EntityManager.SetComponentData(segment, new LocalTransform
+                ecb.SetComponent(segment, new LocalTransform
                 {
                     Position = midpoint,
                     Rotation = quaternion.LookRotationSafe(forward, math.up()),
                     Scale = 1f
                 });
-                EntityManager.SetComponentData(segment, new Team
+                ecb.SetComponent(segment, new Team
                 {
                     TeamID = team,
                     UnitID = 0,
@@ -117,12 +121,12 @@ public partial class ConstructionSystem : SystemBase
                         BevelRadius = 0.05f
                     });
 
-                    EntityManager.AddComponentData(segment, new ColliderCleanup { ColliderRef = col });
-                    EntityManager.SetComponentData(segment, new PhysicsCollider { Value = col });
+                    ecb.AddComponent(segment, new ColliderCleanup { ColliderRef = col });
+                    ecb.SetComponent(segment, new PhysicsCollider { Value = col });
                 }
 
-                EntityManager.AddComponent<PostTransformMatrix>(segment);
-                EntityManager.SetComponentData(segment, new PostTransformMatrix
+                ecb.AddComponent<PostTransformMatrix>(segment);
+                ecb.SetComponent(segment, new PostTransformMatrix
                 {
                     Value = float4x4.Scale(new float3(1f, 1f, segLength - SEGEMENT_SIZE_OFFSET))
                 });
@@ -131,25 +135,33 @@ public partial class ConstructionSystem : SystemBase
             prevNode = pos;
             hasPrev = true;
         }
+        
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
     void ConstructStructure(ConstructData d, int team)
     {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
         ApplySnap(ref d);
         if (TryGetStructureFromDB(d.constructData.key, out Entity prefab))
         {
-            var e = EntityManager.Instantiate(prefab);
-            EntityManager.SetComponentData(e, new LocalTransform
+            var e = ecb.Instantiate(prefab);
+            ecb.SetComponent(e, new LocalTransform
             {
                 Position = d.pos,
                 Rotation = quaternion.identity,
                 Scale = 1f
             });
-            EntityManager.SetComponentData(e, new Team
+            ecb.SetComponent(e, new Team
             {
                 TeamID = team,
                 UnitID = 0,
             });
         }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
     void ApplyWallSnap(ref ConstructWallData d)
     {
@@ -161,7 +173,8 @@ public partial class ConstructionSystem : SystemBase
     }
     SnapResult SnapWallPoint(float3 input)
     {
-        var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        if(!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return new SnapResult{};
+        
         var wallNodeLookup = SystemAPI.GetComponentLookup<WallNode>();
         var posLookup = SystemAPI.GetComponentLookup<LocalTransform>();
 
@@ -317,7 +330,7 @@ public partial class ConstructionSystem : SystemBase
     const float GRID_SIZE = 3f;
     void ApplySnap(ref ConstructData d)
     {
-        var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        if(!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return;
         float3 rndedPos = math.round(d.pos / GRID_SIZE) * GRID_SIZE;
 
         if (TryGetGroundPoint(ref world, rndedPos, out float3 ground))
@@ -327,7 +340,7 @@ public partial class ConstructionSystem : SystemBase
     }
     bool CheckValidStructurePlacement(ref ConstructData d)
     {
-        var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        if(!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return false;
 
         NativeList<int> hits = new NativeList<int>(Allocator.Temp);
         float3 halfExtent = ((float3)d.constructData.size / 2) - new float3(STRUCTURE_CHECK_BEVEL, STRUCTURE_CHECK_BEVEL, STRUCTURE_CHECK_BEVEL);
@@ -355,6 +368,8 @@ public partial class ConstructionSystem : SystemBase
     public const float WALL_CHECK_RADIUS = 1f;
     bool CheckValidWallPlacement(ConstructWallData d)
     {
+        if(!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return false;
+
         if (d.isSingleVis) { return true; }
         float dist = math.distance(d.start, d.end);
 
@@ -365,7 +380,7 @@ public partial class ConstructionSystem : SystemBase
         int segmentCount = math.max(1, (int)math.ceil(dist / d.constructData.spacing));
         float spacing = dist / segmentCount;
 
-        var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        
 
         float3 prev = float3.zero;
         bool hasPrev = false;

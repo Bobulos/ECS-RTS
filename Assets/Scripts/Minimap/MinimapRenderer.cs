@@ -147,8 +147,13 @@ public partial class CollectUnitsSystem : SystemBase
             var handle = job.Schedule(Dependency);
             handle.Complete();
 
-            _minimap.UpdateMinimap(0, _friendly.AsArray());
-            _minimap.UpdateMinimap(1, _enemy.AsArray());
+            var arrFriendly = _friendly.AsArray();
+            if (arrFriendly.Length <= 0) return;
+            _minimap.UpdateMinimap(0, arrFriendly);
+
+            var arrEnemy = _enemy.AsArray();
+            if (arrEnemy.Length <= 0) return;
+            _minimap.UpdateMinimap(1, arrEnemy);
         }
     }
 }
