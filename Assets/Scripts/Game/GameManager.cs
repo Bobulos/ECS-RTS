@@ -1,9 +1,13 @@
 using Unity.Entities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using System;
 public class GameManager : MonoBehaviour
 {
+    //Events
+    public static Action OnEndGame;
+
+
     [SerializeField] private GameObject inputPlayback;
     [SerializeField] private GameObject inputLogger;
 
@@ -63,6 +67,8 @@ public class GameManager : MonoBehaviour
 
     public void EndGame()
     {
+        OnEndGame?.Invoke();
+
         GameSettings.InReplayMode = false;
         GameSettings.ReplayPath = "";
         SceneManager.LoadScene("MainMenue");

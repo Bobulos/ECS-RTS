@@ -16,7 +16,6 @@ public partial class ConstructionSystem : SystemBase
         BelongsTo = CollisionFilter.Default.BelongsTo,
         GroupIndex = 0
     };
-
     /*    int VALID_MAT_ID;
         int INVALID_MAT_ID;*/
     protected override void OnCreate()
