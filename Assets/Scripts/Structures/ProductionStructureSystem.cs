@@ -1,9 +1,10 @@
-﻿using Unity.Collections;
+﻿using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
 public partial class ProductionStructureHandler : SystemBase
 {
     //private int _count;
@@ -48,7 +49,7 @@ public partial class ProductionStructureHandler : SystemBase
         }
     }
 }
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
 public partial struct ProductionStructureSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
