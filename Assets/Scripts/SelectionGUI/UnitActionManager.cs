@@ -81,8 +81,9 @@ public class UnitActionManager : MonoBehaviour
 
         if (!manifest.TryGetData(toDisplay.Key, out var data)) return;
 
+        if (data.actions == null) return;
 
-        if (data.actions.Length > elements.Length) { UnityEngine.Debug.Log($"You have to many actions on {data.name} UnitGUIData"); };
+        //if (data.actions.Length > elements.Length) { UnityEngine.Debug.Log($"You have to many actions on {data.name} UnitGUIData"); };
         //UnityEngine.Debug.Log($"Action list length of {data.actions.Length}");
         for (int i = 0; i < data.actions.Length; i ++)
         {

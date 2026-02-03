@@ -10,11 +10,11 @@ public class ECSWorldManager : MonoBehaviour
 
     void Awake()
     {
-
+        GameManager.OnEndGame += Clean;
     }
     void OnDestroy()
     {
-        
+        GameManager.OnEndGame -= Clean;
     }
 
     public void Clean()
