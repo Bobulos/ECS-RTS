@@ -9,14 +9,14 @@ public class UnitGUIActionElement : MonoBehaviour
     public Image image;
     public TextMeshProUGUI text;
 
-    public static Action<UnitGUIData, byte> OnAction;
+    public static Action<byte> OnAction;
 
     private UnitGUIData data;
     private byte actionIndex;
     public void OnClick()
     {
         if (data == null) return;
-        OnAction?.Invoke(data, actionIndex);
+        OnAction?.Invoke(actionIndex);
     }
     public void SetData(UnitGUIData d, byte index)
     {

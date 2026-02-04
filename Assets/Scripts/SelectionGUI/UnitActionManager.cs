@@ -4,11 +4,6 @@ using TMPro;
 using Unity.Entities;
 using UnityEngine;
 
-public struct UnitAction
-{
-    public ActionType ActionType;
-    public byte ActionIndex;
-}
 
 public class UnitActionManager : MonoBehaviour
 {
@@ -19,22 +14,26 @@ public class UnitActionManager : MonoBehaviour
 
     private UnitGUIManifest manifest;
 
-    public static Action<UnitAction, int> OnAction;
+    private UnitGUIData curGUIData;
+    //                   NOT
+    //                   FOR
+    //                   REPLAY     Team  For REPLAY
+    public static Action<ActionData, int, byte> OnAction;
 
     public int team = 0;
-    public List<UnitAction> buffer = new List<UnitAction>();
+    public List<byte> buffer = new List<byte>();
 
 
     private void FixedUpdate()
     {
         //only playback input buffer if not in playback mode
         
-
+        //the byte is the index of the action in the UGUIData 
         foreach (var input in buffer)
         {
             var record = InputRecordUtil.AssembleActionRecord(input, team);
             PlaybackInput(record);
-            UnityEngine.Debug.Log($"Unit Action {input.ActionIndex}");
+            UnityEngine.Debug.Log($"Unit Action {input}");
         }
         
         buffer.Clear();
@@ -42,14 +41,11 @@ public class UnitActionManager : MonoBehaviour
 
     public void PlaybackInput(InputRecord r)
     {
-        OnAction.Invoke(r.Action, r.Team);
+        OnAction.Invoke(curGUIData.actions[r.ActionIndex], r.Team, r.ActionIndex);
     }
-    public void OnElementAction(UnitGUIData d, byte actionIndex)
+    public void OnElementAction(byte actionIndex)
     {
-        buffer.Add(new UnitAction { 
-            ActionType = d.actions[actionIndex],
-            ActionIndex = actionIndex }
-        );
+        buffer.Add(actionIndex);
     }
 
     public void OnUpdateGUI()
@@ -83,10 +79,13 @@ public class UnitActionManager : MonoBehaviour
             return;
         }
 
-        if (!manifest.TryGetData(toDisplay.Key, out var data)) return;
+        curGUIData = null;
+
+        if (!manifest.TryGetData(toDisplay.Key, out UnitGUIData data)) return;
 
         if (data.actions == null) return;
 
+        curGUIData = data;
         //if (data.actions.Length > elements.Length) { UnityEngine.Debug.Log($"You have to many actions on {data.name} UnitGUIData"); };
         //UnityEngine.Debug.Log($"Action list length of {data.actions.Length}");
         for (int i = 0; i < data.actions.Length; i ++)

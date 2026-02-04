@@ -20,7 +20,7 @@ public partial class ProductionStructureHandler : SystemBase
     protected override void OnUpdate()
     {
     }
-    public void AddUnitToQueue(UnitAction action, int team)
+    public void AddUnitToQueue(ActionData action, int team, byte _)
     {
         if (action.ActionType != ActionType.AddUnitToQueue) return;
 
@@ -31,9 +31,7 @@ public partial class ProductionStructureHandler : SystemBase
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (transform, t, key, prod) in SystemAPI.Query<
-            RefRO<LocalTransform>,
-            RefRO<Team>,
+        foreach (var (key, prod) in SystemAPI.Query<
             RefRO<SelectionKey>,
             RefRW<ProductionStructure>>().WithAll<UnitSelecetedTag>())
         {
@@ -42,7 +40,7 @@ public partial class ProductionStructureHandler : SystemBase
             if (prod.ValueRO.QueueCount <= prod.ValueRO.QueueSize)
 
             prod.ValueRW.QueueCount++;
-            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.ActionIndex]);
+            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.PrefabIndex]);
 
             //if it is the first in list need to start cycle
             if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;

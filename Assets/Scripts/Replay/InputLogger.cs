@@ -43,13 +43,13 @@ public class InputLogger : MonoBehaviour
     {
         step++;
     }
-    public void OnAction(UnitAction action, int team)
+    public void OnAction(ActionData _, int team, byte actionIndex)
     {
         buffer.Add(new InputRecord { 
             Step = step, 
             Team = team, 
             Type = InputType.Action, 
-            Action = action
+            ActionIndex = actionIndex
         });
         TryFlush();
     }
@@ -159,8 +159,9 @@ public class InputLogger : MonoBehaviour
             switch (r.Type)
             {
                 case InputType.Action:
-                    writer.Write((byte)r.Action.ActionType);
-                    writer.Write(r.Action.ActionIndex);
+                    // only needs to write the index of
+                    // the fella
+                    writer.Write(r.ActionIndex);
                     break;
                 case InputType.MoveUnits:
                     WriteVector3(r.Move.CurrentRayOrigin);
@@ -230,8 +231,7 @@ public static class InputDecoder
                     switch (record.Type)
                     {
                         case InputType.Action:
-                            record.Action.ActionType = (ActionType)reader.ReadByte();
-                            record.Action.ActionIndex = reader.ReadByte();
+                            record.ActionIndex = reader.ReadByte();
                             break;
                         case InputType.MoveUnits:
                             record.Move = new MoveUnitsData { CurrentRayOrigin = ReadVector3(reader), CurrentRayDirection = ReadVector3(reader) };
@@ -283,7 +283,7 @@ public struct InputRecord
     public uint Step;
     public int Team;
     // data
-    public UnitAction Action;
+    public byte ActionIndex;
     public ConstructWallData Wall;
     public ConstructData Structure;
     public MoveUnitsData Move;
@@ -301,13 +301,13 @@ public static class InputRecordUtil
             CodeSelect = d
         };
     }
-    public static InputRecord AssembleActionRecord(UnitAction d, int team)
+    public static InputRecord AssembleActionRecord(byte d, int team)
     {
         return new InputRecord
         {
             Type = InputType.Action,
             Team = team,
-            Action = d
+            ActionIndex = d,
         };
     }
     public static InputRecord AssembleRecord(ConstructWallData d, int team)
