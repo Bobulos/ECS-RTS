@@ -80,6 +80,7 @@ public partial struct NavSystem : ISystem
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
+        int numDisposed = 0;
         // Dispose ALL queries that were ever allocated
         for (int i = 0; i < _maxQueries; i++)
         {
@@ -96,12 +97,15 @@ public partial struct NavSystem : ISystem
 
             if (!isFree)
             {
+                numDisposed ++;
                 _queries[i].Dispose();
             }
         }
 
         _queries.Dispose();
         _freeIndices.Dispose();
+
+        UnityEngine.Debug.Log($"Disposed of {numDisposed} Nav Queries");
     }
 
     [BurstCompile]

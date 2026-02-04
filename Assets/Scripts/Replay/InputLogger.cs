@@ -1,9 +1,7 @@
-using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
 public class InputLogger : MonoBehaviour
@@ -20,7 +18,7 @@ public class InputLogger : MonoBehaviour
     {
         DateTime now = DateTime.Now;
         string t = now.ToString("yyyyMMddHHmmss");
-        fileName = $"{t.Substring(0, 4)}_{t.Substring(4, 2)}_{t.Substring(6, 2)}_{t.Substring(8, 2)}.bin";
+        fileName = $"{t.Substring(0, 4)}/{t.Substring(4, 2)}/{t.Substring(6, 2)}/{t.Substring(8, 2)}.bin";
         ReplayFileManager.AddFile(fileName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 

@@ -57,7 +57,9 @@ public partial class InputHandlerSystem : SystemBase
 
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         //0 is all others are command groups
-        foreach (var (t, e) in SystemAPI.Query<RefRO<Team>>().WithEntityAccess())
+        foreach (var (t, e) in 
+            SystemAPI.Query<RefRO<Team>>().
+            WithEntityAccess().WithAll<UnitTag>())
         {
             if (t.ValueRO.TeamID == team)
             {

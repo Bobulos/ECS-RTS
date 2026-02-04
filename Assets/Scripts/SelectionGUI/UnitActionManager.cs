@@ -24,8 +24,12 @@ public class UnitActionManager : MonoBehaviour
     public int team = 0;
     public List<UnitAction> buffer = new List<UnitAction>();
 
+
     private void FixedUpdate()
     {
+        //only playback input buffer if not in playback mode
+        
+
         foreach (var input in buffer)
         {
             var record = InputRecordUtil.AssembleActionRecord(input, team);
@@ -99,6 +103,8 @@ public class UnitActionManager : MonoBehaviour
 
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
+
+        if (GameSettings.InReplayMode) this.enabled = false;
     }
     private void OnDestroy()
     {
