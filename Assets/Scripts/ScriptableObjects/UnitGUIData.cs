@@ -14,4 +14,6 @@ public class UnitGUIData : ScriptableObject
 public enum ActionType : byte
 {
     AddUnitToQueue,
+    SetRallyPoint,
+    Move,
 }

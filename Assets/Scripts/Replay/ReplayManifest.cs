@@ -77,15 +77,20 @@ public static class FileDeleter
     public static void DeleteSaveFile(string fileName)
     {
         string path = Path.Combine(Application.persistentDataPath, fileName);
-
-        if (File.Exists(path))
+        try
         {
-            File.Delete(path);
-            Debug.Log($"File deleted successfully at: {path}");
-        }
-        else
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                Debug.Log($"File deleted successfully at: {path}");
+            }
+            else
+            {
+                Debug.LogWarning($"File not found at: {path}");
+            }
+        } catch (Exception e)
         {
-            Debug.LogWarning($"File not found at: {path}");
+            UnityEngine.Debug.LogWarning($"Issue deleteing {fileName} at a path of {path}");
         }
     }
 }

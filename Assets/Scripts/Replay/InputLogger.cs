@@ -18,7 +18,7 @@ public class InputLogger : MonoBehaviour
     {
         DateTime now = DateTime.Now;
         string t = now.ToString("yyyyMMddHHmmss");
-        fileName = $"{t.Substring(0, 4)}/{t.Substring(4, 2)}/{t.Substring(6, 2)}/{t.Substring(8, 2)}.bin";
+        fileName = $"{t.Substring(0, 4)}I{t.Substring(4, 2)}I{t.Substring(6, 2)}I{t.Substring(8, 2)}.bin";
         ReplayFileManager.AddFile(fileName);
         string path = Path.Combine(Application.persistentDataPath, fileName);
 
