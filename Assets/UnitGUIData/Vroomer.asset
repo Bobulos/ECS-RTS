@@ -13,6 +13,12 @@ MonoBehaviour:
   m_Name: Vroomer
   m_EditorClassIdentifier: 
   key: 0
-  name: 
+  unitName: 
   icon: {fileID: 0}
   description: 
+  actions:
+  - ActionType: 2
+    InteractionType: 1
+    PrefabIndex: 0
+  actionIcons:
+  - {fileID: 1893708181, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}

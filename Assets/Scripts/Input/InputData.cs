@@ -2,5 +2,5 @@ using UnityEngine;
 
 public static class InputData
 {
-    public static bool InAction = false;
+    public static bool inAction = false;
 }

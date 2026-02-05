@@ -43,15 +43,14 @@ public class InputBridge : MonoBehaviour
         {
             OnMoveUnits?.Invoke(new MoveUnitsData
             {
-                CurrentRayDirection = -Vector3.up,
-                CurrentRayOrigin = p + new Vector3(0, 5, 0),
+                RayDirection = -Vector3.up,
+                RayOrigin = p + new Vector3(0, 5, 0),
             }, 0);
         }
         else if (b == 0 && rig != null)
         {
             rig.transform.position = p + new Vector3(0, rig.position.y, 0);
         }
-
     }
 
 
@@ -59,7 +58,8 @@ public class InputBridge : MonoBehaviour
     //fix in a seccond
     void Update()
     {
-        if (UIUtility.IsPointerOverUI() || InputData.InAction) { return; }
+        //UnityEngine.Debug.Log($"reading input as {InputData.inAction}");
+        if (UIUtility.IsPointerOverUI() || InputData.inAction) { return; }
 
         Vector3 mousePos = Input.mousePosition;
         UnityEngine.Ray ray = mainCamera.ScreenPointToRay(mousePos);
@@ -105,8 +105,8 @@ public class InputBridge : MonoBehaviour
         {
             buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
             {
-                CurrentRayDirection = ray.direction,
-                CurrentRayOrigin = ray.origin,
+                RayDirection = ray.direction,
+                RayOrigin = ray.origin,
             }, team));
         }
         else if (isDraggingLeft)
@@ -118,37 +118,52 @@ public class InputBridge : MonoBehaviour
     //playback buffer
     private void FixedUpdate()
     {
+        bool needsGUIUpdate = false;
+        
         foreach (InputRecord r in buffer)
         {
-            PlaybackInput(r);
+            if (PlaybackInput(r))
+            {
+                needsGUIUpdate = true;
+            }
         }
         buffer.Clear();
+        
+        if (needsGUIUpdate)
+        {
+            OnUpdateGUI.Invoke();
+        }
     }
-    public void PlaybackInput(InputRecord r)
+
+    public bool PlaybackInput(InputRecord r)
     {
+        bool affectsGUI = false;
+        
         switch (r.Type)
         {
             case InputType.CodeSelectUnits:
                 OnCodeSelectUnits.Invoke(r.CodeSelect, r.Team);
-                OnUpdateGUI.Invoke();
+                affectsGUI = true;
                 break;
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
                 OnSelectUnits.Invoke(selectionBox.GetColliderEntity(), r.Select, team);
-                OnUpdateGUI.Invoke();
+                affectsGUI = true;
                 break;
             case InputType.MoveUnits:
                 OnMoveUnits?.Invoke(new MoveUnitsData
                 {
-                    CurrentRayDirection = r.Move.CurrentRayDirection,
-                    CurrentRayOrigin = r.Move.CurrentRayOrigin,
+                    RayDirection = r.Move.RayDirection,
+                    RayOrigin = r.Move.RayOrigin,
                 }, team);
                 break;
             case InputType.ClearUnits:
                 OnClearUnits?.Invoke(r.Team);
-                OnUpdateGUI.Invoke();
+                affectsGUI = true;
                 break;
         }
+        
+        return affectsGUI;
     }
 }
 
@@ -156,6 +171,6 @@ public struct MoveUnitsData
 {
     // We can keep the direction and the current ray's origin for the DOTS system 
     // to reuse in its raycast calculations.
-    public float3 CurrentRayOrigin;
-    public float3 CurrentRayDirection;
+    public float3 RayOrigin;
+    public float3 RayDirection;
 }

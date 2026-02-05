@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Security.Principal;
-using Unity.Burst;
+﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -157,16 +155,14 @@ public partial class InputHandlerSystem : SystemBase
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var raycastInput = new RaycastInput
         {
-            Start = m.CurrentRayOrigin, // Ray origin
-            End = m.CurrentRayOrigin + m.CurrentRayDirection * MAX_RAY_LENGTH,   // Ray end point
+            Start = m.RayOrigin, // Ray origin
+            End = m.RayOrigin + m.RayDirection * MAX_RAY_LENGTH,   // Ray end point
             Filter = CollisionFilter.Default // Or a custom filter
         };
 
         float3 calculatedCenter = float3.zero;
 
         //assigned after the center has been calculated;
-        
-
         int unitCount = 0;
 
         //given 64 to reduce memory churn
@@ -188,9 +184,6 @@ public partial class InputHandlerSystem : SystemBase
             }
 
             float calculatedRadius = 0;
-
-
-
             calculatedCenter /= unitCount;
             //calculate avg radius arround center
             foreach (float3 p in unitPositions)
@@ -201,12 +194,6 @@ public partial class InputHandlerSystem : SystemBase
             //average everything out
             calculatedRadius /= unitCount;
             calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
-
-            
-
-            /*UnityEngine.Debug.DrawLine(calculatedCenter, calculatedCenter +
-                new float3(calculatedRadius, 0, 0),
-                UnityEngine.Color.red, 5f);*/
 
             bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
 

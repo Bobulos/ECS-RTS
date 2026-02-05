@@ -13,6 +13,12 @@ MonoBehaviour:
   m_Name: Bean
   m_EditorClassIdentifier: 
   key: 0
-  name: Bean
+  unitName: 
   icon: {fileID: 21300000, guid: c66d33a287cd60b4eaaf3406c55a1fc4, type: 3}
   description: 
+  actions:
+  - ActionType: 2
+    InteractionType: 1
+    PrefabIndex: 0
+  actionIcons:
+  - {fileID: 1893708181, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}

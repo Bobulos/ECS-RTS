@@ -166,8 +166,8 @@ public class InputLogger : MonoBehaviour
                     WriteVector3(r.Action.RayDirection);
                     break;
                 case InputType.MoveUnits:
-                    WriteVector3(r.Move.CurrentRayOrigin);
-                    WriteVector3(r.Move.CurrentRayDirection);
+                    WriteVector3(r.Move.RayOrigin);
+                    WriteVector3(r.Move.RayDirection);
                     break;
                 case InputType.SelectUnits:
                     //writer.Write(r.Select.code);
@@ -238,7 +238,7 @@ public static class InputDecoder
                             record.Action.RayDirection = ReadVector3(reader);
                             break;
                         case InputType.MoveUnits:
-                            record.Move = new MoveUnitsData { CurrentRayOrigin = ReadVector3(reader), CurrentRayDirection = ReadVector3(reader) };
+                            record.Move = new MoveUnitsData { RayOrigin = ReadVector3(reader), RayDirection = ReadVector3(reader) };
                             break;
                         case InputType.SelectUnits:
                             //byte code = reader.ReadByte();
