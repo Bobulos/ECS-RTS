@@ -25,6 +25,7 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
         AddComponent(entity, new ProductionStructure
         {
             SpawnOffset = authoring.spawnOffset,
+            RallyPoint = float3.zero,
             QueueCount = 0,
             Prefabs = new FixedList512Bytes<int> {
                 authoring.prefab0.Key, 
@@ -44,6 +45,7 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
 public struct ProductionStructure : IComponentData
 {
     public float3 SpawnOffset;
+    public float3 RallyPoint;
     public int QueueCount;
     public int QueueSize;
     public float StartTime;

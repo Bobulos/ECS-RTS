@@ -1,12 +1,24 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
+public struct ActionData
+{
+    //WRITE
+    public byte ActionByte;
 
+    //NOT FOR REPLAY FETCHED DYNAMICALLY
+    public ActionInfo Info;
 
+    //for stuff like set rally points WRITE
+    public float3 RayOrigin;
+    public float3 RayDirection;
+}
 public class UnitActionManager : MonoBehaviour
 {
+    public Texture2D[] cursors;
+
     public UnitGUIActionElement[] elements;
 
     private EntityManager entityManager;
@@ -17,11 +29,13 @@ public class UnitActionManager : MonoBehaviour
     private UnitGUIData curGUIData;
     //                   NOT
     //                   FOR
-    //                   REPLAY     Team  For REPLAY
-    public static Action<ActionData, int, byte> OnAction;
+    //                   REPLAY     Team
+    public static Action<ActionData, int> OnAction;
 
     public int team = 0;
-    public List<byte> buffer = new List<byte>();
+    public List<ActionData> buffer = new List<ActionData>();
+
+    private Camera cam;
 
 
     private void FixedUpdate()
@@ -31,9 +45,9 @@ public class UnitActionManager : MonoBehaviour
         //the byte is the index of the action in the UGUIData 
         foreach (var input in buffer)
         {
-            var record = InputRecordUtil.AssembleActionRecord(input, team);
+            var record = InputRecordUtil.AssembleRecord(input, team);
             PlaybackInput(record);
-            UnityEngine.Debug.Log($"Unit Action {input}");
+            //UnityEngine.Debug.Log($"Unit Action {input}");
         }
         
         buffer.Clear();
@@ -41,13 +55,68 @@ public class UnitActionManager : MonoBehaviour
 
     public void PlaybackInput(InputRecord r)
     {
-        OnAction.Invoke(curGUIData.actions[r.ActionIndex], r.Team, r.ActionIndex);
+        var data = new ActionData
+        {
+            // Dont need to use this
+            ActionByte = r.Action.ActionByte,
+            Info = curGUIData.actions[r.Action.ActionByte],
+            RayOrigin = r.Action.RayOrigin,
+            RayDirection = r.Action.RayDirection
+        };
+        OnAction.Invoke(data, r.Team);
     }
-    public void OnElementAction(byte actionIndex)
+    public void OnElementAction(byte actionByte)
     {
-        buffer.Add(actionIndex);
+        ActionInfo info = curGUIData.actions[actionByte];
+
+        var data = new ActionData
+        {
+            // Dont need to use this
+            ActionByte = actionByte,
+            Info = info,
+            RayOrigin = float3.zero,
+            RayDirection = float3.zero
+        };
+        switch (info.InteractionType)
+        {
+            case InteractionType.Target:
+                Cursor.SetCursor(cursors[0], Vector2.zero, CursorMode.Auto);
+                StartCoroutine(TargetAction(data));
+                break;
+
+            case InteractionType.Instant:
+                buffer.Add(data);
+                break;
+        }
     }
 
+    System.Collections.IEnumerator TargetAction(ActionData data)
+    {
+        //Debug.Log("Starting targetings");
+        bool done = false;
+        InputData.InAction = true;
+        while (!done)
+        {
+            // when left click
+            if (Input.GetMouseButtonDown(0))
+            {
+                done = true;
+                var r = cam.ScreenPointToRay(Input.mousePosition);
+                data.RayOrigin = r.origin;
+                data.RayDirection = r.direction;
+                buffer.Add(data);
+            } else if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                done = true;
+            }
+            yield return null; // Wait until the next frame
+        }
+        InputData.InAction = false;
+        //reset texture
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        //Debug.Log("Done");
+    }
+    
     public void OnUpdateGUI()
     {
         //allow time for the system to update
@@ -104,6 +173,8 @@ public class UnitActionManager : MonoBehaviour
         UnitGUIActionElement.OnAction += OnElementAction;
 
         if (GameSettings.InReplayMode) this.enabled = false;
+
+        cam = Camera.main;
     }
     private void OnDestroy()
     {

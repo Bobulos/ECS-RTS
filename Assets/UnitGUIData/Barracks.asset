@@ -18,22 +18,31 @@ MonoBehaviour:
   description: 
   actions:
   - ActionType: 1
+    InteractionType: 1
     PrefabIndex: 0
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 0
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 1
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 2
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 3
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 4
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 5
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 6
   - ActionType: 0
+    InteractionType: 0
     PrefabIndex: 7
   actionIcons:
   - {fileID: 1720560118, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}

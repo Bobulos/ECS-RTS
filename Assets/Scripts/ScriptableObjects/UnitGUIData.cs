@@ -9,14 +9,20 @@ public class UnitGUIData : ScriptableObject
     public Sprite icon;
     public string description;
 
-    public ActionData[] actions;
+    public ActionInfo[] actions;
     public Sprite[] actionIcons;
 }
 [Serializable]
-public struct ActionData
+public struct ActionInfo
 {
     public ActionType ActionType;
+    public InteractionType InteractionType;
     [Header("ONLY IF ADD UNIT TO QUEUE TYPE")]public int PrefabIndex;
+}
+public enum InteractionType
+{
+    Instant,
+    Target,
 }
 public enum ActionType : byte
 {

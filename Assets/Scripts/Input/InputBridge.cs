@@ -59,7 +59,7 @@ public class InputBridge : MonoBehaviour
     //fix in a seccond
     void Update()
     {
-        if (UIUtility.IsPointerOverUI()) { return; }
+        if (UIUtility.IsPointerOverUI() || InputData.InAction) { return; }
 
         Vector3 mousePos = Input.mousePosition;
         UnityEngine.Ray ray = mainCamera.ScreenPointToRay(mousePos);
@@ -71,7 +71,7 @@ public class InputBridge : MonoBehaviour
             selectionData = selectionBox.UpdatePerspectiveSelection(mainCamera, startScreenPos, Input.mousePosition);
         }
 
-        //Specail selection
+        //Code selection
         if (Input.GetKeyDown(KeyCode.Space))
         {
             buffer.Add(InputRecordUtil.AssembleRecord(0, team));
