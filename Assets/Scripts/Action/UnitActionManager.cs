@@ -25,7 +25,7 @@ public class UnitActionManager : MonoBehaviour
     private EntityManager entityManager;
     private EntityQuery query;
 
-    private UnitGUIManifest manifest;
+    private EntityGUIManifest manifest;
 
     private EntityData curGUIData;
     //                   NOT
@@ -226,7 +226,7 @@ public class UnitActionManager : MonoBehaviour
     // }
     private void Start()
     {
-        manifest = FindFirstObjectByType<UnitGUIManifest>();
+        manifest = FindFirstObjectByType<EntityGUIManifest>();
         World defaultWorld = World.DefaultGameObjectInjectionWorld;
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));

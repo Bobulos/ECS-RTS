@@ -1,7 +1,7 @@
 using UnityEditor;
 using System.Linq;
 using UnityEngine;
-public class UnitGUIManifest : MonoBehaviour
+public class EntityGUIManifest : MonoBehaviour
 {
     [SerializeField]
     private EntityData[] manifest;

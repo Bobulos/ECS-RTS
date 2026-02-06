@@ -9,14 +9,14 @@ public class SelectionGUIManager : MonoBehaviour
     public TextMeshProUGUI description;
     public GameObject GUIElement;
 
-    private UnitGUIManifest manifest;
+    private EntityGUIManifest manifest;
     
     private EntityManager entityManager;
     private EntityQuery query;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        manifest = FindFirstObjectByType<UnitGUIManifest>();
+        manifest = FindFirstObjectByType<EntityGUIManifest>();
         World defaultWorld = World.DefaultGameObjectInjectionWorld;
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
