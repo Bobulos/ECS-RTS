@@ -1,11 +1,34 @@
-using Unity.Collections;
+using UnityEditor;
+using System.Linq;
 using Unity.Entities;
 using UnityEngine;
 
 public class StructureManifestAuthoring : MonoBehaviour
 {
     [SerializeField]
-    public GameObject[] manifest;
+    public EntityData[] manifest;
+
+    #if UNITY_EDITOR
+    [ContextMenu("Update manifest")]
+    public void UpdateManifest()
+    {
+        var data = ScriptableObjectUtil.LoadAllScriptableObjects<EntityData>();
+        
+        manifest = data
+            .Where(e => e.entityType == EntityType.Structure)
+            .OrderBy(e => e.entityGuid)
+            .ToArray();
+        
+        // Update each entity's key to match array index
+        for (int i = 0; i < manifest.Length; i++)
+        {
+            manifest[i].key = i;
+            EditorUtility.SetDirty(manifest[i]);
+        }
+        
+        AssetDatabase.SaveAssets();
+    }
+    #endif
 }
 
 class StructureManifestBaker : Baker<StructureManifestAuthoring>
@@ -17,11 +40,11 @@ class StructureManifestBaker : Baker<StructureManifestAuthoring>
         // AddBuffer creates and returns the buffer - no need for AddComponent
         var buffer = AddBuffer<StructureManifest>(entity);
 
-        foreach (var g in authoring.manifest)
+        foreach (var i in authoring.manifest)
         {
-            if (g != null)
+            if (i != null)
             {
-                var prefabEntity = GetEntity(g, TransformUsageFlags.Dynamic);
+                var prefabEntity = GetEntity(i.prefab, TransformUsageFlags.Dynamic);
                 buffer.Add(new StructureManifest { Value = prefabEntity });
             }
         }

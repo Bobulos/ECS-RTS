@@ -11,14 +11,14 @@ public class UnitGUIActionElement : MonoBehaviour
 
     public static Action<byte> OnAction;
 
-    private UnitGUIData data;
+    private EntityData data;
     private byte actionIndex;
     public void OnClick()
     {
         if (data == null) return;
         OnAction?.Invoke(actionIndex);
     }
-    public void SetData(UnitGUIData d, byte index)
+    public void SetData(EntityData d, byte index)
     {
         data = d;
         actionIndex = index;

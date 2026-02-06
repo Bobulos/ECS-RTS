@@ -27,7 +27,7 @@ public class UnitActionManager : MonoBehaviour
 
     private UnitGUIManifest manifest;
 
-    private UnitGUIData curGUIData;
+    private EntityData curGUIData;
     //                   NOT
     //                   FOR
     //                   REPLAY     Team
@@ -169,7 +169,7 @@ public class UnitActionManager : MonoBehaviour
 
         curGUIData = null;
 
-        if (!manifest.TryGetData(toDisplay.Key, out UnitGUIData data)) 
+        if (!manifest.TryGetData(toDisplay.Key, out EntityData data)) 
             yield break;
 
         if (data.actions == null) 

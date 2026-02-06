@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class ProductionStructureAuthoring : MonoBehaviour
 {
+    public EntityData data;
     public int queueSize = 10;
     public Vector3 spawnOffset;
     [Header("Possible Units")]

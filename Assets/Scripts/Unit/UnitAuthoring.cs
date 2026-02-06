@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class UnitAuthoring : MonoBehaviour
 {
+    public EntityData data;
     public int selectionKey = 0;
     public int hp = 10;
     public int dmg = 10;

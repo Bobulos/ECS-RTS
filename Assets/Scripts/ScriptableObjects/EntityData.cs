@@ -1,0 +1,50 @@
+using System;
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "UnitGUIData", menuName = "Scriptable Objects/UnitGUIData")]
+public class EntityData : ScriptableObject
+{
+    public GameObject prefab;
+    public EntityType entityType;
+
+    public string unitName;
+    public Sprite icon;
+    public string description;
+
+    public ActionInfo[] actions;
+    public Sprite[] actionIcons;
+
+
+    //production
+    public float trainingTime;
+
+
+
+    //Ident
+    public Hash128 entityGuid;
+    public int key;
+    public int keyGUI;
+}
+[Serializable]
+public struct ActionInfo
+{
+    public ActionType ActionType;
+    public InteractionType InteractionType;
+    [Header("ONLY IF ADD UNIT TO QUEUE TYPE")]public int PrefabIndex;
+}
+public enum EntityType
+{
+    Unit,
+    Structure,
+}
+public enum InteractionType
+{
+    Instant,
+    Target,
+}
+public enum ActionType : byte
+{
+    AddUnitToQueue,
+    SetRallyPoint,
+    Move,
+}

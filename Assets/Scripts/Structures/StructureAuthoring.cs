@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class StructureAuthoring : MonoBehaviour
 {
+    public EntityData data;
     public int selectionKey = 1;
     public float visionRadius = 5f;
 }

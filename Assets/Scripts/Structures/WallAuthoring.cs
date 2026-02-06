@@ -3,10 +3,12 @@ using UnityEngine;
 
 public class WallAuthoring : MonoBehaviour
 {
+    public EntityData data;
     public int id = 1;
 }
 class WallBaker : Baker<WallAuthoring>
 {
+    
     public override void Bake(WallAuthoring authoring)
     {
         var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
