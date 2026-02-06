@@ -1,3 +1,4 @@
+using System;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -5,7 +6,13 @@ using UnityEngine;
 public class UnitManifestAuthoring : MonoBehaviour
 {
     [SerializeField]
-    public GameObject[] manifest;
+    public UnitManifestAuthoringElement[] manifest;
+}
+[Serializable]
+public class UnitManifestAuthoringElement
+{
+    public GameObject prefab;
+    public ProductionKey productionKey;
 }
 
 class UnitManifestBaker : Baker<UnitManifestAuthoring>
@@ -17,12 +24,13 @@ class UnitManifestBaker : Baker<UnitManifestAuthoring>
         // AddBuffer creates and returns the buffer - no need for AddComponent
         var buffer = AddBuffer<UnitManifest>(entity);
 
-        foreach (var g in authoring.manifest)
+        foreach (var e in authoring.manifest)
         {
-            if (g != null)
+            if (e != null)
             {
-                var prefabEntity = GetEntity(g, TransformUsageFlags.Dynamic);
-                buffer.Add(new UnitManifest { Unit = prefabEntity, TrainingTime = 3f});
+                var prefabEntity = GetEntity(e.prefab, TransformUsageFlags.Dynamic);
+                buffer.Add(new UnitManifest { Unit = prefabEntity, 
+                TrainingTime = e.productionKey.TrainingTime});
             }
         }
     }

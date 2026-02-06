@@ -23,6 +23,9 @@ public class MinimapRenderer : MonoBehaviour
     private ComputeBuffer positionBuffer;
 
     public int teamID = 0;
+
+    public EntityManager entityManager;
+    public EntityQuery mapQuery;
     void Awake()
     {
         minimapTexture = new RenderTexture(textureSize, textureSize, 0, RenderTextureFormat.ARGB32);
@@ -31,11 +34,21 @@ public class MinimapRenderer : MonoBehaviour
         minimapTexture.Create();
         GetComponent<RawImage>().texture = minimapTexture;
     }
-
+    void Start()
+    {
+        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        mapQuery = entityManager.CreateEntityQuery(typeof(MinimapData));
+    }
     void Update()
     {
         minimap.rotation = Quaternion.Euler(0, 0, cam.rotation.eulerAngles.y);
         UpdatePlayerIcon();
+
+        var data = mapQuery.GetSingleton<MinimapData>();
+        ClearMinimap();
+        UpdateMinimap(1, data.enemy);
+        UpdateMinimap(0, data.friendly);
+
         // Collect ECS unit positions
     }
     void UpdatePlayerIcon()
@@ -58,7 +71,7 @@ public class MinimapRenderer : MonoBehaviour
     }
     [Tooltip("RGBA")]
     public Vector4[] teamColors;
-    public void UpdateMinimap(int team, NativeArray<float2> unitPositions)
+    public void UpdateMinimap(int team, float2[] unitPositions)
     {
         if (unitPositions.Length == 0) return;
         int stampKernel = minimapComputeShader.FindKernel("Stamp");
@@ -94,10 +107,18 @@ public class MinimapRenderer : MonoBehaviour
     }
 }
 
+
+//managed component
+public class MinimapData : IComponentData
+{
+    public float2[] friendly;
+    public float2 [] enemy;
+}
+//[UpdateBefore(typeof(LocalV))]
 public partial class CollectUnitsSystem : SystemBase
 {
     public const int MAX_ALLOC_UNITS = 1024 * 4;
-    private MinimapRenderer _minimap; // cached
+    //private MinimapRenderer _minimap; // cached
 
     private NativeList<float2> _friendly;
     private NativeList<float2> _enemy;
@@ -107,59 +128,66 @@ public partial class CollectUnitsSystem : SystemBase
     {
         _friendly = new NativeList<float2>(MAX_ALLOC_UNITS, Allocator.Persistent);
         _enemy = new NativeList<float2>(MAX_ALLOC_UNITS, Allocator.Persistent);
+
+        var entity = EntityManager.CreateEntity();
+        EntityManager.AddComponentData(entity, new MinimapData
+        {
+            friendly = new float2[0], // Initialize with empty arrays
+            enemy = new float2[0]
+        });
     }
     protected override void OnDestroy()
     {
         _friendly.Dispose();
         _enemy.Dispose();
     }
+    private JobHandle _pendingJob;
+    private bool _jobScheduled;
+
     protected override void OnUpdate()
     {
-        if (_minimap == null)
+        // First, check if previous job is done and update minimap
+        if (_jobScheduled && _pendingJob.IsCompleted)
         {
-            _minimap = GameObject.FindFirstObjectByType<MinimapRenderer>();
-            return;
-        }
-        _friendly.Clear(); _enemy.Clear();
-
-        _minimap.ClearMinimap();
-
-
-
-        if (SystemAPI.TryGetSingleton(out LocalPlayerData playerData))
-        {
-            var map = SystemAPI.GetSingleton<MapData>();
-
-            float2 wMin = new float2(-map.Size.x * 0.5f, -map.Size.y * 0.5f);
-            float2 wMax = new float2(map.Size.x * 0.5f, map.Size.y * 0.5f);
-
-            float2 worldSize = wMax - wMin;
-            //float2 invSize = 1f / worldSize;
-
-            var job = new CollectUnitsJob
+            _pendingJob.Complete();
+            
+            if (SystemAPI.ManagedAPI.TryGetSingleton(out MinimapData minimap))
             {
-                TeamID = playerData.TeamID,
-                WorldMin = wMin,
-                WorldSize = wMax - wMin,
-                Friendly = _friendly.AsParallelWriter(),
-                Enemy = _enemy.AsParallelWriter(),
-            };
-            var handle = job.Schedule(Dependency);
-            handle.Complete();
-
-            var arrFriendly = _friendly.AsArray();
-            if (arrFriendly.Length <= 0) return;
-            _minimap.UpdateMinimap(0, arrFriendly);
-
-            var arrEnemy = _enemy.AsArray();
-            if (arrEnemy.Length <= 0) return;
-            _minimap.UpdateMinimap(1, arrEnemy);
+                if (_friendly.Length > 0)
+                    minimap.friendly = _friendly.AsArray().ToArray();
+                if (_enemy.Length > 0)
+                    minimap.enemy = _enemy.AsArray().ToArray();
+            }
+            
+            _jobScheduled = false;
         }
+
+        // Then schedule new job
+        _friendly.Clear(); 
+        _enemy.Clear();
+
+        if (!SystemAPI.TryGetSingleton(out LocalPlayerData playerData)) return;
+
+        var map = SystemAPI.GetSingleton<MapData>();
+        float2 wMin = new float2(-map.Size.x * 0.5f, -map.Size.y * 0.5f);
+        float2 wMax = new float2(map.Size.x * 0.5f, map.Size.y * 0.5f);
+
+        var job = new CollectUnitsJob
+        {
+            TeamID = playerData.TeamID,
+            WorldMin = wMin,
+            WorldSize = wMax - wMin,
+            Friendly = _friendly,
+            Enemy = _enemy,
+        };
+        
+        _pendingJob = job.Schedule(Dependency);
+        Dependency = _pendingJob;
+        _jobScheduled = true;
     }
 }
 
 [BurstCompile]
-[UpdateAfter(typeof(FogSystem))]
 public partial struct CollectUnitsJob : IJobEntity
 {
     public bool InverseTeam;
@@ -167,8 +195,8 @@ public partial struct CollectUnitsJob : IJobEntity
     public float2 WorldMin;
     public float2 WorldSize;
 
-    public NativeList<float2>.ParallelWriter Friendly;
-    public NativeList<float2>.ParallelWriter Enemy;
+    public NativeList<float2> Friendly;
+    public NativeList<float2> Enemy;
     [BurstCompile]
     void Execute(RefRO<LocalTransform> transform,
              RefRO<Team> team,

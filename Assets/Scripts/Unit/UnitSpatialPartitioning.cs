@@ -102,7 +102,7 @@ public partial struct UnitSpatialPartitioning : ISystem
         // Schedule the IJobEntity in parallel. We do NOT call Complete() � let the scheduler run it async.
         // The returned JobHandle is stored in state.Dependency so that subsequent jobs/systems respect it.
 
-        JobHandle handle = job.ScheduleParallel(state.Dependency);
+        var handle = job.ScheduleParallel(state.Dependency);
         state.Dependency = handle;
         //handle.Complete();
 

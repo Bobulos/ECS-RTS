@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51f637c4193690342a881985acfedf33, type: 3}
   m_Name: Vroomer
   m_EditorClassIdentifier: 
-  Key: 2
+  Key: 1
+  TrainingTime: 0.5
+  Cost: 0

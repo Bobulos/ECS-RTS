@@ -13,9 +13,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Local Playerdata")]
     public int localTeam = 1;
-    public InputBridge inputBridge;
-    public ConstructionBridge constructionBridge;
-    public UnitActionManager unitActionManager;
+    [HideInInspector]public InputBridge inputBridge;
+    [HideInInspector]public ConstructionBridge constructionBridge;
+    [HideInInspector]public UnitActionManager unitActionManager;
 
     private EntityManager entityManager;
 

@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51f637c4193690342a881985acfedf33, type: 3}
   m_Name: AlphaVroomer
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  Key: 4
+  Key: 0
+  TrainingTime: 2
+  Cost: 0
