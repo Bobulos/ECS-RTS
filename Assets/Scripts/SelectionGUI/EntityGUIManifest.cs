@@ -4,7 +4,7 @@ using UnityEngine;
 public class EntityGUIManifest : MonoBehaviour
 {
     [SerializeField]
-    private EntityData[] manifest;
+    public EntityData[] manifest;
 
     #if UNITY_EDITOR
 
@@ -20,7 +20,7 @@ public class EntityGUIManifest : MonoBehaviour
         // Update each entity's key to match array index
         for (int i = 0; i < manifest.Length; i++)
         {
-            manifest[i].key = i;
+            manifest[i].keyGUI = i;
             EditorUtility.SetDirty(manifest[i]);
         }
         

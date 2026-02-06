@@ -5,7 +5,7 @@ using UnityEngine;
 public class UnitAuthoring : MonoBehaviour
 {
     public EntityData data;
-    public int selectionKey = 0;
+    //public int selectionKey = 0;
     public int hp = 10;
     public int dmg = 10;
     public float speed = 10f;
@@ -77,7 +77,7 @@ class UnitBaker : Baker<UnitAuthoring>
             //spawnRate = authoring.spawnRate
             //pathBuffer = new DynamicBuffer<PathPosition>(),
         });
-        AddComponent(entity, new SelectionKey {Value = authoring.selectionKey });
+        AddComponent(entity, new SelectionKey {Value = authoring.data.keyGUI });
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
         AddComponent(entity, new Vision { Radius = math.round(authoring.range) });

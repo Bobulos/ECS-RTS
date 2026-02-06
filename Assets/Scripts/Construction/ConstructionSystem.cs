@@ -60,8 +60,9 @@ public partial class ConstructionSystem : SystemBase
         float dist = math.distance(d.start, d.end);
         if (dist < 0.01f) return;
 
+        var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         //keep entitymanager readonly
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var ecb = ecbSys.CreateCommandBuffer(World.Unmanaged);
 
         int segmentCount = math.max(1, (int)math.ceil(dist / d.constructData.spacing));
         float actualSpacing = dist / segmentCount;
@@ -73,7 +74,7 @@ public partial class ConstructionSystem : SystemBase
         {
             float3 pos = d.start + dir * (i * actualSpacing);
 
-            if (!TryGetStructureFromDB(d.constructData.key, out Entity nodePrefab))
+            if (!TryGetStructureFromDB(d.constructData.primary.key, out Entity nodePrefab))
                 continue;
 
             var node = ecb.Instantiate(nodePrefab);
@@ -91,7 +92,7 @@ public partial class ConstructionSystem : SystemBase
             });
             //build it
             if (hasPrev &&
-                TryGetStructureFromDB(d.constructData.secondaryKey, out Entity segmentPrefab))
+                TryGetStructureFromDB(d.constructData.secondary.key, out Entity segmentPrefab))
             {
                 float3 midpoint = (prevNode + pos) * 0.5f;
                 float3 forward = math.normalize(pos - prevNode);
@@ -135,15 +136,18 @@ public partial class ConstructionSystem : SystemBase
             hasPrev = true;
         }
         
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+        // ecb.Playback(EntityManager);
+        // ecb.Dispose();
     }
     void ConstructStructure(ConstructData d, int team)
     {
+        ApplySnap(ref d);
+        if (!CheckValidStructurePlacement(ref d)) return;
+        
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        ApplySnap(ref d);
-        if (TryGetStructureFromDB(d.constructData.key, out Entity prefab))
+        
+        if (TryGetStructureFromDB(d.constructData.primary.key, out Entity prefab))
         {
             var e = ecb.Instantiate(prefab);
             ecb.SetComponent(e, new LocalTransform
@@ -174,8 +178,8 @@ public partial class ConstructionSystem : SystemBase
     {
         if(!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return new SnapResult{};
         
-        var wallNodeLookup = SystemAPI.GetComponentLookup<WallNode>();
-        var posLookup = SystemAPI.GetComponentLookup<LocalTransform>();
+        var wallNodeLookup = SystemAPI.GetComponentLookup<WallNode>(true);
+        var posLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
 
         NativeList<DistanceHit> hits = new NativeList<DistanceHit>(Allocator.Temp);
 
@@ -230,7 +234,7 @@ public partial class ConstructionSystem : SystemBase
         }
         else
         {
-            if (TryGetStructureFromDB(d.constructData.key, out var prefab))
+            if (TryGetStructureFromDB(d.constructData.primary.key, out var prefab))
             {
                 var e = EntityManager.Instantiate(prefab);
                 EntityManager.SetComponentData(e, new LocalTransform
@@ -250,7 +254,7 @@ public partial class ConstructionSystem : SystemBase
     void VisualizeWalls(ConstructWallData d)
     {
         ApplyWallSnap(ref d);
-        if (!TryGetStructureFromDB(d.constructData.key, out Entity prefab))
+        if (!TryGetStructureFromDB(d.constructData.primary.key, out Entity prefab))
             return;
 
         float dist = math.distance(d.start, d.end);

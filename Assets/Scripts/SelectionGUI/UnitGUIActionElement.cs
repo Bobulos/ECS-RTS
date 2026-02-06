@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class UnitGUIActionElement : MonoBehaviour
 {
-    public Sprite defaultSprite;
-    public Image image;
+    public Texture2D defaultTex;
+    public RawImage image;
     public TextMeshProUGUI text;
 
     public static Action<byte> OnAction;
@@ -22,12 +22,12 @@ public class UnitGUIActionElement : MonoBehaviour
     {
         data = d;
         actionIndex = index;
-        image.sprite = d.actionIcons[(int)index];
+        image.texture = d.actionIcons[(int)index];
     }
     public void Clear()
     {
         data = null;
         actionIndex = 0;
-        image.sprite = defaultSprite;
+        image.texture = defaultTex;
     }
 }

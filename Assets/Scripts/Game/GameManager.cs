@@ -52,6 +52,7 @@ public class GameManager : MonoBehaviour
         localTeam = newTeam;
         if (localData.TryGetSingleton(out LocalPlayerData data))
         {
+            
             initialized = true;
             data.TeamID = newTeam;
             //write to it
@@ -59,6 +60,7 @@ public class GameManager : MonoBehaviour
             inputBridge.team = newTeam;
             constructionBridge.team = newTeam;
             unitActionManager.team = newTeam;
+            UnityEngine.Debug.Log($"Change player team to {newTeam}");
 
         }
     }

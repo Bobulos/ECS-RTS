@@ -9,14 +9,14 @@ public class ProductionStructureAuthoring : MonoBehaviour
     public int queueSize = 10;
     public Vector3 spawnOffset;
     [Header("Possible Units")]
-    public ProductionKey prefab0;
-    public ProductionKey prefab1;
-    public ProductionKey prefab2;
-    public ProductionKey prefab3;
-    public ProductionKey prefab4;
-    public ProductionKey prefab5;
-    public ProductionKey prefab6;
-    public ProductionKey prefab7;
+    public EntityData prefab0;
+    public EntityData prefab1;
+    public EntityData prefab2;
+    public EntityData prefab3;
+    public EntityData prefab4;
+    public EntityData prefab5;
+    public EntityData prefab6;
+    public EntityData prefab7;
 }
 class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
 {
@@ -29,14 +29,14 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
             RallyPoint = float3.zero,
             QueueCount = 0,
             Prefabs = new FixedList512Bytes<int> {
-                authoring.prefab0.Key, 
-                authoring.prefab1.Key, 
-                authoring.prefab2.Key, 
-                authoring.prefab3.Key, 
-                authoring.prefab4.Key, 
-                authoring.prefab5.Key, 
-                authoring.prefab6.Key, 
-                authoring.prefab7.Key,
+                authoring.prefab0.key, 
+                authoring.prefab1.key, 
+                authoring.prefab2.key, 
+                authoring.prefab3.key, 
+                authoring.prefab4.key, 
+                authoring.prefab5.key, 
+                authoring.prefab6.key, 
+                authoring.prefab7.key,
             },
             QueueSize = authoring.queueSize,
             Queue = new FixedList512Bytes<int> {}

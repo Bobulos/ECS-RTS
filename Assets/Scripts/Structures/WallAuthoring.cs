@@ -13,6 +13,7 @@ class WallBaker : Baker<WallAuthoring>
     {
         var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
 
+        //figure out why im even using this little guy
         AddComponent(entity, new WallNode
         {
             ID = authoring.id

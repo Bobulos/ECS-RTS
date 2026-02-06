@@ -25,6 +25,7 @@ public class UnitActionManager : MonoBehaviour
     private EntityManager entityManager;
     private EntityQuery query;
 
+    //private EntityGUIManifest manifestGUI;
     private EntityGUIManifest manifest;
 
     private EntityData curGUIData;
@@ -141,8 +142,7 @@ public class UnitActionManager : MonoBehaviour
     System.Collections.IEnumerator ReadSelection()
     {
         yield return null; // Wait one frame for the system to update
-        
-        UnityEngine.Debug.Log("Read");
+
         
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
             yield break;
@@ -169,13 +169,16 @@ public class UnitActionManager : MonoBehaviour
 
         curGUIData = null;
 
+        //Debug.Log($"Update panel for key of {toDisplay.Key}");
         if (!manifest.TryGetData(toDisplay.Key, out EntityData data)) 
             yield break;
 
+        //var data = manifest[toDisplay.Key];
         if (data.actions == null) 
             yield break;
 
         curGUIData = data;
+        
         
         for (int i = 0; i < data.actions.Length; i++)
         {

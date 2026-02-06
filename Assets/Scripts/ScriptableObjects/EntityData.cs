@@ -7,12 +7,14 @@ public class EntityData : ScriptableObject
     public GameObject prefab;
     public EntityType entityType;
 
-    public string unitName;
-    public Sprite icon;
+    public string entityName;
+    public Texture2D icon;
     public string description;
 
     public ActionInfo[] actions;
-    public Sprite[] actionIcons;
+
+    [Header("Overides deafualt keep null if want to fetch")]
+    public Texture2D[] actionIcons;
 
 
     //production

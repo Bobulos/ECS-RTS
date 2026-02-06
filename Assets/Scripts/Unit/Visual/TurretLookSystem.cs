@@ -28,6 +28,7 @@ partial struct TurretLookSystem : ISystem
             TargetLookup = _targetLookup,
             LocalToWorldLookup = _transformLookup
         };
+        //nothing realy relies on this guy
         job.ScheduleParallel();
     }
 

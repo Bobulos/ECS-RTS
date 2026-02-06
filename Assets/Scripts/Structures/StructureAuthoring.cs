@@ -14,7 +14,7 @@ class StructureBaker : Baker<StructureAuthoring>
         var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
         AddComponent(entity, new Vision { Radius = Mathf.Round(authoring.visionRadius) });
         AddComponent(entity, new StructureTag { });
-        AddComponent(entity, new SelectionKey { Value = authoring.selectionKey });
+        AddComponent(entity, new SelectionKey { Value = authoring.data.keyGUI });
         AddComponent(entity, new LocalVisibility { IsVisible = true, DisableChildren = true });
         AddComponent(entity, new Team { TeamID = 0, UnitID = -1 });
     }

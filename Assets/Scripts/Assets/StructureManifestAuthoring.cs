@@ -22,6 +22,7 @@ public class StructureManifestAuthoring : MonoBehaviour
         // Update each entity's key to match array index
         for (int i = 0; i < manifest.Length; i++)
         {
+            //UnityEngine.Debug.Log(i);
             manifest[i].key = i;
             EditorUtility.SetDirty(manifest[i]);
         }
