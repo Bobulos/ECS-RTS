@@ -9,8 +9,15 @@ public class MinimapCam : MonoBehaviour
         //camera.enabled = false;
     }
 
+    int count;
     private void LateUpdate()
     {
+        count++;
+        
+        if (count > 5)
+        {
+            gameObject.SetActive(false);
+        }
         camera.Render();
         //this.enabled = false;
     }
