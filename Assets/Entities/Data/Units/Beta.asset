@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5479b243e701d0e4d86474f24bf08dda, type: 3}
+  m_Name: Beta
+  m_EditorClassIdentifier: Assembly-CSharp::EntityData
+  prefab: {fileID: 8410485855669339686, guid: 2b642af24b5807a4a8dd44a78338a624, type: 3}
+  entityType: 0
+  entityName: 
+  icon: {fileID: 2800000, guid: b20568c8e2e9cb542ba7fd7bd0ca3950, type: 3}
+  description: 
+  actions: []
+  actionIcons: []
+  trainingTime: 0
+  entityGuid:
+    serializedVersion: 2
+    Hash: 2b642af24b5807a4a8dd44a78338a624
+  key: 1
+  keyGUI: 5

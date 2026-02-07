@@ -33,7 +33,7 @@ MonoBehaviour:
   actionIcons:
   - {fileID: 2800000, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
   - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
-  - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
+  - {fileID: 2800000, guid: b20568c8e2e9cb542ba7fd7bd0ca3950, type: 3}
   - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
   trainingTime: 0
   entityGuid:
