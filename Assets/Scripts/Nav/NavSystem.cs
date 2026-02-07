@@ -160,7 +160,7 @@ public partial struct NavSystem : ISystem
                 Query = _queries[p.ValueRO.QueryIndex],
                 Ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged)
             };
-
+            //job.Schedule();
             state.Dependency = job.Schedule(state.Dependency);
         }
     }

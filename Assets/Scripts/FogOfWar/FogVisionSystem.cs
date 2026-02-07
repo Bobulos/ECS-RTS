@@ -175,8 +175,7 @@ public partial class FogSystem : SystemBase
         {
             _hasMaskUpdate = false;
             float2 worldMin = (float2)settings.Size * -0.5f;
-            var ecb = new EntityCommandBuffer(Allocator.TempJob);
-            _linkedEntitys.Update(this);
+            _linkedEntitys.Update(this); //stack trace says leak here please help
             var job = new LocalVisibilityJob
             {
                 ECB = ecbSys.CreateCommandBuffer(World.Unmanaged),
@@ -186,8 +185,9 @@ public partial class FogSystem : SystemBase
                 CellSize = 1f,
                 GridResolution = settings.Size.x,
             };
-            var handle = job.Schedule(Dependency);
-            Dependency = handle;
+            job.Schedule();
+            // var handle = job.Schedule(Dependency);
+            // Dependency = handle;
         }
 
         if (_readCount >= 16)
@@ -267,7 +267,7 @@ public partial struct LocalVisibilityJob : IJobEntity
         int gy = (int)((pos.z - WorldMin.y) / CellSize);
         int index = gy * GridResolution + gx;
 
-        if (index > 0 && index <= Mask.Length)
+        if ((uint)index < (uint)Mask.Length)
         {
             if (vis.ValueRO.DisableChildren && Groups.TryGetBuffer(e, out var buffer))
             {

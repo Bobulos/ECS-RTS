@@ -46,8 +46,8 @@ public partial struct UnitStateSystem : ISystem
             TransformLookup = transformLookup
         };
         // = job;
-
-        state.Dependency = job.Schedule(state.Dependency);
+        job.Schedule();
+        //state.Dependency = job.Schedule(state.Dependency);
         //handle.Complete();
 
 

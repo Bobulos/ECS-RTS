@@ -98,12 +98,11 @@ public partial struct UnitSpatialPartitioning : ISystem
             UnitSpatialMap = _spatialMap,
             Bucket = _targBucket,
         };
+        job.ScheduleParallel();
+    
 
-        // Schedule the IJobEntity in parallel. We do NOT call Complete() � let the scheduler run it async.
-        // The returned JobHandle is stored in state.Dependency so that subsequent jobs/systems respect it.
-
-        var handle = job.ScheduleParallel(state.Dependency);
-        state.Dependency = handle;
+        //var handle = job.ScheduleParallel(state.Dependency);
+        //state.Dependency = handle;
         //handle.Complete();
 
 
@@ -115,7 +114,7 @@ public partial struct UnitSpatialPartitioning : ISystem
             TimeHorizon = _timeHorizon,
         };
 
-        avoidanceJob.Schedule();
+        avoidanceJob.ScheduleParallel();
         _targBucket += 1;
         if (_targBucket > _maxTargBucket) { _targBucket = 0; }
         _navBucket += 1;

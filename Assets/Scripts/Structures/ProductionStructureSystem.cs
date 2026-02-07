@@ -24,8 +24,9 @@ public partial struct ProductionStructureSystem : ISystem
             Ecb = ecbSys.CreateCommandBuffer(state.World.Unmanaged),
             Time = time,
         };
-        var handle = job.Schedule(state.Dependency);
-        state.Dependency = handle;
+        job.Schedule();
+        // var handle = job.Schedule(state.Dependency);
+        // state.Dependency = handle;
     }
     [BurstCompile]
     private partial struct ProductionJob : IJobEntity

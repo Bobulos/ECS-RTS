@@ -52,6 +52,7 @@ public partial struct DestroyDeadUnitsSystem : ISystem
 
         var handle = job.Schedule(state.Dependency);
         state.Dependency = handle;
+        
         _jobSet = true;
         _prevJob = handle;
         

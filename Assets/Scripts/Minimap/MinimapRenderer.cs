@@ -117,7 +117,7 @@ public class MinimapData : IComponentData
 //[UpdateBefore(typeof(LocalV))]
 public partial class CollectUnitsSystem : SystemBase
 {
-    public const int MAX_ALLOC_UNITS = 1024 * 4;
+    public const int MAX_ALLOC_UNITS = 1024 * 8;
     //private MinimapRenderer _minimap; // cached
 
     private NativeList<float2> _friendly;
@@ -149,7 +149,7 @@ public partial class CollectUnitsSystem : SystemBase
         // First, check if previous job is done and update minimap
         if (_jobScheduled && _pendingJob.IsCompleted)
         {
-            _pendingJob.Complete();
+            //_pendingJob.Complete();
             
             if (SystemAPI.ManagedAPI.TryGetSingleton(out MinimapData minimap))
             {
@@ -180,9 +180,9 @@ public partial class CollectUnitsSystem : SystemBase
             Friendly = _friendly,
             Enemy = _enemy,
         };
-        
-        _pendingJob = job.Schedule(Dependency);
-        Dependency = _pendingJob;
+        job.Schedule();        
+        // _pendingJob = job.Schedule(Dependency);
+        // Dependency = _pendingJob;
         _jobScheduled = true;
     }
 }
@@ -209,9 +209,9 @@ public partial struct CollectUnitsJob : IJobEntity
         pos.y = math.clamp((transform.ValueRO.Position.z - WorldMin.y) / WorldSize.y, 0, 1);
 
         if (team.ValueRO.TeamID == TeamID)
-            Friendly.Add(pos);
+            Friendly.AddNoResize(pos);
         else
-            Enemy.Add(pos);
+            Enemy.AddNoResize(pos);
     }
 }
 
