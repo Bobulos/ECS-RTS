@@ -12,26 +12,45 @@ public partial struct ProductionStructureSystem : ISystem
     {
         if (!SystemAPI.TryGetSingletonBuffer<UnitManifest>(out var manifest)) return;
 
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var ecbSys = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
+
+        var m = manifest.ToNativeArray(Allocator.TempJob);
+        
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (transform, team, prod) in SystemAPI.Query<
-            RefRO<LocalTransform>,
-            RefRO<Team>,
-            RefRW<ProductionStructure>>())
+        var job = new ProductionJob
         {
-            if (prod.ValueRO.QueueCount <= 0) continue;
-            if (time - prod.ValueRO.StartTime >= manifest[prod.ValueRO.Queue[0]].TrainingTime)
+            Manifest = m,
+            Ecb = ecbSys.CreateCommandBuffer(state.World.Unmanaged),
+            Time = time,
+        };
+        var handle = job.Schedule(state.Dependency);
+        state.Dependency = handle;
+    }
+    [BurstCompile]
+    private partial struct ProductionJob : IJobEntity
+    {
+        [ReadOnly,DeallocateOnJobCompletion] public NativeArray<UnitManifest> Manifest;
+        public EntityCommandBuffer Ecb;
+        [ReadOnly]public float Time;
+        [BurstCompile]
+        void Execute(
+            RefRO<LocalTransform> transform,
+            RefRO<Team> team,
+            RefRW<ProductionStructure> prod)
+        {
+            if (prod.ValueRO.QueueCount <= 0) return;
+            if (Time - prod.ValueRO.StartTime >= Manifest[prod.ValueRO.Queue[0]].TrainingTime)
             {
                 //Get que unit index
-                var e = ecb.Instantiate(manifest[prod.ValueRO.Queue[0]].Unit);
+                var e = Ecb.Instantiate(Manifest[prod.ValueRO.Queue[0]].Unit);
 
                 prod.ValueRW.Queue.RemoveAt(0);
                 prod.ValueRW.QueueCount--;
-                prod.ValueRW.StartTime = time;
+                prod.ValueRW.StartTime = Time;
 
-                ecb.SetComponent(e, new Team { TeamID = team.ValueRO.TeamID });
-                ecb.SetComponent(e, new LocalTransform
+                Ecb.SetComponent(e, new Team { TeamID = team.ValueRO.TeamID });
+                Ecb.SetComponent(e, new LocalTransform
                 {
                     Position = transform.ValueRO.Position + prod.ValueRO.SpawnOffset,
                     Rotation = quaternion.identity,
@@ -46,12 +65,9 @@ public partial struct ProductionStructureSystem : ISystem
                 {
                     dest = prod.ValueRO.RallyPoint;
                 }
-                ecb.AddComponent(e, new UnitMoveOrder 
+                Ecb.AddComponent(e, new UnitMoveOrder 
                 { Dest = prod.ValueRO.RallyPoint, });
             }
         }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 }

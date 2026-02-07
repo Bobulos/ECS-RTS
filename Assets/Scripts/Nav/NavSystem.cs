@@ -223,7 +223,7 @@ public struct NavQueryJob : IJob
         calculated = false;
         inValid = false;
         //float3 toPosition = pather.Dest;
-        float3 extents = new float3(1, 2, 1);
+        float3 extents = new float3(5f, 5f, 5f);
 
         var fromLoc = Query.MapLocation(FromPos, extents, 0);
         var toLoc = Query.MapLocation(ToPos, extents, 0);

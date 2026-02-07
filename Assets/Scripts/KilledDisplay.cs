@@ -19,7 +19,7 @@ public class KilledDisplay : MonoBehaviour
     }
     private void UpdateKilled()
     {
-        var stats = query.GetSingleton<GameStats>();
+        if (!query.TryGetSingleton<GameStats>(out var stats)) return;
         text.text = $"{stats.Killed}";
     }
 }

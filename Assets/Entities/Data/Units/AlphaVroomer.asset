@@ -23,7 +23,7 @@ MonoBehaviour:
     PrefabIndex: 0
   actionIcons:
   - {fileID: 2800000, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
-  trainingTime: 2
+  trainingTime: 0.1
   entityGuid:
     serializedVersion: 2
     Hash: fa260329a255be647bd8fa2e9d309fac

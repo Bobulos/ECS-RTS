@@ -1,19 +1,28 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+
 public class SelectionGUIManager : MonoBehaviour
 {
-
     public TextMeshProUGUI description;
-    public GameObject GUIElement;
+    public GameObject GUIElementPrefab;
+    
+    [Header("Pool Settings")]
+    public int initialPoolSize = 10;
 
     private EntityGUIManifest manifest;
-    
     private EntityManager entityManager;
     private EntityQuery query;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    
+    // Object pool
+    private Queue<UnitGUIElement> pool = new Queue<UnitGUIElement>();
+    private List<UnitGUIElement> activeElements = new List<UnitGUIElement>();
+    
+    private Coroutine updateCoroutine;
+
     void Start()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
@@ -21,36 +30,113 @@ public class SelectionGUIManager : MonoBehaviour
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
 
-        //subscribe to events
+        // Initialize pool
+        InitializePool();
+
+        // Subscribe to events
         InputBridge.OnUpdateGUI += OnUpdateGUI;
     }
+
     private void OnDestroy()
     {
         InputBridge.OnUpdateGUI -= OnUpdateGUI;
+        
+        // Stop coroutine if running
+        if (updateCoroutine != null)
+        {
+            StopCoroutine(updateCoroutine);
+        }
+    }
+
+    void InitializePool()
+    {
+        for (int i = 0; i < initialPoolSize; i++)
+        {
+            CreateNewPooledElement();
+        }
+    }
+
+    UnitGUIElement CreateNewPooledElement()
+    {
+        GameObject go = Instantiate(GUIElementPrefab, transform);
+        UnitGUIElement element = go.GetComponent<UnitGUIElement>();
+        go.SetActive(false);
+        pool.Enqueue(element);
+        return element;
+    }
+
+    UnitGUIElement GetFromPool()
+    {
+        if (pool.Count == 0)
+        {
+            return CreateNewPooledElement();
+        }
+
+        UnitGUIElement element = pool.Dequeue();
+        element.gameObject.SetActive(true);
+        activeElements.Add(element);
+        return element;
+    }
+
+    void ReturnToPool(UnitGUIElement element)
+    {
+        element.gameObject.SetActive(false);
+        activeElements.Remove(element);
+        pool.Enqueue(element);
+    }
+
+    void ReturnAllToPool()
+    {
+        // Use a copy to avoid modification during iteration
+        var elementsToReturn = new List<UnitGUIElement>(activeElements);
+        
+        foreach (var element in elementsToReturn)
+        {
+            ReturnToPool(element);
+        }
+        
+        activeElements.Clear();
     }
     public void OnUpdateGUI()
     {
-        List<GameObject> list = new List<GameObject>();
-        for (int i = 0; i < transform.childCount; i++)
+        // Stop any existing coroutine
+        if (updateCoroutine != null)
         {
-            list.Add(transform.GetChild(i).gameObject);
+            StopCoroutine(updateCoroutine);
         }
-        foreach (GameObject go in list) { Destroy(go); }
-        Invoke(nameof(ReadSelection), Time.deltaTime*2f);
+        
+        // Start new update coroutine
+        updateCoroutine = StartCoroutine(UpdateGUICoroutine());
     }
 
-    void ReadSelection()
+    IEnumerator UpdateGUICoroutine()
     {
+        // Return all active elements to pool
+        ReturnAllToPool();
+        
+        // Wait for end of frame to ensure all ECS systems have run
+        yield return new WaitForEndOfFrame();
+        
+        // Read selection data
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
-            return;
+        {
+            yield break;
+        }
 
+        int elementIndex = 0;
         foreach (var bucket in selectedUnits.Buckets)
         {
             var data = manifest.GetData(bucket.Key);
-            //Debug.Log($"{bucket.Count} of unit nameof {data.name}");
-            var e = Instantiate(GUIElement, transform).GetComponent<UnitGUIElement>();
-            e.SetData(data, bucket.Count);
+            
+            if (data != null)
+            {
+                UnitGUIElement element = GetFromPool();
+                element.SetData(data, bucket.Count);
+                element.transform.SetSiblingIndex(elementIndex++);
+            }
         }
+        
+        updateCoroutine = null;
     }
 }
 

@@ -368,7 +368,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
   hp: 100
   dmg: 20
-  speed: 21
+  speed: 40
   range: 28.9
   teamID: 0
   attackRange: 20.26

@@ -209,9 +209,9 @@ public partial struct CollectUnitsJob : IJobEntity
         pos.y = math.clamp((transform.ValueRO.Position.z - WorldMin.y) / WorldSize.y, 0, 1);
 
         if (team.ValueRO.TeamID == TeamID)
-            Friendly.AddNoResize(pos);
+            Friendly.Add(pos);
         else
-            Enemy.AddNoResize(pos);
+            Enemy.Add(pos);
     }
 }
 

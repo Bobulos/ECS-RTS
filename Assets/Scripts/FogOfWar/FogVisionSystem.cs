@@ -169,6 +169,7 @@ public partial class FogSystem : SystemBase
 
 
         //Debug.Log($"VisibleTex actual size = {_visibleTex.width}x{_visibleTex.height}");
+        var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
 
         if (_hasMaskUpdate)
         {
@@ -178,7 +179,7 @@ public partial class FogSystem : SystemBase
             _linkedEntitys.Update(this);
             var job = new LocalVisibilityJob
             {
-                ECB = ecb,
+                ECB = ecbSys.CreateCommandBuffer(World.Unmanaged),
                 Groups = _linkedEntitys,
                 Mask = _mask,
                 WorldMin = worldMin,
@@ -186,9 +187,7 @@ public partial class FogSystem : SystemBase
                 GridResolution = settings.Size.x,
             };
             var handle = job.Schedule(Dependency);
-            handle.Complete();
-            ecb.Playback(EntityManager);
-            ecb.Dispose();
+            Dependency = handle;
         }
 
         if (_readCount >= 16)
