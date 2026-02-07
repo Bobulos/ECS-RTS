@@ -15,7 +15,7 @@ MonoBehaviour:
   prefab: {fileID: 2234781847415395746, guid: 7491bb615b26b244f9fd2d729623b266, type: 3}
   entityType: 1
   entityName: 
-  icon: {fileID: 0}
+  icon: {fileID: 2800000, guid: cb267c5ba32157e4aa62ec6b86273fd7, type: 3}
   description: 
   actions:
   - ActionType: 1
@@ -32,9 +32,9 @@ MonoBehaviour:
     PrefabIndex: 2
   actionIcons:
   - {fileID: 2800000, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
-  - {fileID: 2800000, guid: e81055662a7fe9e4e9434018ec2cd930, type: 3}
-  - {fileID: 2800000, guid: e81055662a7fe9e4e9434018ec2cd930, type: 3}
-  - {fileID: 2800000, guid: e81055662a7fe9e4e9434018ec2cd930, type: 3}
+  - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
+  - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
+  - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
   trainingTime: 0
   entityGuid:
     serializedVersion: 2

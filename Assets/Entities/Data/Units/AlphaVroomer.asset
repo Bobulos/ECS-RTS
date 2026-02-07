@@ -15,14 +15,14 @@ MonoBehaviour:
   prefab: {fileID: 8410485855669339686, guid: fa260329a255be647bd8fa2e9d309fac, type: 3}
   entityType: 0
   entityName: 
-  icon: {fileID: 2800000, guid: e81055662a7fe9e4e9434018ec2cd930, type: 3}
+  icon: {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
   description: 
   actions:
   - ActionType: 2
     InteractionType: 1
     PrefabIndex: 0
   actionIcons:
-  - {fileID: 1893708181, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
+  - {fileID: 2800000, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
   trainingTime: 2
   entityGuid:
     serializedVersion: 2

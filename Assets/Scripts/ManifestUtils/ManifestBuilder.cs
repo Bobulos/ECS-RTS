@@ -16,16 +16,22 @@ public class ManifestBuilder : MonoBehaviour
     public string _structureDataPath = "Assets/Data/GUI/Structures";
     public string _constructionDataPath = "Assets/Data/Construction";
 
-    [ContextMenu("Build Manifest")]
-    void BuildManifestFromPrefabs()
+    // [ContextMenu("Build Full Manifest")]
+    // void BuildFullManifest()
+    // {
+    //     BuildEntityData();
+    //     BuildConstructionData();
+    //     GenerateIcons();
+    // }
+
+    [ContextMenu("Build Entity Data")]
+    void BuildEntityData()
     {
         if (Application.isPlaying) return;
 
         EnsureFolder(_unitDataPath);
         EnsureFolder(_structureDataPath);
-        EnsureFolder(_constructionDataPath);
 
-        // Fixed: Get different component types from correct folders
         var prefabs = GetPrefabs<UnitAuthoring>(_unitPath)
             .Concat(GetPrefabs<StructureAuthoring>(_structurePath))
             .Concat(GetPrefabs<WallAuthoring>(_structurePath))
@@ -37,14 +43,8 @@ public class ManifestBuilder : MonoBehaviour
             .Where(d => d.entityGuid.isValid)
             .ToDictionary(d => d.entityGuid);
 
-        Dictionary<Hash128, ConstructionData> constructionDataById = ScriptableObjectUtil.LoadAllScriptableObjects<ConstructionData>()
-            .Where(d => d.Guid.isValid)
-            .ToDictionary(d => d.Guid);
-
         int created = 0;
         int modified = 0;
-        int constructionCreated = 0;
-        int constructionModified = 0;
 
         AssetDatabase.StartAssetEditing();
         try
@@ -63,7 +63,7 @@ public class ManifestBuilder : MonoBehaviour
                         PopulateUnitData
                     );
                 }
-                else if (prefab.TryGetComponent<WallAuthoring>(out var wall))
+                if (prefab.TryGetComponent<WallAuthoring>(out var wall))
                 {
                     ProcessPrefab(
                         prefab,
@@ -74,9 +74,8 @@ public class ManifestBuilder : MonoBehaviour
                         ref modified,
                         PopulateWallData
                     );
-                    ProcessConstructionData(prefab, constructionDataById, ref constructionCreated, ref constructionModified);
                 }
-                else if (prefab.TryGetComponent<ProductionStructureAuthoring>(out var prod))
+                if (prefab.TryGetComponent<ProductionStructureAuthoring>(out var prod))
                 {
                     ProcessPrefab(
                         prefab,
@@ -87,9 +86,8 @@ public class ManifestBuilder : MonoBehaviour
                         ref modified,
                         PopulateProductionStructureData
                     );
-                    ProcessConstructionData(prefab, constructionDataById, ref constructionCreated, ref constructionModified);
                 }
-                else if (prefab.TryGetComponent<StructureAuthoring>(out var structure))
+                if (prefab.TryGetComponent<StructureAuthoring>(out var structure))
                 {
                     ProcessPrefab(
                         prefab,
@@ -100,7 +98,6 @@ public class ManifestBuilder : MonoBehaviour
                         ref modified,
                         PopulateStructureData
                     );
-                    ProcessConstructionData(prefab, constructionDataById, ref constructionCreated, ref constructionModified);
                 }
             }
         }
@@ -111,8 +108,138 @@ public class ManifestBuilder : MonoBehaviour
             AssetDatabase.Refresh();
         }
 
-        Debug.Log($"Entity Manifest Complete — Created: {created}, Modified: {modified}");
-        Debug.Log($"Construction Data Complete — Created: {constructionCreated}, Modified: {constructionModified}");
+        Debug.Log($"Entity Data Complete — Created: {created}, Modified: {modified}");
+    }
+
+    [ContextMenu("Build Construction Data Only")]
+    void BuildConstructionData()
+    {
+        if (Application.isPlaying) return;
+
+        EnsureFolder(_constructionDataPath);
+
+        var prefabs = GetPrefabs<StructureAuthoring>(_structurePath)
+            .Concat(GetPrefabs<WallAuthoring>(_structurePath))
+            .Concat(GetPrefabs<ProductionStructureAuthoring>(_structurePath))
+            .Distinct()
+            .ToList();
+
+        Dictionary<Hash128, ConstructionData> constructionDataById = ScriptableObjectUtil.LoadAllScriptableObjects<ConstructionData>()
+            .Where(d => d.Guid.isValid)
+            .ToDictionary(d => d.Guid);
+
+        int created = 0;
+        int modified = 0;
+
+        AssetDatabase.StartAssetEditing();
+        try
+        {
+            foreach (var prefab in prefabs)
+            {
+                ProcessConstructionData(prefab, constructionDataById, ref created, ref modified);
+            }
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        Debug.Log($"Construction Data Complete — Created: {created}, Modified: {modified}");
+    }
+
+    [ContextMenu("Generate Icons Only")]
+    void GenerateIcons()
+    {
+        if (Application.isPlaying) return;
+
+        EnsureFolder(_iconPath);
+
+        var prefabs = GetPrefabs<UnitAuthoring>(_unitPath)
+            .Concat(GetPrefabs<StructureAuthoring>(_structurePath))
+            .Concat(GetPrefabs<WallAuthoring>(_structurePath))
+            .Concat(GetPrefabs<ProductionStructureAuthoring>(_structurePath))
+            .Distinct()
+            .ToList();
+
+        int generated = 0;
+        int skipped = 0;
+
+        AssetDatabase.StartAssetEditing();
+        try
+        {
+            foreach (var prefab in prefabs)
+            {
+                string genPath = $"{_iconPath}/{prefab.name}.png";
+                Texture2D existingIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(genPath);
+                
+                if (existingIcon != null)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                Texture2D icon = CreatePrefabIcon(prefab);
+                if (icon != null)
+                {
+                    generated++;
+                }
+            }
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        Debug.Log($"Icon Generation Complete — Generated: {generated}, Skipped: {skipped}");
+    }
+
+    [ContextMenu("Regenerate All Icons(Recomended)")]
+    void RegenerateAllIcons()
+    {
+        if (Application.isPlaying) return;
+
+        EnsureFolder(_iconPath);
+
+        var prefabs = GetPrefabs<UnitAuthoring>(_unitPath)
+            .Concat(GetPrefabs<StructureAuthoring>(_structurePath))
+            .Concat(GetPrefabs<WallAuthoring>(_structurePath))
+            .Concat(GetPrefabs<ProductionStructureAuthoring>(_structurePath))
+            .Distinct()
+            .ToList();
+
+        int generated = 0;
+
+        AssetDatabase.StartAssetEditing();
+        try
+        {
+            foreach (var prefab in prefabs)
+            {
+                // Delete existing icon if it exists
+                string genPath = $"{_iconPath}/{prefab.name}.png";
+                if (AssetDatabase.LoadAssetAtPath<Texture2D>(genPath) != null)
+                {
+                    AssetDatabase.DeleteAsset(genPath);
+                }
+
+                Texture2D icon = CreatePrefabIcon(prefab);
+                if (icon != null)
+                {
+                    generated++;
+                }
+            }
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        Debug.Log($"Icon Regeneration Complete — Generated: {generated}");
     }
 
     // --------------------------------------------------
@@ -210,7 +337,6 @@ public class ManifestBuilder : MonoBehaviour
     {
         data.entityType = EntityType.Unit;
         data.prefab = prefab;
-                    // returns a texture 2D
         data.icon = GetOrCreatePrefabIcon(prefab);
         authoring.data = data;
     }
@@ -219,6 +345,7 @@ public class ManifestBuilder : MonoBehaviour
     {
         data.entityType = EntityType.Structure;
         data.prefab = prefab;
+        data.icon = GetOrCreatePrefabIcon(prefab);
         authoring.data = data;
     }
 
@@ -226,6 +353,7 @@ public class ManifestBuilder : MonoBehaviour
     {
         data.entityType = EntityType.Structure;
         data.prefab = prefab;
+        data.icon = GetOrCreatePrefabIcon(prefab);
         authoring.data = data;
     }
 
@@ -233,6 +361,7 @@ public class ManifestBuilder : MonoBehaviour
     {
         data.entityType = EntityType.Structure;
         data.prefab = prefab;
+        data.icon = GetOrCreatePrefabIcon(prefab);
         authoring.data = data;
     }
 
@@ -257,18 +386,27 @@ public class ManifestBuilder : MonoBehaviour
             currentPath = newPath;
         }
     }
+
     private Texture2D GetOrCreatePrefabIcon(GameObject prefab)
     {
         if (prefab == null) return null;
         
-        // Check if icon already exists
-        string genPath = $"{_iconPath}/{prefab.name}_{prefab.name}.png";
-        Texture2D existingIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(_iconPath);
+        string genPath = $"{_iconPath}/{prefab.name}.png";
+        Texture2D existingIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(genPath);
         
         if (existingIcon != null)
         {
-            return existingIcon; // Use existing icon
+            return existingIcon;
         }
+        
+        return CreatePrefabIcon(prefab);
+    }
+
+    private Texture2D CreatePrefabIcon(GameObject prefab)
+    {
+        if (prefab == null) return null;
+
+        string genPath = $"{_iconPath}/{prefab.name}.png";
         
         // Generate new icon
         Texture2D preview = AssetPreview.GetAssetPreview(prefab);
@@ -305,6 +443,7 @@ public class ManifestBuilder : MonoBehaviour
         // Return the saved asset
         return AssetDatabase.LoadAssetAtPath<Texture2D>(genPath);
     }
+
     List<GameObject> GetPrefabs<T>(string folder) where T : Component
     {
         if (!AssetDatabase.IsValidFolder(folder))
