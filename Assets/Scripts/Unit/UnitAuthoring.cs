@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class UnitAuthoring : MonoBehaviour
 {
+    public bool shootWhileMoveing = true;
     public EntityData data;
     //public int selectionKey = 0;
     public int hp = 10;
@@ -56,6 +57,7 @@ class UnitBaker : Baker<UnitAuthoring>
         AddComponent(entity, unitTarget);
         AddComponent(entity, new UnitAttack
         {
+            ShootWhileMoveing = authoring.shootWhileMoveing,
             Dmg = authoring.dmg,
             RangeSq = authoring.attackRange * authoring.attackRange,
             Last = 0,
@@ -87,6 +89,7 @@ class UnitBaker : Baker<UnitAuthoring>
 public struct UnitInitFlag : IComponentData { }
 public struct UnitAttack : IComponentData
 {
+    public bool ShootWhileMoveing;
     public float RangeSq;
     public int Dmg;
     public float Rate;

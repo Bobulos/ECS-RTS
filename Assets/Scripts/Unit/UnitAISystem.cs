@@ -20,8 +20,8 @@ public partial struct UnitStateSystem : ISystem
         var hpLookup = SystemAPI.GetComponentLookup<UnitHP>(false);
         //var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
-        var ecbSystem =
-            SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+        // var ecbSystem =
+        //     SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
 
         float elapsedTime = (float)SystemAPI.Time.ElapsedTime;
 
@@ -40,7 +40,7 @@ public partial struct UnitStateSystem : ISystem
         var job = new UnitStateMachineJob
         {
             EntityInfo = state.GetEntityStorageInfoLookup(),
-            Ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged),
+            //Ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged),
             ElapsedTime = elapsedTime,
             HpLookup = hpLookup,
             TransformLookup = transformLookup
@@ -69,7 +69,7 @@ public partial struct UnitStateMachineJob : IJobEntity
     [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
     [ReadOnly] public ComponentLookup<UnitHP> HpLookup;
 
-    public EntityCommandBuffer Ecb;
+    //public EntityCommandBuffer Ecb;
 
     public void Execute(
         RefRW<Pather> pather,
@@ -154,7 +154,6 @@ public partial struct UnitStateMachineJob : IJobEntity
             ctx.State.ValueRW.State = UnitStates.Attack;
             return;
         }
-
         // Update destination only if target moved enough
         SetDestination(ref ctx, targetPos);
     }
@@ -185,17 +184,17 @@ public partial struct UnitStateMachineJob : IJobEntity
         
 
         // Execute attack
-        if (AttackReady(ctx.Attack.ValueRO))
-        {
-            ctx.Attack.ValueRW.Last = ElapsedTime;
+//         if (AttackReady(ctx.Attack.ValueRO))
+//         {
+//             ctx.Attack.ValueRW.Last = ElapsedTime;
 
-            Ecb.SetComponent(targetEntity, new UnitHP
-            {
-                HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
-            });
-            /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
-targetPos, UnityEngine.Color.red, 1 / 50f);*/
-        }
+//             Ecb.SetComponent(targetEntity, new UnitHP
+//             {
+//                 HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
+//             });
+//             /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
+// targetPos, UnityEngine.Color.red, 1 / 50f);*/
+//         }
    
         /*if (TryGetTargetPosition(targetEntity, out float3 pos))
         {

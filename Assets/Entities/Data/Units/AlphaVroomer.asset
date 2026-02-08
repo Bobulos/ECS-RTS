@@ -22,10 +22,10 @@ MonoBehaviour:
     InteractionType: 1
     PrefabIndex: 0
   actionIcons:
-  - {fileID: 2800000, guid: 75d0b92f55166e64683a56d92b5882ee, type: 3}
-  trainingTime: 0.1
+  - {fileID: 2800000, guid: c66f0ae48e46d2b4a85686f31b71955a, type: 3}
+  trainingTime: 10
   entityGuid:
     serializedVersion: 2
     Hash: fa260329a255be647bd8fa2e9d309fac
-  key: 0
-  keyGUI: 3
+  key: 1
+  keyGUI: 4

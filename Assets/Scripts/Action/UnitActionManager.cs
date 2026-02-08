@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 public struct ActionData
@@ -18,7 +19,7 @@ public struct ActionData
 }
 public class UnitActionManager : MonoBehaviour
 {
-    public Texture2D[] cursors;
+    //public Texture2D[] cursors;
 
     public UnitGUIActionElement[] elements;
 
@@ -82,7 +83,7 @@ public class UnitActionManager : MonoBehaviour
         switch (info.InteractionType)
         {
             case InteractionType.Target:
-                Cursor.SetCursor(cursors[0], Vector2.zero, CursorMode.Auto);
+                Cursor.SetCursor(curGUIData.actionIcons[(int)actionByte], Vector2.zero, CursorMode.ForceSoftware);
                 StartCoroutine(TargetAction(data));
                 break;
 

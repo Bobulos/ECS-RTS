@@ -157,7 +157,7 @@ partial class UnitActionSystem : SystemBase
         {
             //check that it is the type that needs to be modified
             if (key.ValueRO.Value != targetKey) continue;
-            if (prod.ValueRO.QueueCount <= prod.ValueRO.QueueSize)
+            if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize)
 
             prod.ValueRW.QueueCount++;
             prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.Info.PrefabIndex]);
