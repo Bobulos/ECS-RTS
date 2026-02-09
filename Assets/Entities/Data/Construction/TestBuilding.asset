@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ConstructionData
   mode: 1
   spacing: 5
-  size: {x: 10, y: 10, z: 10}
+  size:
+    x: 10
+    y: 10
+    z: 10
   primary: {fileID: 11400000, guid: f853ae03de79b634d9f06291ae5398b7, type: 2}
   secondary: {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}
+  key: 2
   Guid:
     serializedVersion: 2
     Hash: 20f57a7c74e07d5468e8c9d8249345fa

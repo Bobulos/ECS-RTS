@@ -365,9 +365,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6aebaba507b7994ca63f8c2680962e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  agentID: 0
+  shootWhileMoveing: 1
   data: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
   hp: 100
-  dmg: 20
+  dmg: 5
   speed: 10
   range: 28.9
   teamID: 0

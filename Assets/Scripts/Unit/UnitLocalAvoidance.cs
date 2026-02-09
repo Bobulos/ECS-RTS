@@ -13,6 +13,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
     public float TimeHorizon;
     public const float FIXED_DT = 1f / 50f;
 
+    public const float MIN_OVERLAP = 0.1f;
     void Execute(
         ref UnitMovement mov,
         in LocalTransform transform,
@@ -41,7 +42,8 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
                 do
                 {
                     if (count >= 254) break;
-                    if (other.Entity == entity)
+                    //same guy
+                    if (BMath.DistXZsq(other.Position, transform.Position) <= MIN_OVERLAP)
                         continue;
                     count++;
                     AddORCALine(

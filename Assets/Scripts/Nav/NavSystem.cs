@@ -10,6 +10,7 @@ using UnityEngine.Experimental.AI; // NavMesh types
 
 public struct Pather : IComponentData
 {
+    public int AgentID;
     public bool NeedsUpdate;
     public float3 Dest;
     public float IndexDistance;
@@ -136,7 +137,7 @@ public partial struct NavSystem : ISystem
         // Handle path requests
         foreach (var (transform, p, e) in
             SystemAPI.Query<RefRO<LocalTransform>, RefRW<Pather>>()
-            .WithEntityAccess())
+            .WithEntityAccess().WithNone<DeadTag>())
         {
             if (!p.ValueRO.QuerySet)
             {
@@ -223,10 +224,12 @@ public struct NavQueryJob : IJob
         calculated = false;
         inValid = false;
         //float3 toPosition = pather.Dest;
-        float3 extents = new float3(5f, 5f, 5f);
+        float3 extents = new float3(10f, 10f, 10f);
 
-        var fromLoc = Query.MapLocation(FromPos, extents, 0);
-        var toLoc = Query.MapLocation(ToPos, extents, 0);
+
+        //Add agent types later
+        var fromLoc = Query.MapLocation(FromPos, extents, RPather.AgentID);
+        var toLoc = Query.MapLocation(ToPos, extents, RPather.AgentID);
 
         if (!Query.IsValid(fromLoc) || !Query.IsValid(toLoc))
         {

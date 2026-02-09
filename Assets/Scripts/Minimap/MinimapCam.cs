@@ -10,7 +10,7 @@ public class MinimapCam : MonoBehaviour
     }
 
     int count;
-    private void LateUpdate()
+    private void Update()
     {
         count++;
         

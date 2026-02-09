@@ -1,10 +1,14 @@
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
 public class UnitAuthoring : MonoBehaviour
 {
+    
+    public int agentID = 0;
     public bool shootWhileMoveing = true;
+
     public EntityData data;
     //public int selectionKey = 0;
     public int hp = 10;
@@ -17,6 +21,10 @@ public class UnitAuthoring : MonoBehaviour
     public float radius = 0.5f;
     public bool disableChildren = true;
 
+    [Header("Worker partition")]
+    public bool buildAsWorker = false;
+    [Header("Structures")]
+    public EntityData[] prefabs;
     //public float3 dir;
 }
 class UnitBaker : Baker<UnitAuthoring>
@@ -65,27 +73,37 @@ class UnitBaker : Baker<UnitAuthoring>
         });
         AddComponent(entity, new Pather
         {
+            AgentID = authoring.agentID,
             Dest = authoring.transform.position,
             IndexDistance = 0.5f,
             NeedsUpdate = false,
             WaypointIndex = -1,
             PathCalculated = false,
             QuerySet = false,
-            //pathPositions = new NativeList<int2>(Allocator.Persistent)
-            //waypoints = authoring.waypoints
-            //prefab = GetEntity(authoring.prefab, TransformUsageFlags.Dynamic),
-            //spawnPos = authoring.transform.position,
-            //nextSpawnTime = 0.0f,
-            //spawnRate = authoring.spawnRate
-            //pathBuffer = new DynamicBuffer<PathPosition>(),
         });
         AddComponent(entity, new SelectionKey {Value = authoring.data.keyGUI });
         AddComponent<PatherWayPoint>(entity);
         AddComponent<UnitInitFlag>(entity);
         AddComponent(entity, new Vision { Radius = math.round(authoring.range) });
         AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = authoring.disableChildren });
+
+
+        //worker specific shit
+
+        
+
+        if (!authoring.buildAsWorker) return;
+
+        var structs = new FixedList128Bytes<int>();
+        foreach (var p in authoring.prefabs)
+        {
+            structs.Add(p.key);
+        }
+
+        AddComponent(entity, new Worker{ ConstructKeys = structs, BuildRequest = new ConstructionRequest{}, HasRequest = false});
     }
 }
+
 public struct UnitInitFlag : IComponentData { }
 public struct UnitAttack : IComponentData
 {

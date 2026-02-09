@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using UnityEditor;
+using System.Linq;
+
 public struct ActionData
 {
     //WRITE
@@ -19,7 +20,8 @@ public struct ActionData
 }
 public class UnitActionManager : MonoBehaviour
 {
-    //public Texture2D[] cursors;
+    public Vector2 cursorOffset;
+    public Texture2D[] cursors;
 
     public UnitGUIActionElement[] elements;
 
@@ -35,11 +37,40 @@ public class UnitActionManager : MonoBehaviour
     //                   REPLAY     Team
     public static Action<ActionData, int> OnAction;
 
+    public static event Action<ConstructData> VisualizeStructure;
+    public static event Action CancelStructure;
+
     public int team = 0;
     public List<ActionData> buffer = new List<ActionData>();
 
     private Camera cam;
 
+
+    public void OnElementAction(byte actionByte)
+    {
+        ActionInfo info = curGUIData.actions[actionByte];
+
+        var data = new ActionData
+        {
+            // Dont need to use this
+            ActionByte = actionByte,
+            Info = info,
+            RayOrigin = float3.zero,
+            RayDirection = float3.zero
+        };
+        switch (info.InteractionType)
+        {
+            case InteractionType.Target:
+                //cursor
+                Cursor.SetCursor(cursors[0], cursorOffset, CursorMode.Auto);
+                StartCoroutine(TargetAction(data));
+                break;
+
+            case InteractionType.Instant:
+                buffer.Add(data);
+                break;
+        }
+    }
 
     private void FixedUpdate()
     {
@@ -68,30 +99,7 @@ public class UnitActionManager : MonoBehaviour
         };
         OnAction.Invoke(data, r.Team);
     }
-    public void OnElementAction(byte actionByte)
-    {
-        ActionInfo info = curGUIData.actions[actionByte];
-
-        var data = new ActionData
-        {
-            // Dont need to use this
-            ActionByte = actionByte,
-            Info = info,
-            RayOrigin = float3.zero,
-            RayDirection = float3.zero
-        };
-        switch (info.InteractionType)
-        {
-            case InteractionType.Target:
-                Cursor.SetCursor(curGUIData.actionIcons[(int)actionByte], Vector2.zero, CursorMode.ForceSoftware);
-                StartCoroutine(TargetAction(data));
-                break;
-
-            case InteractionType.Instant:
-                buffer.Add(data);
-                break;
-        }
-    }
+    
 
     System.Collections.IEnumerator TargetAction(ActionData data)
     {
@@ -103,7 +111,9 @@ public class UnitActionManager : MonoBehaviour
             // when left click
             if (Input.GetMouseButtonDown(0))
             {
+                
                 done = true;
+                
                 var r = cam.ScreenPointToRay(Input.mousePosition);
                 data.RayOrigin = r.origin;
                 data.RayDirection = r.direction;
@@ -111,7 +121,23 @@ public class UnitActionManager : MonoBehaviour
             } else if (Input.GetKeyDown(KeyCode.Escape))
             {
                 done = true;
+                //CancelStructure?.Invoke();
             }
+
+            //visualize stuf
+            if (data.Info.ActionType == ActionType.BuildStructure)
+            {
+                var r = cam.ScreenPointToRay(Input.mousePosition);
+                //CancelStructure?.Invoke();//stop the visualization
+                VisualizeStructure?.Invoke(new ConstructData
+                {
+                    //pos = cam
+                    Origin = r.origin,
+                    Dir = r.direction,
+                    Data = structures[data.Info.construction.key],
+                });
+            }
+
             yield return null; // Wait until the next frame
         }
 
@@ -120,10 +146,11 @@ public class UnitActionManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.5f);
         InputData.inAction = false;
-        
+        CancelStructure?.Invoke();
         
         //Debug.Log("Done");
     }
+    public ConstructionData[] structures;
     // System.Collections.IEnumerable ChangeInputData()
     // {
     //     yield return null;
@@ -187,57 +214,42 @@ public class UnitActionManager : MonoBehaviour
         }
     }
 
-    // void ReadSelection()
-    // {
-    //     //reads = 0;
-    //     UnityEngine.Debug.Log("Read");
-    //     if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
-    //         return;
+    #if UNITY_EDITOR
+    [ContextMenu("Update manifest")]
+    public void UpdateManifest()
+    {
+        var constructionData = ScriptableObjectUtil.LoadAllScriptableObjects<ConstructionData>();
 
-    //     //crappy way to fetch a non null reference
-    //     bool found = false;
-    //     SelectedUnitBucket toDisplay = new SelectedUnitBucket { Key = 0, Count = 0};
-    //     foreach (var bucket in selectedUnits.Buckets)
-    //     {
-    //         found = true;
-    //         toDisplay = bucket;
-    //         break;
-    //     }
 
-    //     //clear all units
-    //     if (!found)
-    //     {
-    //         foreach (var e in elements)
-    //         {
-    //             e.Clear();
-    //         }
-    //         return;
-    //     }
+        structures = constructionData
+            .OrderBy(e => e.Guid)
+            .ToArray();
+        
 
-    //     curGUIData = null;
 
-    //     if (!manifest.TryGetData(toDisplay.Key, out UnitGUIData data)) return;
-
-    //     if (data.actions == null) return;
-
-    //     curGUIData = data;
-    //     //if (data.actions.Length > elements.Length) { UnityEngine.Debug.Log($"You have to many actions on {data.name} UnitGUIData"); };
-    //     //UnityEngine.Debug.Log($"Action list length of {data.actions.Length}");
-    //     for (int i = 0; i < data.actions.Length; i ++)
-    //     {
-    //         elements[i].SetData(data, (byte)i);
-    //     }
-    // }
+        for (int i = 0; i < structures.Length; i++)
+        {
+            //UnityEngine.Debug.Log(i);
+            structures[i].key = i;
+            EditorUtility.SetDirty(structures[i]);
+        }
+        EditorUtility.SetDirty(this);
+        AssetDatabase.SaveAssets();
+    }
+    #endif
     private void Start()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
+
+        //structures = FindFirstObjectByType<StructureManifestAuthoring>().construction;
+
         World defaultWorld = World.DefaultGameObjectInjectionWorld;
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
 
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
-
+        
         if (GameSettings.InReplayMode) this.enabled = false;
 
         cam = Camera.main;

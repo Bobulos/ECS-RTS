@@ -100,13 +100,14 @@ public class ConstructionBridge : MonoBehaviour
         }
         else if (constructData.mode == ConstructionMode.Structure)
         {
+            var ray = cam.ScreenPointToRay(Input.mousePosition);
             if (Input.GetMouseButtonDown(0))
             {
-
                 buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData
                 {
-                    constructData = constructData,
-                    pos = hit.point,
+                    Data = constructData,
+                    Dir = ray.direction,
+                    Origin = ray.origin
                 }, team));
             }
             //visualize
@@ -114,12 +115,14 @@ public class ConstructionBridge : MonoBehaviour
             {
                 VisualizeStructure?.Invoke(new ConstructData
                 {
-                    constructData = constructData,
-                    pos = hit.point,
+                    Data = constructData,
+                    Dir = ray.direction,
+                    Origin = ray.origin
                 });
             }
         }
     }
+    //private Camera cam;
     private void FixedUpdate()
     {
 
@@ -150,11 +153,14 @@ public class ConstructionBridge : MonoBehaviour
             case InputType.Construct:
                 ConstructStructure?.Invoke(new ConstructData
                 {
-                    pos = r.Structure.pos,
-                    constructData = r.Structure.constructData,
+                    Dir = r.Structure.Dir,
+
+                    Origin = r.Structure.Origin,
+                    Data = r.Structure.Data,
+                    
 
                     //for replay mabeye check if in range
-                    constructID = Array.IndexOf(constructs, r.Structure.constructData),
+                    ConstructID = Array.IndexOf(constructs, r.Structure.ConstructID),
                 }, team);
                 break;
         }
@@ -177,9 +183,9 @@ public class ConstructionBridge : MonoBehaviour
             case InputType.Construct:
                 ConstructStructure?.Invoke(new ConstructData
                 {
-                    pos = r.Structure.pos,
-                    constructData = constructs[r.Structure.constructID],
-                    constructID = 0,
+                    Dir = r.Structure.Dir,
+                    Data = constructs[r.Structure.ConstructID],
+                    ConstructID = 0,
                 }, team);
                 break;
         }
@@ -202,8 +208,9 @@ public struct ConstructWallData
 }
 public struct ConstructData
 {
-    public float3 pos;
-    public ConstructionData constructData;
-    public int constructID;
+    public float3 Origin;
+    public float3 Dir;
+    public ConstructionData Data;
+    public int ConstructID;
 
 }

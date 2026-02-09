@@ -177,7 +177,7 @@ MonoBehaviour:
   queueSize: 10
   spawnOffset: {x: 6, y: 0, z: 0}
   prefab0: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
-  prefab1: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
+  prefab1: {fileID: 11400000, guid: 668f46f84208d1148b5bfe2a595b1655, type: 2}
   prefab2: {fileID: 11400000, guid: 216fedd5d6b987f4dbfcfadfd925ed6d, type: 2}
   prefab3: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
   prefab4: {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}

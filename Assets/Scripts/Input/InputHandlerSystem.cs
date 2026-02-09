@@ -28,8 +28,7 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnSelectUnits += HandleUnitSelect;
         InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
         
-        RequireForUpdate(new EntityQueryBuilder(Allocator.Persistent)
-            .WithAll<AssetSingleton>().Build(this));
+        
         //DEPRECATED
         /*        var t = GameObject.FindFirstObjectByType<Terrain>();
                 if (t != null)
@@ -194,8 +193,8 @@ public partial class InputHandlerSystem : SystemBase
             //average everything out
             calculatedRadius /= unitCount;
             calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
-
-            bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
+                                                                        //remove this later
+            bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < 999999*calculatedRadius;
 
             foreach (var (transform, entity) in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>().WithEntityAccess())
             {

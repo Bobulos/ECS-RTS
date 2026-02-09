@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fab20e5178b92c4e913a3490416bd19, type: 3}
   m_Name: PallisadeSegement
   m_EditorClassIdentifier: Assembly-CSharp::ConstructionData
-  mode: 0
+  mode: 1
   spacing: 5
-  size: {x: 10, y: 10, z: 10}
-  primary: {fileID: 0}
+  size:
+    x: 10
+    y: 10
+    z: 10
+  primary: {fileID: 11400000, guid: 5a4c7d049e138fb449eb527345650e1f, type: 2}
   secondary: {fileID: 0}
+  key: 0
   Guid:
     serializedVersion: 2
     Hash: 6f117903cc9d581449e41ae7ff94d66e

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EntityData
   prefab: {fileID: 8410485855669339686, guid: fa260329a255be647bd8fa2e9d309fac, type: 3}
   entityType: 0
-  entityName: 
+  entityName: Alpha Vroomer
   icon: {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
   description: 
   actions:
@@ -27,5 +27,5 @@ MonoBehaviour:
   entityGuid:
     serializedVersion: 2
     Hash: fa260329a255be647bd8fa2e9d309fac
-  key: 1
-  keyGUI: 4
+  key: 2
+  keyGUI: 5

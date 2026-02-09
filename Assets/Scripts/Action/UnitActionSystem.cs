@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -5,22 +7,48 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using ConstructionMan;
+[InternalBufferCapacity(16)]
+public struct ConstructRequest : IBufferElementData
+{   
+    public float3 Position;
+    //add end pos later
+    public ConstructionDataBaked Data;
+}
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
 partial class UnitActionSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;
     const float UNIT_RADIUS_MULTIPLIER = 0.9f;
+
+    private CollisionFilter TERRAIN_MASK = new CollisionFilter
+    {
+        CollidesWith = 1 << 7,
+        BelongsTo = CollisionFilter.Default.BelongsTo,
+        GroupIndex = 0
+    };
+    
+    private CollisionFilter STRUCTURE_MASK = new CollisionFilter
+    {
+        CollidesWith = 1 << 8,
+        BelongsTo = CollisionFilter.Default.BelongsTo,
+        GroupIndex = 0
+    };
     protected override void OnCreate()
     {
         //_count = 100;
         UnitActionManager.OnAction += OnAction;
+        // EntityManager.CreateSingletonBuffer<ConstructRequest>();
+        // var entity = EntityManager.CreateEntity(typeof(ConstructRequests));
+        // EntityManager.AddBuffer<ConstructRequests>(entity);
+
     }
     protected override void OnDestroy()
     {
         UnitActionManager.OnAction -= OnAction;
     }
-        private void OnAction(ActionData action, int team)
+    private void OnAction(ActionData action, int team)
     {
         switch (action.Info.ActionType)
         {
@@ -32,6 +60,9 @@ partial class UnitActionSystem : SystemBase
                 break;
             case ActionType.SetRallyPoint:
                 SetRallyPoint(action, team);
+                break;
+            case ActionType.BuildStructure:
+                BuildStructure(action, team);
                 break;
         }
     }
@@ -109,6 +140,7 @@ partial class UnitActionSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
+    [BurstCompile]
     private void SetRallyPoint(ActionData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return;
@@ -142,6 +174,7 @@ partial class UnitActionSystem : SystemBase
             // Set the structures rally point
         }
     }
+    [BurstCompile]
     private void AddUnitToQueue(ActionData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
@@ -166,4 +199,149 @@ partial class UnitActionSystem : SystemBase
             if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;
         }
     }
+    //public static Action s;
+    //[BurstCompile]
+    private void BuildStructure(ActionData action, int team)
+    {
+        
+        UnityEngine.Debug.Log("Build structure");
+        if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        var structures = SystemAPI.GetSingletonBuffer<StructureManifest>();
+
+        //var constructBufferEntity = SystemAPI.GetSingletonEntity<ConstructRequest>();
+        var constructionData = SystemAPI.GetSingletonBuffer<ConstructionDataManifest>();
+
+        var raycastInput = new RaycastInput
+        {
+            Start = action.RayOrigin, // Ray origin
+            End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,   // Ray end point
+            Filter = CollisionFilter.Default // Or a custom filter
+        };
+
+        // This is the first index of the selected units
+        if (physicsWorld.CastRay(raycastInput, out RaycastHit hit))
+        {
+            //round the raycast pos
+            float3 roundPos = SnapToGrid(physicsWorld, hit.Position);
+
+            int targetKey = selectedUnits.Buckets[0].Key;
+            foreach (var (transform, key, work, entity) in SystemAPI.Query<
+                RefRO<LocalTransform>,
+                RefRO<SelectionKey>,
+                RefRW<Worker>>().WithAll<UnitSelecetedTag>().WithEntityAccess())
+            {
+            //need to add position rounding
+            
+                //UnityEngine.Debug.Log("GOGOGOGOOG");
+                //check that it is the type that needs to be modified
+                if (key.ValueRO.Value != targetKey) continue;
+                // Get the construction data
+                var cD = constructionData[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]];
+                
+                if (!CheckValidStructurePlacement(physicsWorld, roundPos, cD.Size)) continue;
+                
+                work.ValueRW.BuildRequest = new ConstructionRequest
+                {
+                    Dest = roundPos,
+                    Size = cD.Size,
+                    //Spacing = cD.Spacing,
+                    PrimaryKey = cD.PrimaryKey
+                };
+                work.ValueRW.HasRequest = true;
+                //yai
+                // var e = ecb.Instantiate(structures[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]].Value);
+                // ecb.SetComponent(e, new LocalTransform {Position = hit.Position, Rotation = quaternion.identity, Scale = 1f});
+                ecb.AddComponent(entity, new UnitMoveOrder {Dest = roundPos});
+            }
+        }
+
+        
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+    const float STRUCTURE_CHECK_BEVEL = 0.3f;
+    bool CheckValidStructurePlacement(PhysicsWorldSingleton world, float3 position, int3 size)
+    {
+        NativeList<int> hits = new NativeList<int>(Allocator.Temp);
+        float3 halfExtent = ((float3)size / 2) - new float3(STRUCTURE_CHECK_BEVEL);
+        
+        var box = new OverlapAabbInput
+        {
+            Aabb = new Aabb
+            {
+                Max = position + halfExtent,
+                Min = position - halfExtent,
+            },
+            Filter = STRUCTURE_MASK,
+        };
+
+        bool hasOverlap = world.OverlapAabb(box, ref hits);
+        hits.Dispose();
+        
+        return !hasOverlap;
+    }
+    private const float GRID_SIZE = 3f;
+    float3 SnapToGrid(PhysicsWorldSingleton world, float3 position)
+    {
+        float3 gridSnapped = math.round(position / GRID_SIZE) * GRID_SIZE;
+        
+        if (TryGetGroundPoint(world, gridSnapped, out float3 groundPos))
+        {
+            return groundPos;
+        }
+        
+        return gridSnapped;
+    }
+    private const float DEPTH_TEST_HEIGHT = 10f;
+    private bool TryGetGroundPoint(PhysicsWorldSingleton world, float3 pos, out float3 result)
+    {
+        float3 upOffset = new float3(0, DEPTH_TEST_HEIGHT, 0);
+        RaycastInput ray = new RaycastInput
+        {
+            Start = pos + upOffset,
+            End = pos - upOffset,
+            Filter = TERRAIN_MASK,
+        };
+
+        if (world.CastRay(ray, out RaycastHit hit))
+        {
+            result = hit.Position;
+            return true;
+        }
+
+        result = float3.zero;
+        return false;
+    }
+}
+public struct ConstructionRequest
+{
+    public float3 Dest;
+    public int3 Size;
+    //public float Spacing;
+    public int PrimaryKey;
+}
+namespace ConstructionMan
+{
+    [InternalBufferCapacity(8)]
+    public struct ConstructionDataManifest : IBufferElementData
+    {
+        //public ConstructionDataBaked Value;
+        public ConstructionMode Mode;
+        public float Spacing;
+        public int3 Size;
+        public int PrimaryKey;
+        public int SecondaryKey;
+    }
+}
+
+public struct ConstructionDataBaked
+{
+    public ConstructionMode Mode;
+    public float Spacing;
+    public float3 Size;
+    public int PrimaryKey;
+    public int SecondaryKey;
 }

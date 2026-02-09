@@ -32,7 +32,10 @@ public struct ActionInfo
 {
     public ActionType ActionType;
     public InteractionType InteractionType;
-    [Header("ONLY IF ADD UNIT TO QUEUE TYPE")]public int PrefabIndex;
+    [Header("ONLY FOR BUILD STUFF")]public int PrefabIndex;
+
+    [Header("Construct data NOT USED SYSTEM SIDE")] public ConstructionData construction;
+    //[Header("Temporary")] public in
     //[Header("0 move 1 rally 2 atk")]public int CursorIndex;
 }
 public enum EntityType
@@ -50,4 +53,5 @@ public enum ActionType : byte
     AddUnitToQueue,
     SetRallyPoint,
     Move,
+    BuildStructure,
 }

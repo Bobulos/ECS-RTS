@@ -192,8 +192,9 @@ public class InputLogger : MonoBehaviour
                     writer.Write(r.Wall.constructID);
                     break;
                 case InputType.Construct:
-                    WriteVector3(r.Structure.pos);
-                    writer.Write(r.Structure.constructID);
+                    WriteVector3(r.Structure.Origin);
+                    WriteVector3(r.Structure.Dir);
+                    writer.Write(r.Structure.ConstructID);
                     break;
             }
         }
@@ -257,7 +258,7 @@ public static class InputDecoder
                             record.Wall = new ConstructWallData { start = ReadVector3(reader), end = ReadVector3(reader), constructID = reader.ReadInt32() };
                             break;
                         case InputType.Construct:
-                            record.Structure = new ConstructData { pos = ReadVector3(reader), constructID = reader.ReadInt32() };
+                            record.Structure = new ConstructData { Origin = ReadVector3(reader), Dir = ReadVector3(reader), ConstructID = reader.ReadInt32() };
                             break;
                     }
                     records.Add(record);

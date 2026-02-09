@@ -28,7 +28,7 @@ public class UnitManifestAuthoring : MonoBehaviour
             manifest[i].key = i;
             EditorUtility.SetDirty(manifest[i]);
         }
-        
+        EditorUtility.SetDirty(this);
         AssetDatabase.SaveAssets();
     }
     #endif

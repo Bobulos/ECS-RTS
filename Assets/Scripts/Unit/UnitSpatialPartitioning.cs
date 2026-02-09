@@ -10,6 +10,12 @@ public struct UnitSpatialData
     public float3 Position;
     public float2 Velocity;
     public float Radius;
+    //public int TeamID;
+    //public Entity Entity;
+}
+public struct TargSpatialData
+{
+    public float3 Position;
     public int TeamID;
     public Entity Entity;
 }
@@ -20,6 +26,8 @@ public partial struct UnitSpatialPartitioning : ISystem
     // Persistent container reused across frames to avoid per-frame allocations.
     private NativeList<UnitSpatialData> _unitData;
     private EntityQuery _query;
+    private EntityQuery _targQuery;
+    private NativeParallelMultiHashMap<int, TargSpatialData> _targSpatialMap;
     private NativeParallelMultiHashMap<int, UnitSpatialData> _spatialMap;
     private int _navBucket;
     private int _maxNavBucket;
@@ -44,49 +52,79 @@ public partial struct UnitSpatialPartitioning : ISystem
             ComponentType.ReadOnly<Team>(),
             ComponentType.ReadOnly<UnitMovement>()
         );
+        _targQuery = state.GetEntityQuery(
+            ComponentType.ReadOnly<UnitHP>()
+        );
 
         // Initialize persistent list. Reserve some capacity to reduce resizing churn.
-        _unitData = new NativeList<UnitSpatialData>(16, Allocator.Persistent);
+        //_unitData = new NativeList<UnitSpatialData>(64, Allocator.Persistent);
         _spatialMap = new NativeParallelMultiHashMap<int, UnitSpatialData>(config.spatialPartitionTargetCount, Allocator.Persistent);
+        _targSpatialMap = new NativeParallelMultiHashMap<int, TargSpatialData>(config.spatialPartitionTargetCount, Allocator.Persistent);
     }
 
     public void OnDestroy(ref SystemState state)
     {
-        _unitData.Dispose();
+        // _query.Dispose();
+        // _targQuery.Dispose();
+        //_unitData.Dispose();
         _spatialMap.Dispose();
+        _targSpatialMap.Dispose();
         //        if (_unitData.IsCreated)
 
     }
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        _unitData.Clear();
+        //_unitData.Clear();
 
 
         int unitCount = _query.CalculateEntityCount();
+        int targetCount = _targQuery.CalculateEntityCount();
+        // if (_unitData.Capacity < unitCount)
+        //     _unitData.Capacity = unitCount;
 
-        if (_unitData.Capacity < unitCount)
-            _unitData.Capacity = unitCount;
+
         _spatialMap.Clear();
+        _targSpatialMap.Clear();
+
+
         if (_spatialMap.Capacity < unitCount)
             _spatialMap.Capacity = unitCount;
+        if (_targSpatialMap.Capacity < targetCount)
+            _targSpatialMap.Capacity = targetCount;
 
         // This is cheap memory-wise because we reuse the list memory every frame.
-        foreach (var (team, mov, transform, entity) in SystemAPI.Query<Team, UnitMovement, LocalTransform>()
-        .WithEntityAccess().WithNone<DeadTag>())
+        foreach (var (team, mov, transform) in SystemAPI.Query<Team, UnitMovement, LocalTransform>()
+        .WithNone<DeadTag>())
         {
-            unitCount++;
             var ud = new UnitSpatialData
             {
-                Entity = entity,
+                //Entity = entity,
                 Position = transform.Position,
                 Velocity = mov.Velocity,
                 Radius = mov.Radius,
-                TeamID = team.TeamID,
+                //TeamID = team.TeamID,
             };
-            _unitData.Add(ud);
+    
+            //_unitData.Add(ud);
             int hashKey = SpatialHash.GetHashKey(transform.Position);
             _spatialMap.Add(hashKey, ud);
+            //_targSpatialMap.Add(hashKey, )
+        }
+        foreach (var (team, transform, entity) in SystemAPI.Query<Team, LocalTransform>()
+        .WithEntityAccess().WithNone<DeadTag>())
+        {
+            var td = new TargSpatialData
+            {
+                Position = transform.Position,
+                TeamID = team.TeamID,
+                Entity = entity
+            };
+            //_unitData.Add(ud);
+            int hashKey = SpatialHash.GetHashKey(transform.Position);
+            //_unitData.Add(ud);
+            _targSpatialMap.Add(hashKey, td);
+            //_targSpatialMap.Add(hashKey, )
         }
 
         //var dedLookup = SystemAPI.GetComponentLookup<DeadTag>(true);
@@ -95,7 +133,7 @@ public partial struct UnitSpatialPartitioning : ISystem
         {
             T = SystemAPI.Time.ElapsedTime,
             //DeadLookup = dedLookup,
-            UnitSpatialMap = _spatialMap,
+            UnitSpatialMap = _targSpatialMap,
             Bucket = _targBucket,
         };
         job.ScheduleParallel();
@@ -127,7 +165,7 @@ public partial struct FindTargetsJob : IJobEntity
     [ReadOnly] public int Bucket;
     [ReadOnly] public double T;
     //[ReadOnly] public ComponentLookup<DeadTag> DeadLookup;
-    [ReadOnly] public NativeParallelMultiHashMap<int, UnitSpatialData> UnitSpatialMap;
+    [ReadOnly] public NativeParallelMultiHashMap<int, TargSpatialData> UnitSpatialMap;
 
     public void Execute(Entity entity, ref LocalTransform transform, in Team team, ref UnitTarget target)
     {
@@ -154,7 +192,7 @@ public partial struct FindTargetsJob : IJobEntity
                     int nx = cellX + dx;
                     int nz = cellZ + dz;
                     int hashKey = (nx * 73856093) ^ (nz * 19349663);
-                    if (UnitSpatialMap.TryGetFirstValue(hashKey, out UnitSpatialData u, out var it))
+                    if (UnitSpatialMap.TryGetFirstValue(hashKey, out TargSpatialData u, out var it))
                     {
                         do
                         {

@@ -10,22 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5479b243e701d0e4d86474f24bf08dda, type: 3}
-  m_Name: Scout
+  m_Name: Worker
   m_EditorClassIdentifier: Assembly-CSharp::EntityData
-  prefab: {fileID: 8410485855669339686, guid: ed6bc3a530d1e7448b5e99effcb8df29, type: 3}
+  prefab: {fileID: 6317822181652009429, guid: 7f30aa9e60a7193468539615164050ed, type: 3}
   entityType: 0
-  entityName: Scout
-  icon: {fileID: 2800000, guid: 34657218092a1824ca2c073aaa32f411, type: 3}
+  entityName: Worker
+  icon: {fileID: 2800000, guid: c34bccd73108d6a4b90414ac3d98d67b, type: 3}
   description: 
   actions:
   - ActionType: 2
     InteractionType: 1
     PrefabIndex: 0
+    construction: {fileID: 0}
+  - ActionType: 3
+    InteractionType: 1
+    PrefabIndex: 0
+    construction: {fileID: 11400000, guid: 903ab913bb446074aa18994e6f71bf2c, type: 2}
   actionIcons:
   - {fileID: 2800000, guid: c66f0ae48e46d2b4a85686f31b71955a, type: 3}
+  - {fileID: 2800000, guid: cb267c5ba32157e4aa62ec6b86273fd7, type: 3}
   trainingTime: 5
   entityGuid:
     serializedVersion: 2
-    Hash: ed6bc3a530d1e7448b5e99effcb8df29
-  key: 1
-  keyGUI: 3
+    Hash: 7f30aa9e60a7193468539615164050ed
+  key: 0
+  keyGUI: 1
