@@ -21,11 +21,12 @@ MonoBehaviour:
   - ActionType: 2
     InteractionType: 1
     PrefabIndex: 0
-    construction: {fileID: 0}
   - ActionType: 3
     InteractionType: 1
     PrefabIndex: 0
-    construction: {fileID: 11400000, guid: 903ab913bb446074aa18994e6f71bf2c, type: 2}
+  visuals:
+  - {fileID: 0}
+  - {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}
   actionIcons:
   - {fileID: 2800000, guid: c66f0ae48e46d2b4a85686f31b71955a, type: 3}
   - {fileID: 2800000, guid: cb267c5ba32157e4aa62ec6b86273fd7, type: 3}

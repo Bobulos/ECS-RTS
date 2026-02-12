@@ -203,7 +203,7 @@ public struct NavQueryJob : IJob
         if (!calculated && !inValid)
         {
             Ecb.SetBuffer<PatherWayPoint>(REntity);
-            Ecb.AppendToBuffer<PatherWayPoint>(REntity, new PatherWayPoint { Position = ToPos });
+            Ecb.AppendToBuffer(REntity, new PatherWayPoint { Position = ToPos });
         }
         
         Ecb.SetComponent(REntity, RPather);

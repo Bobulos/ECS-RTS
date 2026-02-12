@@ -5,6 +5,14 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+public struct MoveUnitsData
+{
+    public bool Shifting;
+    // We can keep the direction and the current ray's origin for the DOTS system 
+    // to reuse in its raycast calculations.
+    public float3 RayOrigin;
+    public float3 RayDirection;
+}
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
@@ -13,7 +21,12 @@ public partial class InputHandlerSystem : SystemBase
     const float FORMATION_SPACING = 2f;
     const float UNIT_RADIUS_MULTIPLIER = 0.9f;
 
-
+    private CollisionFilter TERRAIN_FILTER = new CollisionFilter
+    {
+        CollidesWith = 1 << 7,
+        BelongsTo = CollisionFilter.Default.BelongsTo,
+        GroupIndex = 0
+    };
     //private EntityQuery _assetQuery;
 
     //DEPRECATED
@@ -47,6 +60,7 @@ public partial class InputHandlerSystem : SystemBase
         InputBridge.OnSelectUnits -= HandleUnitSelect;
         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
     }
+    #region CodeSelect
     private void OnCodeSelectUnits(byte code, int team)
     {
 
@@ -67,6 +81,8 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
+    #endregion
+    #region  SelectUnits
     private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, int t)
     {
         if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
@@ -131,6 +147,7 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
+    #endregion
     //private bool terrainInitialized => terrain != null;
     protected override void OnUpdate()
     {
@@ -147,6 +164,7 @@ public partial class InputHandlerSystem : SystemBase
         terrainPos = t.transform.position;
         terrainSize = terrainData.size;
     }*/
+    #region OnMoveUnits
     [BurstCompile]
     private void OnMoveUnits(MoveUnitsData m, int team)
     {
@@ -169,7 +187,7 @@ public partial class InputHandlerSystem : SystemBase
         if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
         {
 
-            foreach (var transform in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>())
+            foreach (var transform in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>())
             {
                 unitCount++;
                 calculatedCenter += transform.Position;
@@ -196,7 +214,8 @@ public partial class InputHandlerSystem : SystemBase
                                                                         //remove this later
             bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < 999999*calculatedRadius;
 
-            foreach (var (transform, entity) in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>().WithNone<UnitMoveOrder>().WithEntityAccess())
+            float3 offset = new float3(0,10,0);
+            foreach (var (transform, orders, entity) in SystemAPI.Query<LocalTransform, RefRW<OrderList>>().WithAll<UnitSelecetedTag>().WithEntityAccess())
             {
                 //if its outside then
                 float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
@@ -205,7 +224,23 @@ public partial class InputHandlerSystem : SystemBase
                 {
                     movPos = (transform.Position - calculatedCenter)/2f + movCenter.Position;
                 }
-                UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
+                var ray = new RaycastInput
+                {
+                    Start = movPos + offset,
+                    End = movPos - offset,
+                    Filter = TERRAIN_FILTER 
+                };
+                if (physicsWorld.CastRay(ray, out var hit))
+                {
+                    if (!m.Shifting) orders.ValueRW.Value.Clear();
+                    orders.ValueRW.Value.Add(new OrderElement
+                    {
+                        Type = OrderType.Move,
+                        Position = hit.Position,
+                        //not needed for this guy
+                        Data = -1,
+                    });
+                }
             }
         }
 
@@ -213,7 +248,8 @@ public partial class InputHandlerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
-
+    #endregion
+    #region  ClearSelection
     [BurstCompile]
     private void OnClearSelection(int team)
     {
@@ -254,6 +290,8 @@ public partial class InputHandlerSystem : SystemBase
         visualEntities.Dispose();
         selectedParentEntities.Dispose();
     }
+    #endregion
+    #region SelectStructure
     [BurstCompile]
     private void AddStructureSelection(ref EntityCommandBuffer ecb, Entity unit, AssetSingleton assetSingleton)
     {
@@ -303,7 +341,9 @@ public partial class InputHandlerSystem : SystemBase
         // 5. Append child reference to parent
         //ecb.AppendToBuffer(unit, new Child { Value = visual });
     }
+    #endregion
 }
+#region ClearJob
 [BurstCompile]
 public partial struct ClearSelectionJob : IJob
 {
@@ -338,5 +378,6 @@ public partial struct ClearSelectionJob : IJob
         }
     }
 }
+#endregion
 
 public struct SelectedVisualTag : IComponentData { }

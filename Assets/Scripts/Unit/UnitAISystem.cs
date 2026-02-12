@@ -5,72 +5,65 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Transforms;
+
+#region System Definition
+
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(UnitSpatialPartitioning))]
 public partial struct UnitStateSystem : ISystem
 {
-    const float STOPPING_DIST_SQ = 1f;
-    const float RESUME_MOVE_DIST_SQ = 1.5f;
-    const float TARGET_REPATH_THRESH_SQ = 4f; // re-path only if target moved 2m+
-
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
         var hpLookup = SystemAPI.GetComponentLookup<UnitHP>(false);
-        //var ecb = new EntityCommandBuffer(Allocator.TempJob);
-
-        // var ecbSystem =
-        //     SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-
         float elapsedTime = (float)SystemAPI.Time.ElapsedTime;
 
-        /*        foreach (var (pather, uState, mov, targ, attack, transform, entity) in
-                         SystemAPI.Query<RefRW<Pather>, 
-                         RefRW<UnitState>, 
-                         RefRW<UnitMovement>, 
-                         RefRO<UnitTarget>, 
-                         RefRW<UnitAttack>, 
-                         RefRO<LocalTransform>>()
-                         .WithEntityAccess()
-                         .WithNone<DeadTag>())
-                {
-
-                }*/
         var job = new UnitStateMachineJob
         {
             EntityInfo = state.GetEntityStorageInfoLookup(),
-            //Ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged),
             ElapsedTime = elapsedTime,
             HpLookup = hpLookup,
             TransformLookup = transformLookup
         };
-        // = job;
+        
         job.Schedule();
-        //state.Dependency = job.Schedule(state.Dependency);
-        //handle.Complete();
-
-
-        //ecb.Playback(state.EntityManager);
-        //ecb.Dispose();
     }
 }
 
+#endregion
+
+#region State Machine Job
 
 [BurstCompile]
 [WithNone(typeof(DeadTag))]
 public partial struct UnitStateMachineJob : IJobEntity
 {
+    #region Constants
+    
     private const float TARGET_REPATH_THRESH_SQ = 4f;
     private const float RANGE_EXIT_HYSTERESIS = 1.2f;
+    private const float REPATH_DIST_SQ = 1f;
+    
+    #endregion
 
+    #region Fields
+    
     [ReadOnly] public EntityStorageInfoLookup EntityInfo;
     [ReadOnly] public float ElapsedTime;
     [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
     [ReadOnly] public ComponentLookup<UnitHP> HpLookup;
+    
+    #endregion
 
-    //public EntityCommandBuffer Ecb;
-
+    #region Execute Entry Point
+    
     public void Execute(
         RefRW<Pather> pather,
         RefRW<UnitState> state,
@@ -100,32 +93,29 @@ public partial struct UnitStateMachineJob : IJobEntity
             case UnitStates.Chase:
                 UpdateChase(ref ctx);
                 break;
-
             case UnitStates.Attack:
                 UpdateAttack(ref ctx);
                 break;
         }
     }
+    
+    #endregion
 
-    // =====================================================================
-    // STATES
-    // =====================================================================
-    private void UpdateMove(ref Context ctx)
-    {
-/*        UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
-    ctx.Movement.ValueRO.Dest, UnityEngine.Color.blue, 1 / 50f);*/
-        if (BMath.DistXZsq(ctx.Transform.ValueRO.Position, ctx.Pather.ValueRO.Dest) < ctx.Pather.ValueRO.IndexDistance)
-        {
-            //made it to the dest got to idele
-            StopMovement(ref ctx);
-            ctx.State.ValueRW.State = UnitStates.Idle;
-            return;
-        }
-    }
+    #region State Update Methods
+    
     private void UpdateIdle(ref Context ctx)
     {
-        /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position, 
-            ctx.Transform.ValueRO.Position + math.up() * 3f, UnityEngine.Color.cyan, 1/50f);*/
+        // Destination changed - new order received
+        if (BMath.DistXZsq(ctx.Movement.ValueRO.Dest, ctx.Pather.ValueRO.Dest) > TARGET_REPATH_THRESH_SQ)
+        {
+            ctx.Pather.ValueRW.Dest = ctx.Movement.ValueRO.Dest;
+            ctx.Pather.ValueRW.NeedsUpdate = true;
+            ctx.Pather.ValueRW.PathCalculated = false;
+            ctx.State.ValueRW.State = UnitStates.Move;
+            return;
+        }
+
+        // Check for valid target
         if (!TryGetTargetPosition(ctx.Target.ValueRO.Targ, out float3 targetPos))
         {
             StopMovement(ref ctx);
@@ -136,17 +126,37 @@ public partial struct UnitStateMachineJob : IJobEntity
         TransitionToChase(ref ctx, targetPos);
     }
 
+    private void UpdateMove(ref Context ctx)
+    {
+        // Check if destination changed
+        if (BMath.DistXZsq(ctx.Movement.ValueRO.Dest, ctx.Pather.ValueRO.Dest) > TARGET_REPATH_THRESH_SQ)
+        {
+            ctx.Pather.ValueRW.Dest = ctx.Movement.ValueRO.Dest;
+            ctx.Pather.ValueRW.NeedsUpdate = true;
+            ctx.Pather.ValueRW.PathCalculated = false;
+            return;
+        }
+
+        // Reached destination
+        if (BMath.DistXZsq(ctx.Transform.ValueRO.Position, ctx.Pather.ValueRO.Dest) < ctx.Pather.ValueRO.IndexDistance)
+        {
+            StopMovement(ref ctx);
+            ctx.State.ValueRW.State = UnitStates.Idle;
+            return;
+        }
+    }
+
     private void UpdateChase(ref Context ctx)
     {
         var targetEntity = ctx.Target.ValueRO.Targ;
 
+        // Target no longer valid
         if (!TryGetTargetPosition(targetEntity, out float3 targetPos))
         {
             TransitionToIdle(ref ctx);
             return;
         }
-/*        UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
-    targetPos, UnityEngine.Color.greenYellow, 1 / 50f);*/
+
         // In attack range → hard stop and attack
         if (ctx.Target.ValueRO.DistSq <= ctx.Attack.ValueRO.RangeSq)
         {
@@ -154,6 +164,7 @@ public partial struct UnitStateMachineJob : IJobEntity
             ctx.State.ValueRW.State = UnitStates.Attack;
             return;
         }
+
         // Update destination only if target moved enough
         SetDestination(ref ctx, targetPos);
     }
@@ -163,67 +174,38 @@ public partial struct UnitStateMachineJob : IJobEntity
         StopMovement(ref ctx);
         var targetEntity = ctx.Target.ValueRO.Targ;
 
+        // Validate target HP
         if (!TryGetTargetHP(targetEntity, out UnitHP targetHP))
         {
             TransitionToIdle(ref ctx);
             return;
         }
+
+        // Validate target position
         if (!TryGetTargetPosition(targetEntity, out float3 targetPos))
         {
             TransitionToIdle(ref ctx);
             return;
         }
 
+        // Target is dead
         if (targetHP.HP <= 0)
         {
             TransitionToIdle(ref ctx);
             return;
         }
 
-        // ATTACK STATE OWNS MOVEMENT
-        
-
-        // Execute attack
-//         if (AttackReady(ctx.Attack.ValueRO))
-//         {
-//             ctx.Attack.ValueRW.Last = ElapsedTime;
-
-//             Ecb.SetComponent(targetEntity, new UnitHP
-//             {
-//                 HP = targetHP.HP - ctx.Attack.ValueRO.Dmg
-//             });
-//             /*UnityEngine.Debug.DrawLine(ctx.Transform.ValueRO.Position,
-// targetPos, UnityEngine.Color.red, 1 / 50f);*/
-//         }
-   
-        /*if (TryGetTargetPosition(targetEntity, out float3 pos))
-        {
-            float3 dir = pos - ctx.Transform.ValueRO.Position;
-            dir.y = 0f;
-
-            if (math.lengthsq(dir) > 0.0001f)
-            {
-                ctx.Transform.ValueRW.Rotation =
-                    quaternion.LookRotationSafe(math.normalize(dir), math.up());
-            }
-        }*/
-
         // If target exits range (with hysteresis) → chase again
-        if (ctx.Target.ValueRO.DistSq >
-            ctx.Attack.ValueRO.RangeSq * RANGE_EXIT_HYSTERESIS)
+        if (ctx.Target.ValueRO.DistSq > ctx.Attack.ValueRO.RangeSq * RANGE_EXIT_HYSTERESIS)
         {
             ctx.State.ValueRW.State = UnitStates.Chase;
-            //SetDestination(ref ctx, targetPos);
         }
     }
+    
+    #endregion
 
-    // =====================================================================
-    // TRANSITIONS / HELPERS
-    // =====================================================================
-    private bool IsEntityValid(Entity e)
-    {
-        return e != Entity.Null && EntityInfo.Exists(e);
-    }
+    #region State Transition Methods
+    
     private void TransitionToIdle(ref Context ctx)
     {
         ctx.State.ValueRW.State = UnitStates.Idle;
@@ -235,7 +217,11 @@ public partial struct UnitStateMachineJob : IJobEntity
         ctx.State.ValueRW.State = UnitStates.Chase;
         SetDestination(ref ctx, targetPos);
     }
-    const float REPATH_DIST_SQ = 1f;
+    
+    #endregion
+
+    #region Movement Helper Methods
+    
     private void SetDestination(ref Context ctx, float3 dest)
     {
         if (BMath.DistXZsq(ctx.Movement.ValueRW.Dest, dest) > REPATH_DIST_SQ)
@@ -243,9 +229,9 @@ public partial struct UnitStateMachineJob : IJobEntity
             ctx.Pather.ValueRW.PathCalculated = false;
             ctx.Pather.ValueRW.NeedsUpdate = true;
         }
+        
         ctx.Movement.ValueRW.Dest = dest;
         ctx.Pather.ValueRW.Dest = dest;
-        
     }
 
     private void StopMovement(ref Context ctx)
@@ -254,10 +240,14 @@ public partial struct UnitStateMachineJob : IJobEntity
         ctx.Movement.ValueRW.Dest = pos;
         ctx.Pather.ValueRW.Dest = pos;
     }
+    
+    #endregion
 
-    private bool AttackReady(in UnitAttack atk)
+    #region Validation Helper Methods
+    
+    private bool IsEntityValid(Entity e)
     {
-        return atk.Last + atk.Rate < ElapsedTime;
+        return e != Entity.Null && EntityInfo.Exists(e);
     }
 
     private bool TryGetTargetPosition(Entity target, out float3 pos)
@@ -285,10 +275,15 @@ public partial struct UnitStateMachineJob : IJobEntity
         return true;
     }
 
-    // =====================================================================
-    // CONTEXT
-    // =====================================================================
+    private bool AttackReady(in UnitAttack atk)
+    {
+        return atk.Last + atk.Rate < ElapsedTime;
+    }
+    
+    #endregion
 
+    #region Context Struct
+    
     private struct Context
     {
         public RefRW<Pather> Pather;
@@ -298,50 +293,13 @@ public partial struct UnitStateMachineJob : IJobEntity
         public RefRW<UnitAttack> Attack;
         public RefRO<LocalTransform> Transform;
     }
+    
+    #endregion
 }
 
-/// <summary>
-/// This system handles incomming orders for units
-/// </summary>
-[UpdateInGroup(typeof(SimulationSystemGroup)),UpdateAfter(typeof(NavSystem))]
-public partial struct UnitOrderSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
-        //move order
-        foreach (var (mov, buf, moveOrder, uState, pather, entity) in
-                 SystemAPI.Query<
-                     RefRW<UnitMovement>,
-                     DynamicBuffer<PatherWayPoint>,
-                     RefRO<UnitMoveOrder>,
-                     RefRW<UnitState>,
-                     RefRW<Pather>
-                 >().WithEntityAccess()
-                 .WithNone<DeadTag>())
-        {
-            // Clear old waypoints
-            buf.Clear();
+#endregion
 
-            // Update destination info
-            pather.ValueRW.Dest = moveOrder.ValueRO.Dest;
-            mov.ValueRW.Dest = moveOrder.ValueRO.Dest;
-            uState.ValueRW.State = UnitStates.Move;
 
-            // Reset pathing state
-            pather.ValueRW.WaypointIndex = 0;
-            pather.ValueRW.NeedsUpdate = true;
-
-            // Remove the order now that it's been handled
-            //UnityEngine.Debug.Log("Go");
-            ecb.RemoveComponent<UnitMoveOrder>(entity);
-        }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-    }
-}
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct UnitInitSystem : ISystem
 {
@@ -397,6 +355,12 @@ public partial struct UnitInitSystem : ISystem
             };
             if (phys.CastRay(r, out Unity.Physics.RaycastHit hit))
             {
+                // ecb.AppendToBuffer(entity, new OrderElement
+                // {
+                //     Type = OrderType.Move,
+                //     Position = hit.Position,
+                //     Data = -1
+                // });
                 //ecb.AddComponent(entity, new UnitMoveOrder { Dest = hit.Position });
                 //UnityEngine.Debug.Log("HEYEYEYEYYE");
             }

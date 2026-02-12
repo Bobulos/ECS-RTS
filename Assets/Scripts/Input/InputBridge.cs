@@ -33,7 +33,7 @@ public class InputBridge : MonoBehaviour
         mainCamera = Camera.main;
         MinimapInteraction.OnClickEvent += MinimapClick;
     }
-
+    #region  Minimap
     public void MinimapClick(Vector3 p, int b)
     {
         //Debug.Log("Click super sigma");
@@ -41,21 +41,24 @@ public class InputBridge : MonoBehaviour
         //Ray ray = mainCamera.ScreenPointToRay(mousePos);
         if (b == 1)
         {
-            OnMoveUnits?.Invoke(new MoveUnitsData
-            {
-                RayDirection = -Vector3.up,
-                RayOrigin = p + new Vector3(0, 5, 0),
-            }, 0);
+            buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
+                {
+                    Shifting = Input.GetKey(KeyCode.LeftShift),
+                    RayDirection = -Vector3.up,
+                    RayOrigin = p + new Vector3(0, 20f, 0),
+                }, team));
+            //OnMoveUnits?.Invoke();
         }
         else if (b == 0 && rig != null)
         {
             rig.transform.position = p + new Vector3(0, rig.position.y, 0);
         }
     }
-
+    #endregion
 
     SelectionData selectionData;
     //fix in a seccond
+    #region MainLoop
     void Update()
     {
         //UnityEngine.Debug.Log($"reading input as {InputData.inAction}");
@@ -105,6 +108,7 @@ public class InputBridge : MonoBehaviour
         {
             buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
             {
+                Shifting = Input.GetKey(KeyCode.LeftShift),
                 RayDirection = ray.direction,
                 RayOrigin = ray.origin,
             }, team));
@@ -114,6 +118,8 @@ public class InputBridge : MonoBehaviour
             selectionVisual?.UpdateSelection(mousePos);
         }
     }
+    #endregion
+    #region PlaybackBuffer
     List<InputRecord> buffer = new List<InputRecord>(16);
     //playback buffer
     private void FixedUpdate()
@@ -153,6 +159,7 @@ public class InputBridge : MonoBehaviour
             case InputType.MoveUnits:
                 OnMoveUnits?.Invoke(new MoveUnitsData
                 {
+                    Shifting = r.Move.Shifting,
                     RayDirection = r.Move.RayDirection,
                     RayOrigin = r.Move.RayOrigin,
                 }, team);
@@ -165,12 +172,6 @@ public class InputBridge : MonoBehaviour
         
         return affectsGUI;
     }
+    #endregion
 }
 
-public struct MoveUnitsData
-{
-    // We can keep the direction and the current ray's origin for the DOTS system 
-    // to reuse in its raycast calculations.
-    public float3 RayOrigin;
-    public float3 RayDirection;
-}

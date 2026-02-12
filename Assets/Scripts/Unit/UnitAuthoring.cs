@@ -81,8 +81,12 @@ class UnitBaker : Baker<UnitAuthoring>
             PathCalculated = false,
             QuerySet = false,
         });
+        
         AddComponent(entity, new SelectionKey {Value = authoring.data.keyGUI });
+        //buffers
+        AddComponent(entity, new OrderList{Value = new FixedList4096Bytes<OrderElement>()});
         AddComponent<PatherWayPoint>(entity);
+        
         AddComponent<UnitInitFlag>(entity);
         AddComponent(entity, new Vision { Radius = math.round(authoring.range) });
         AddComponent(entity, new LocalVisibility { IsVisible = false, DisableChildren = authoring.disableChildren });
@@ -100,7 +104,7 @@ class UnitBaker : Baker<UnitAuthoring>
             structs.Add(p.key);
         }
 
-        AddComponent(entity, new Worker{ ConstructKeys = structs, BuildRequest = new ConstructionRequest{}, HasRequest = false});
+        AddComponent(entity, new Worker{ ConstructKeys = structs});
     }
 }
 
@@ -164,10 +168,6 @@ public struct UnitHP : IComponentData
     public int HP;
 }
 // orders very sigma
-public struct UnitMoveOrder : IComponentData
-{
-    public float3 Dest;
-}
 public struct UnitAttackMoveOrder : IComponentData
 {
     public float3 Dest;

@@ -66,8 +66,14 @@ public partial struct ProductionStructureSystem : ISystem
                 {
                     dest = prod.ValueRO.RallyPoint;
                 }
-                Ecb.AddComponent(e, new UnitMoveOrder 
-                { Dest = prod.ValueRO.RallyPoint, });
+                var l = new FixedList512Bytes<OrderElement>();
+                l.Add(new OrderElement
+                {
+                    Type = OrderType.Move,
+                    Position = dest,
+                    Data = -1//unused
+                });
+                Ecb.SetComponent(e, new OrderList { Value = l});
             }
         }
     }

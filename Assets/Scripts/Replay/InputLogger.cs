@@ -161,11 +161,13 @@ public class InputLogger : MonoBehaviour
                 case InputType.Action:
                     // only needs to write the index of
                     // the fella
+                    writer.Write(r.Action.Shifting);
                     writer.Write(r.Action.ActionByte);
                     WriteVector3(r.Action.RayOrigin);
                     WriteVector3(r.Action.RayDirection);
                     break;
                 case InputType.MoveUnits:
+                    writer.Write(r.Action.Shifting);
                     WriteVector3(r.Move.RayOrigin);
                     WriteVector3(r.Move.RayDirection);
                     break;
@@ -226,14 +228,17 @@ public static class InputDecoder
 
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
-                    InputRecord record = new InputRecord();
-                    record.Type = (InputType)reader.ReadByte();
-                    record.Step = reader.ReadUInt32(); // Matches writer.Write(uint)
-                    record.Team = reader.ReadInt32();
+                    var record = new InputRecord
+                    {
+                        Type = (InputType)reader.ReadByte(),
+                        Step = reader.ReadUInt32(),
+                        Team = reader.ReadInt32(),
+                    };
 
                     switch (record.Type)
                     {
                         case InputType.Action:
+                            record.Action.Shifting = reader.ReadBoolean();
                             record.Action.ActionByte = reader.ReadByte();
                             record.Action.RayOrigin = ReadVector3(reader);
                             record.Action.RayDirection = ReadVector3(reader);

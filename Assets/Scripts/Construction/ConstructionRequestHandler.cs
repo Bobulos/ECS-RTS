@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using ConstructionMan;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -7,68 +8,73 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine.UIElements;
 
+// public struct ConstructionRequest : IBufferElementData
+// {
+//     public float3 Position;
+
+//     public int Key;
+// }
+
+public struct ConstructionRequest : IComponentData
+{
+    public int Key;
+    public int TeamID;
+    public float3 Position;
+}
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial struct ConstructionRequestHandler : ISystem
 {
-    private CollisionFilter _structureFilter;
-    private CollisionFilter _terrainFilter;
-    private void OnCreate()
-    {
-        _structureFilter = new CollisionFilter
-        {
-            CollidesWith = 1 << 8,
-            BelongsTo = CollisionFilter.Default.BelongsTo,
-            GroupIndex = 0
-        };
-        _terrainFilter = new CollisionFilter
-        {
-            CollidesWith = 1 << 7,
-            BelongsTo = CollisionFilter.Default.BelongsTo,
-            GroupIndex = 0
-        };
-    }
-    const float BUILD_ARRIVE = 5f;
+    // private CollisionFilter _structureFilter;
+    // private CollisionFilter _terrainFilter;
+    // private void OnCreate()
+    // {
+    //     _structureFilter = new CollisionFilter
+    //     {
+    //         CollidesWith = 1 << 8,
+    //         BelongsTo = CollisionFilter.Default.BelongsTo,
+    //         GroupIndex = 0
+    //     };
+    //     _terrainFilter = new CollisionFilter
+    //     {
+    //         CollidesWith = 1 << 7,
+    //         BelongsTo = CollisionFilter.Default.BelongsTo,
+    //         GroupIndex = 0
+    //     };
+    // }
+    //const float BUILD_ARRIVE = 5f;
     const float STRUCTURE_CHECK_BEVEL = 0.3f;
     private void OnUpdate(ref SystemState state)
     {
-        //UnityEngine.Debug.Log("FOUND A BUFFER");
-        if (!SystemAPI.TryGetSingletonBuffer<StructureManifest>(out var manifest)) return;
         if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var physicsWorld)) return;
+        if (!SystemAPI.TryGetSingletonBuffer<StructureManifest>(out var manifest)) return;
+        if (!SystemAPI.TryGetSingletonBuffer<ConstructionDataManifest>(out var construction)) return;
 
-        //var ecbSys = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
-        //UnityEngine.Debug.Log("RUNNING");
+        var ecbSys = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
 
-        foreach (var (transform, work, team) in SystemAPI.Query<RefRO<LocalTransform>, RefRW<Worker>, RefRO<Team>>())
+        var ecb = ecbSys.CreateCommandBuffer(state.WorldUnmanaged);
+        foreach (var (req, entity) in SystemAPI.Query<ConstructionRequest>().WithEntityAccess())
         {
-            //UnityEngine.Debug.Log("FOUND SOME FELLAS");
-            //UnityEngine.Debug.Log(BMath.DistXZsq(transform.ValueRO.Position, work.ValueRO.BuildRequest.Dest));
-            //if (work.ValueRO.HasRequest) UnityEngine.Debug.Log(BMath.DistXZsq(transform.ValueRO.Position, work.ValueRO.BuildRequest.Dest));
-            if (work.ValueRO.HasRequest
-             && BMath.DistXZ(transform.ValueRO.Position, work.ValueRO.BuildRequest.Dest) <= BUILD_ARRIVE)
+            //UnityEngine.Debug.Log($"is valid of {CheckValidStructurePlacement(physicsWorld, req.Position, construction[req.Key].Size)}");
+            if (CheckValidStructurePlacement(physicsWorld, req.Position, construction[req.Key].Size))
             {
-                work.ValueRW.HasRequest = false;
-                //check if valid with aab
-                if (!CheckValidStructurePlacement(physicsWorld, work.ValueRO.BuildRequest.Dest, work.ValueRO.BuildRequest.Size)) continue;
-                //UnityEngine.Debug.Log("BUILD FROM REQUEST");
-                //can build the guy
-                var e = ecb.Instantiate(manifest[work.ValueRO.BuildRequest.PrimaryKey].Value);
-                ecb.SetComponent(e, new LocalTransform {Position = work.ValueRO.BuildRequest.Dest, Rotation = quaternion.identity , Scale = 1f});
-                ecb.SetComponent(e, new Team { TeamID = team.ValueRO.TeamID});
+                var s = ecb.Instantiate(manifest[req.Key].Value);
+                ecb.SetComponent(s, new LocalTransform
+                {
+                    Position = req.Position,
+                    Scale = 1f,
+                    Rotation = quaternion.identity
+                });
+                ecb.SetComponent(s, new Team{TeamID = req.TeamID});
             }
+
+            ecb.DestroyEntity(entity);
+            //UnityEngine.Debug.Log("There is a build request");
         }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-        // foreach (var r in requests)
-        // {
-        //     UnityEngine.Debug.Log($"Request {r}");
-        //     r.Position
-
-        // }
     }
-    bool CheckValidStructurePlacement(PhysicsWorldSingleton world, float3 position, int3 size)
+    
+    private bool CheckValidStructurePlacement(PhysicsWorldSingleton world, float3 position, int3 size)
     {
         NativeList<int> hits = new NativeList<int>(Allocator.Temp);
         float3 halfExtent = ((float3)size / 2) - new float3(STRUCTURE_CHECK_BEVEL);
@@ -80,7 +86,12 @@ public partial struct ConstructionRequestHandler : ISystem
                 Max = position + halfExtent,
                 Min = position - halfExtent,
             },
-            Filter = _structureFilter,
+            Filter =  new CollisionFilter
+            {
+                CollidesWith = 1 << 8,
+                BelongsTo = CollisionFilter.Default.BelongsTo,
+                GroupIndex = 0
+            },
         };
 
         bool hasOverlap = world.OverlapAabb(box, ref hits);
@@ -113,8 +124,8 @@ public struct UnderConstruction : IComponentData
 }
 public struct Worker : IComponentData
 {
-    public bool HasRequest;
-    public ConstructionRequest BuildRequest;
+    // public bool HasRequest;
+    // public ConstructionRequest BuildRequest;
     //public float3 BuildDest;
     public FixedList128Bytes<int> ConstructKeys;
 }

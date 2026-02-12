@@ -126,7 +126,7 @@ public partial struct TestSpawnerSystem : ISystem
 
                     Entity e = ECB.Instantiate(spawner.Prefab);
                     ECB.SetComponent(e, LocalTransform.FromPosition(hit.Position));
-                    ECB.AddComponent(e, new UnitMoveOrder { Dest = hit.Position });
+                    //ECB.AddComponent(e, new UnitMoveOrder { Dest = hit.Position });
 
                     spawner.Count++;
                     spawnedThisTick++;
