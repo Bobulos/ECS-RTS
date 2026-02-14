@@ -34,6 +34,7 @@ public partial struct UnitMovementSystem : ISystem
     [WithNone(typeof(DeadTag))]
     private partial struct MovementJob : IJobEntity
     {
+        //private const float CLUSTER_WAYPOINT_INDEX_DIST = 0.9f;
         private const float FIXED_DT = 1f / 50f;
         //private const float MIN_VELOCITY_SQ = 1e-6f;
         private const float MIN_DIRECTION_LENGTH = 1e-4f;
@@ -41,7 +42,8 @@ public partial struct UnitMovementSystem : ISystem
         private const float GROUND_RAYCAST_OFFSET = 10f;
         private const float SLERP_SPEED = 4f;
         private const float DEBUG_LINE_LENGTH = 1f;
-
+        private const float INDEX_DISTANCE_SQ = 1f;
+        private const float LANE_STRENGTH = 1.5f;
         [ReadOnly] public BufferLookup<PatherWayPoint> WaypointLookup;
         [ReadOnly] public PhysicsWorldSingleton World;
         [ReadOnly] public CollisionFilter Filter;
@@ -55,12 +57,11 @@ public partial struct UnitMovementSystem : ISystem
             ref UnitState state)
         {
             float3 currentPosition = transform.Position;
-            float3 targetPosition = GetTargetPosition(entity, ref pather, ref state, currentPosition, currentPosition);
+            float3 targetPosition = GetTargetPosition(entity, ref pather, ref mov, ref state, currentPosition, currentPosition);
 
-            UpdatePreferredVelocity(ref mov, currentPosition, targetPosition, pather.IndexDistance);
+            UpdatePreferredVelocity(entity, ref mov, currentPosition, targetPosition, INDEX_DISTANCE_SQ);
             ApplyMovement(ref transform, mov.Velocity, currentPosition);
             GroundUnit(ref transform, pather.Dest);
-
             //                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              DrawDebugDest(mov.Dest, transform.Position);
             //DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
         }
@@ -68,6 +69,7 @@ public partial struct UnitMovementSystem : ISystem
         private float3 GetTargetPosition(
             Entity entity,
             ref Pather pather,
+            ref UnitMovement mov,
             ref UnitState state,
             float3 defaultDestination,
             float3 currentPosition)
@@ -87,19 +89,31 @@ public partial struct UnitMovementSystem : ISystem
                 return defaultDestination;
             }
                 
-            return UpdateWaypointIndex(ref pather, waypoints, currentPosition);
+            return UpdateWaypointIndex(ref pather, ref mov, waypoints, currentPosition);
         }
 
         private float3 UpdateWaypointIndex(
             ref Pather pather,
+            ref UnitMovement mov,
             DynamicBuffer<PatherWayPoint> waypoints,
             float3 currentPosition)
         {
             float3 currentWaypoint = waypoints[pather.WaypointIndex].Position;
             float waypointDistanceSq = pather.IndexDistance * pather.IndexDistance;
-
+            
+            //check cluster first
+            // if (math.distancesq(mov.PreferredVelocity/mov.MaxSpeed, mov.Velocity/mov.MaxSpeed)
+            // >= CLUSTER_WAYPOINT_INDEX_DIST)
+            // {
+            //     // Advance to next waypoint if available
+            //     if (pather.WaypointIndex < waypoints.Length - 1)
+            //     {
+            //         pather.WaypointIndex++;
+            //         currentWaypoint = waypoints[pather.WaypointIndex].Position;
+            //     }
+            // }
             // Check if we've reached current waypoint
-            if (BMath.DistXZsq(currentPosition, currentWaypoint) <= waypointDistanceSq)
+            if (BMath.DistXZsq(currentPosition, currentWaypoint) <= INDEX_DISTANCE_SQ)
             {
                 // Advance to next waypoint if available
                 if (pather.WaypointIndex < waypoints.Length - 1)
@@ -113,6 +127,7 @@ public partial struct UnitMovementSystem : ISystem
         }
 
         private void UpdatePreferredVelocity(
+            Entity entity,
             ref UnitMovement mov,
             float3 currentPosition,
             float3 targetPosition,
@@ -122,7 +137,7 @@ public partial struct UnitMovementSystem : ISystem
             delta.y = 0f;
 
             float distanceSq = math.lengthsq(delta);
-            float arriveDistanceSq = math.max(MIN_ARRIVE_DISTANCE_SQ, arriveDistance * arriveDistance);
+            float arriveDistanceSq = math.max(MIN_ARRIVE_DISTANCE_SQ, arriveDistance);
 
             // If we're close enough to target, stop
             if (distanceSq <= arriveDistanceSq)
@@ -137,7 +152,20 @@ public partial struct UnitMovementSystem : ISystem
 
             if (directionLength > MIN_DIRECTION_LENGTH)
             {
-                mov.PreferredVelocity = (direction2D / directionLength) * mov.MaxSpeed;
+                float2 dir = direction2D / directionLength;
+
+                // --- perpendicular bias ---
+                // float2 perp = new float2(-dir.y, dir.x);
+
+                // // Stable per-entity bias (deterministic)
+                // uint hash = (uint)entity.Index * 747796405u + 2891336453u;
+                // float bias01 = (hash & 1023u) / 1023f; // 0-1
+                // float signedBias = (bias01 - 0.5f) * 2f; // -1 to 1
+
+                // //float laneWidth = mov.Radius * 1.5f; // tune this
+                // float2 biasedDir = math.normalize(dir + perp * signedBias * LANE_STRENGTH);
+
+                mov.PreferredVelocity = dir * mov.MaxSpeed;
             }
             else
             {

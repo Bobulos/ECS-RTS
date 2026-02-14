@@ -24,6 +24,7 @@ MonoBehaviour:
   - ActionType: 3
     InteractionType: 1
     PrefabIndex: 0
+  hotKeys: 6d00000062000000
   visuals:
   - {fileID: 0}
   - {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}

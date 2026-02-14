@@ -21,6 +21,8 @@ MonoBehaviour:
   - ActionType: 2
     InteractionType: 1
     PrefabIndex: 0
+  hotKeys: 6d000000
+  visuals: []
   actionIcons:
   - {fileID: 2800000, guid: c66f0ae48e46d2b4a85686f31b71955a, type: 3}
   trainingTime: 10

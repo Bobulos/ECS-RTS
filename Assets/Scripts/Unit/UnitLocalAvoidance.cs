@@ -12,7 +12,6 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
     public float CellSize;
     public float TimeHorizon;
     public const float FIXED_DT = 1f / 50f;
-
     public const float MIN_OVERLAP = 0.1f;
     void Execute(
         ref UnitMovement mov,
@@ -86,14 +85,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             mov.PreferredVelocity,
             mov.MaxSpeed
         );
-        if (newVelocity.Equals(float2.zero))
-        {
-            mov.Velocity = newVelocity;
-        }
-        else
-        {
-            mov.Velocity = newVelocity;
-        }
+        mov.Velocity = newVelocity;
         /*// DEBUG: Draw velocity changes
         float3 velStart = pos;
         float3 oldVelEnd = new float3(pos.x + oldVel.x, pos.y, pos.z + oldVel.y);
@@ -190,15 +182,44 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
             {
                 if (!SolveLine(lines, i, maxSpeed, preferred, ref result))
                 {
-                    return float2.zero;
+                    //return float2.zero;
                     //fail set pref to 0
                     //return new float2(5f, 5f);
-                    //return result;
+                    return result/2f;
                 }
             }
         }
         return result;
     }
+    // float2 SolveORCA(FixedList4096Bytes<Line> lines, float2 preferred, float maxSpeed)
+    // {
+    //     float2 result = preferred;
+        
+    //     if (math.lengthsq(result) > maxSpeed * maxSpeed)
+    //         result = math.normalize(result) * maxSpeed;
+
+    //     int failureCount = 0;
+    //     for (int i = 0; i < lines.Length; i++)
+    //     {
+    //         if (Cross(lines[i].Direction, lines[i].Point - result) > 0f)
+    //         {
+    //             if (!SolveLine(lines, i, maxSpeed, preferred, ref result))
+    //             {
+    //                 failureCount++;
+    //                 // Instead of halving, bias more toward preferred
+    //                 if (failureCount > 3)
+    //                 {
+    //                     // Too constrained just use preferred velocity
+    //                     result = math.lengthsq(preferred) > maxSpeed * maxSpeed 
+    //                         ? math.normalize(preferred) * maxSpeed 
+    //                         : preferred;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return result;
+    // }
 
     bool SolveLine(
         FixedList4096Bytes<Line> lines,

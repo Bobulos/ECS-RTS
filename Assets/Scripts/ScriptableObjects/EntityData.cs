@@ -14,6 +14,9 @@ public class EntityData : ScriptableObject
     //this is all structs keep it that way no managed bs
     public ActionInfo[] actions;
 
+    [Header("Hotkeys for action of equivalent index")]
+    public KeyCode[] hotKeys;
+
     [Header("Never sent to system used for structure visualization")]
     public EntityData[] visuals;
 

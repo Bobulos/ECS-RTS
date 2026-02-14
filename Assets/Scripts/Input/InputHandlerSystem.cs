@@ -212,7 +212,7 @@ public partial class InputHandlerSystem : SystemBase
             calculatedRadius /= unitCount;
             calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
                                                                         //remove this later
-            bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < 999999*calculatedRadius;
+            bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
 
             float3 offset = new float3(0,10,0);
             foreach (var (transform, orders, entity) in SystemAPI.Query<LocalTransform, RefRW<OrderList>>().WithAll<UnitSelecetedTag>().WithEntityAccess())

@@ -15,9 +15,9 @@ MonoBehaviour:
   mode: 1
   spacing: 5
   size:
-    x: 10
+    x: 5
     y: 10
-    z: 10
+    z: 5
   primary: {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}
   secondary: {fileID: 0}
   key: 1

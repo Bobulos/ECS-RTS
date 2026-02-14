@@ -21,24 +21,23 @@ MonoBehaviour:
   - ActionType: 1
     InteractionType: 1
     PrefabIndex: 0
-    construction: {fileID: 0}
   - ActionType: 0
     InteractionType: 0
     PrefabIndex: 0
-    construction: {fileID: 0}
   - ActionType: 0
     InteractionType: 0
     PrefabIndex: 1
-    construction: {fileID: 0}
   - ActionType: 0
     InteractionType: 0
     PrefabIndex: 2
-    construction: {fileID: 0}
+  hotKeys: 720000007a0000007800000063000000
+  visuals:
+  - {fileID: 0}
+  - {fileID: 11400000, guid: a48aa085838e86c4181f9aca22c3d6e7, type: 2}
+  - {fileID: 11400000, guid: 668f46f84208d1148b5bfe2a595b1655, type: 2}
+  - {fileID: 11400000, guid: 216fedd5d6b987f4dbfcfadfd925ed6d, type: 2}
   actionIcons:
   - {fileID: 2800000, guid: 73e04c22dcb0f034786b845563b4e242, type: 3}
-  - {fileID: 2800000, guid: c310c56fc64363444bf1969568cb5eac, type: 3}
-  - {fileID: 2800000, guid: c34bccd73108d6a4b90414ac3d98d67b, type: 3}
-  - {fileID: 2800000, guid: 34657218092a1824ca2c073aaa32f411, type: 3}
   trainingTime: 0
   entityGuid:
     serializedVersion: 2

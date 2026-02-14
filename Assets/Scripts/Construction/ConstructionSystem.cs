@@ -243,6 +243,9 @@ public partial class ConstructionSystem : SystemBase
                 });
                 EntityManager.AddComponent<StructureVisualTag>(e);
                 EntityManager.RemoveComponent<PhysicsCollider>(e);
+                //vision
+                EntityManager.RemoveComponent<Vision>(e);
+                EntityManager.RemoveComponent<LocalVisibility>(e);
                 if (EntityManager.HasComponent<ProductionStructure>(e))
                 {
                     EntityManager.RemoveComponent<ProductionStructure>(e);

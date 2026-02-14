@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 884af895db527f740ba79b5f33b1c25d, type: 3}
   m_Name: Default
   m_EditorClassIdentifier: 
-  timeHorizon: 1
+  timeHorizon: 0.5
   spatialPartitionTargetCount: 16
   targetBucketCount: 4
   cellSize: 10
   navBucketCount: 16
+  maxNavQueries: 12288
