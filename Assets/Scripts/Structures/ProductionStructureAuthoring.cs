@@ -2,6 +2,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using Unity.NetCode;
 
 public class ProductionStructureAuthoring : MonoBehaviour
 {
@@ -28,7 +29,7 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
             SpawnOffset = authoring.spawnOffset,
             RallyPoint = float3.zero,
             QueueCount = 0,
-            Prefabs = new FixedList512Bytes<int> {
+            Prefabs = new FixedList64Bytes<int> {
                 authoring.prefab0.key, 
                 authoring.prefab1.key, 
                 authoring.prefab2.key, 
@@ -39,20 +40,21 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
                 authoring.prefab7.key,
             },
             QueueSize = authoring.queueSize,
-            Queue = new FixedList512Bytes<int> {}
+            Queue = new FixedList64Bytes<int> {}
         });
     }
 }
+[GhostComponent]
 public struct ProductionStructure : IComponentData
 {
-    public float3 SpawnOffset;
-    public float3 RallyPoint;
-    public int QueueCount;
-    public int QueueSize;
-    public float StartTime;
+    [GhostField] public float3 SpawnOffset;
+    [GhostField] public float3 RallyPoint;
+    [GhostField] public int QueueCount;
+    [GhostField] public int QueueSize;
+    [GhostField] public float StartTime;
     
     //64 bytes for each unit
-    public FixedList512Bytes<int> Prefabs;
+    public FixedList64Bytes<int> Prefabs;
     // can hold 512
-    public FixedList512Bytes<int> Queue;
+    [GhostField] public FixedList64Bytes<int> Queue;
 }

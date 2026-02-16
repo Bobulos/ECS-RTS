@@ -4,6 +4,7 @@ using TMPro;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+using Unity.NetCode;
 
 public class SelectionGUIManager : MonoBehaviour
 {
@@ -12,6 +13,9 @@ public class SelectionGUIManager : MonoBehaviour
     
     [Header("Pool Settings")]
     public int initialPoolSize = 10;
+    
+    [Header("Update Settings")]
+    public float updateInterval = 0.1f; // Update every 0.1 seconds
 
     private EntityGUIManifest manifest;
     private EntityManager entityManager;
@@ -22,19 +26,25 @@ public class SelectionGUIManager : MonoBehaviour
     private List<UnitGUIElement> activeElements = new List<UnitGUIElement>();
     
     private Coroutine updateCoroutine;
+    
+    // Cache for detecting changes
+    private Dictionary<int, int> lastBucketData = new Dictionary<int, int>();
 
     void Start()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
-        World defaultWorld = World.DefaultGameObjectInjectionWorld;
+        World defaultWorld = ClientServerBootstrap.ClientWorld;
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
 
         // Initialize pool
         InitializePool();
 
-        // Subscribe to events
+        // Subscribe to events (optional - for immediate updates)
         InputBridge.OnUpdateGUI += OnUpdateGUI;
+        
+        // Start continuous update
+        updateCoroutine = StartCoroutine(ContinuousUpdateCoroutine());
     }
 
     private void OnDestroy()
@@ -97,32 +107,47 @@ public class SelectionGUIManager : MonoBehaviour
         
         activeElements.Clear();
     }
+    
+    // Continuous update coroutine
+    IEnumerator ContinuousUpdateCoroutine()
+    {
+        while (true)
+        {
+            UpdateGUI();
+            yield return new WaitForSeconds(updateInterval);
+        }
+    }
+    
+    // Immediate event update
     public void OnUpdateGUI()
     {
-        // Stop any existing coroutine
-        if (updateCoroutine != null)
-        {
-            StopCoroutine(updateCoroutine);
-        }
-        
-        // Start new update coroutine
-        updateCoroutine = StartCoroutine(UpdateGUICoroutine());
+        UpdateGUI();
     }
 
-    IEnumerator UpdateGUICoroutine()
+    void UpdateGUI()
     {
-        // Return all active elements to pool
-        ReturnAllToPool();
-        
-        // Wait for end of frame to ensure all ECS systems have run
-        yield return new WaitForSeconds(1f);
-        
         // Read selection data
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
         {
-            yield break;
+            // No selection data - clear GUI if there are active elements
+            if (activeElements.Count > 0)
+            {
+                ReturnAllToPool();
+                lastBucketData.Clear();
+            }
+            return;
         }
 
+        // Check if data has changed
+        if (!HasSelectionChanged(selectedUnits))
+        {
+            return; // No changes, skip update
+        }
+
+        // Return all active elements to pool
+        ReturnAllToPool();
+
+        // Update the GUI
         int elementIndex = 0;
         foreach (var bucket in selectedUnits.Buckets)
         {
@@ -136,86 +161,52 @@ public class SelectionGUIManager : MonoBehaviour
             }
         }
         
-        updateCoroutine = null;
+        // Update cache
+        UpdateCache(selectedUnits);
+    }
+    
+    bool HasSelectionChanged(LocalSelectedUnits selectedUnits)
+    {
+        // Quick check: different number of buckets
+        if (lastBucketData.Count != selectedUnits.Buckets.Length)
+        {
+            return true;
+        }
+        
+        // Check each bucket
+        foreach (var bucket in selectedUnits.Buckets)
+        {
+            if (!lastBucketData.TryGetValue(bucket.Key, out int cachedCount) || 
+                cachedCount != bucket.Count)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    void UpdateCache(LocalSelectedUnits selectedUnits)
+    {
+        lastBucketData.Clear();
+        
+        foreach (var bucket in selectedUnits.Buckets)
+        {
+            lastBucketData[bucket.Key] = bucket.Count;
+        }
     }
 }
 
 /// <summary>
-/// This things goal is to add all selction unique
+/// This things goal is to add all selection unique
 /// selection datas to an entity;
 /// </summary>
-public partial struct SelectionGUIManagerSystem : ISystem
-{
-    public void OnCreate(ref SystemState state)
-    {
-        var e = state.EntityManager.CreateSingleton<LocalSelectedUnits>();
-    }
-    private int _teamID;
-    public void OnUpdate(ref SystemState state)
-    {
-        if (!SystemAPI.TryGetSingleton<LocalPlayerData>(out var data))
-            return;
-
-        if (!SystemAPI.TryGetSingletonEntity<LocalSelectedUnits>(out var entity))
-            return;
-
-        var newBuckets = new FixedList4096Bytes<SelectedUnitBucket>();
-        int teamID = data.TeamID;
-
-        foreach (var (team, key) in SystemAPI
-            .Query<Team, SelectionKey>()
-            .WithAll<UnitSelecetedTag>())
-        {
-            if (team.TeamID != teamID)
-                continue;
-
-            bool found = false;
-
-            for (int i = 0; i < newBuckets.Length; i++)
-            {
-                if (newBuckets[i].Key == key.Value)
-                {
-                    var b = newBuckets[i];
-                    b.Count++;
-                    newBuckets[i] = b;
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                if (newBuckets.Length >= 64)
-                    break;
-
-                newBuckets.Add(new SelectedUnitBucket
-                {
-                    Key = key.Value,
-                    Count = 1
-                });
-            }
-        }
-
-        state.EntityManager.SetComponentData(entity,
-            new LocalSelectedUnits { Buckets = newBuckets });
-    }
-/*    private bool IsUniqueKey(FixedList4096Bytes<SelectedUnitBucket> d, int key)
-    {
-        foreach (var item in d)
-        {
-            if (item.Key == key)
-            {
-                return false;
-            }
-        }
-        return true;
-    }*/
-}
 public struct LocalSelectedUnits : IComponentData
 {
     //64 unique buckets
     public FixedList4096Bytes<SelectedUnitBucket> Buckets;
 }
+
 public struct SelectedUnitBucket
 {
     public int Key;

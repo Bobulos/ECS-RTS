@@ -91,7 +91,7 @@ public partial class InputToServerRelay : SystemBase
                     {
                         TargetConnection = connectionEntity
                     });
-                    UnityEngine.Debug.Log("Sent move units rpc");
+                    //UnityEngine.Debug.Log("Sent move units rpc");
                     break;
                 case InputType.ClearUnits:
                     ecb.AddComponent(rpcEntity, new ClearUnitsRpc
@@ -102,7 +102,7 @@ public partial class InputToServerRelay : SystemBase
                     {
                         TargetConnection = connectionEntity
                     });
-                    UnityEngine.Debug.Log("Sent clear units rpc");
+                    //UnityEngine.Debug.Log("Sent clear units rpc");
                     break;
                 case InputType.Action:
                     ecb.AddComponent(rpcEntity, new ActionRpc
@@ -114,7 +114,7 @@ public partial class InputToServerRelay : SystemBase
                     {
                         TargetConnection = connectionEntity
                     });
-                    UnityEngine.Debug.Log("Sent action rpc");
+                    //UnityEngine.Debug.Log("Sent action rpc");
                     break;
                 case InputType.CodeSelectUnits:
                     ecb.AddComponent(rpcEntity, new CodeSelectRpc
@@ -126,7 +126,7 @@ public partial class InputToServerRelay : SystemBase
                     {
                         TargetConnection = connectionEntity
                     });
-                    UnityEngine.Debug.Log("Sent code select units rpc");
+                    //UnityEngine.Debug.Log("Sent code select units rpc");
                     break;
                 case InputType.SelectUnits:
                     ecb.AddComponent(rpcEntity, new FixedSelectionRpc
@@ -138,7 +138,7 @@ public partial class InputToServerRelay : SystemBase
                     {
                         TargetConnection = connectionEntity
                     });
-                    UnityEngine.Debug.Log("Sent selct units rpc");
+                    //UnityEngine.Debug.Log("Sent selct units rpc");
                     break;
             }
         }

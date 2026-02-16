@@ -1,14 +1,12 @@
-using System;
-using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using ConstructionMan;
 using Unity.NetCode;
+using UnityEngine;
 
 [InternalBufferCapacity(16)]
 public struct ConstructRequest : IBufferElementData
@@ -60,9 +58,10 @@ public partial struct UnitActionSystem : ISystem
                 AddUnitToQueue(ref state, action, team);
                 break;
             case ActionType.Move:
-                Move(ref state, ref ecb, action, team);
+                Move(ref state, action, team);
                 break;
             case ActionType.SetRallyPoint:
+                UnityEngine.Debug.Log("Received rally point");
                 SetRallyPoint(ref state, action, team);
                 break;
             case ActionType.BuildStructure:
@@ -73,9 +72,9 @@ public partial struct UnitActionSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
-        foreach (var (rpc, rpcSource, entity) in
-         SystemAPI.Query<RefRO<ActionRpc>, RefRO<ReceiveRpcCommandRequest>>()
-         .WithEntityAccess())
+        foreach (var (rpc, rpcSource, entity) in 
+            SystemAPI.Query<RefRO<ActionRpc>, RefRO<ReceiveRpcCommandRequest>>()
+            .WithEntityAccess())
         {
             OnAction(ref state, ref ecb, rpc.ValueRO.Action, rpc.ValueRO.Team);
             ecb.DestroyEntity(entity);
@@ -86,83 +85,83 @@ public partial struct UnitActionSystem : ISystem
     #region  Move
     //shared no check for key
     [BurstCompile]
-    private void Move(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
+    private void Move(ref SystemState state, ActionData action, int team)
     {
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var raycastInput = new RaycastInput
         {
-            Start = action.RayOrigin, // Ray origin
-            End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,   // Ray end point
-            Filter = CollisionFilter.Default // Or a custom filter
+            Start = action.RayOrigin,
+            End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,
+            Filter = TERRAIN_FILTER
         };
 
+        UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.red, 10f);
+
         float3 calculatedCenter = float3.zero;
-
-        //assigned after the center has been calculated;
         int unitCount = 0;
-
-        //given 64 to reduce memory churn
         var unitPositions = new NativeList<float3>(64, Allocator.Temp);
+        
         if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
         {
-
-            foreach (var transform in 
-            SystemAPI.Query<LocalTransform>()
-            .WithAll<UnitSelecetedTag>()
-            .WithNone<StructureTag>())
+            foreach (var (transform, selected) in SystemAPI.Query<LocalTransform, RefRO<Selected>>())
             {
-                unitCount++;
-                calculatedCenter += transform.Position;
-                unitPositions.Add(transform.Position);
+                if (selected.ValueRO.Value)
+                {
+                    unitCount++;
+                    calculatedCenter += transform.Position;
+                    unitPositions.Add(transform.Position);
+                }
             }
+            
             if (unitCount == 0)
             {
-                ecb.Dispose();
                 unitPositions.Dispose();
                 return;
             }
 
             float calculatedRadius = 0;
             calculatedCenter /= unitCount;
-            //calculate avg radius arround center
+            
             foreach (float3 p in unitPositions)
             {
                 calculatedRadius += BMath.DistXZ(p, calculatedCenter);
             }
 
-            //average everything out
             calculatedRadius /= unitCount;
             calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
-
+            
             bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
 
-            float3 offset = new float3(0,10,0);
-
-            foreach (var (transform, orders, entity) in 
-            SystemAPI.Query<LocalTransform, RefRW<OrderList>>().WithAll<UnitSelecetedTag>().WithEntityAccess())
+            float3 offset = new float3(0, 10, 0);
+            
+            foreach (var (transform, orders, selected, entity) in 
+                     SystemAPI.Query<LocalTransform, RefRW<OrderList>, RefRO<Selected>>()
+                     .WithEntityAccess())
             {
-                //if its outside then
+                if (!selected.ValueRO.Value) continue;
+                
                 float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
-                //if its inside then
+                
                 if (mode)
                 {
-                    movPos = (transform.Position - calculatedCenter)/2f + movCenter.Position;
+                    movPos = (transform.Position - calculatedCenter) / 2f + movCenter.Position;
                 }
-                //UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
+                
                 var ray = new RaycastInput
                 {
                     Start = movPos + offset,
                     End = movPos - offset,
                     Filter = TERRAIN_FILTER
                 };
+                
                 if (physicsWorld.CastRay(ray, out var hit))
                 {
                     if (!action.Shifting) orders.ValueRW.Value.Clear();
-                    orders.ValueRW.Value.Add( new OrderElement
+                    
+                    orders.ValueRW.Value.Add(new OrderElement
                     {
                         Type = OrderType.Move,
                         Position = hit.Position,
-                        //not needed for this guy
                         Data = -1,
                     });
                 }
@@ -171,6 +170,93 @@ public partial struct UnitActionSystem : ISystem
 
         unitPositions.Dispose();
     }
+    // private void Move(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
+    // {
+    //     var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
+    //     var raycastInput = new RaycastInput
+    //     {
+    //         Start = action.RayOrigin, // Ray origin
+    //         End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,   // Ray end point
+    //         Filter = CollisionFilter.Default // Or a custom filter
+    //     };
+
+    //     UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.green, 10f);
+
+    //     float3 calculatedCenter = float3.zero;
+
+    //     //assigned after the center has been calculated;
+    //     int unitCount = 0;
+
+    //     //given 64 to reduce memory churn
+    //     var unitPositions = new NativeList<float3>(64, Allocator.Temp);
+    //     if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
+    //     {
+
+    //         foreach (var transform in 
+    //         SystemAPI.Query<LocalTransform>()
+    //         .WithAll<Selected>()
+    //         .WithNone<StructureTag>())
+    //         {
+    //             unitCount++;
+    //             calculatedCenter += transform.Position;
+    //             unitPositions.Add(transform.Position);
+    //         }
+    //         if (unitCount == 0)
+    //         {
+    //             ecb.Dispose();
+    //             unitPositions.Dispose();
+    //             return;
+    //         }
+
+    //         float calculatedRadius = 0;
+    //         calculatedCenter /= unitCount;
+    //         //calculate avg radius arround center
+    //         foreach (float3 p in unitPositions)
+    //         {
+    //             calculatedRadius += BMath.DistXZ(p, calculatedCenter);
+    //         }
+
+    //         //average everything out
+    //         calculatedRadius /= unitCount;
+    //         calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
+
+    //         bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
+
+    //         float3 offset = new float3(0,10,0);
+
+    //         foreach (var (transform, orders, entity) in 
+    //         SystemAPI.Query<LocalTransform, RefRW<OrderList>>().WithAll<Selected>().WithEntityAccess())
+    //         {
+    //             //if its outside then
+    //             float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
+    //             //if its inside then
+    //             if (mode)
+    //             {
+    //                 movPos = (transform.Position - calculatedCenter)/2f + movCenter.Position;
+    //             }
+    //             //UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
+    //             var ray = new RaycastInput
+    //             {
+    //                 Start = movPos + offset,
+    //                 End = movPos - offset,
+    //                 Filter = TERRAIN_FILTER
+    //             };
+    //             if (physicsWorld.CastRay(ray, out var hit))
+    //             {
+    //                 if (!action.Shifting) orders.ValueRW.Value.Clear();
+    //                 orders.ValueRW.Value.Add( new OrderElement
+    //                 {
+    //                     Type = OrderType.Move,
+    //                     Position = hit.Position,
+    //                     //not needed for this guy
+    //                     Data = -1,
+    //                 });
+    //             }
+    //         }
+    //     }
+
+    //     unitPositions.Dispose();
+    // }
     #endregion
     #region Rallypoint
     [BurstCompile]
@@ -195,12 +281,12 @@ public partial struct UnitActionSystem : ISystem
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (key, prod) in SystemAPI.Query<
-            RefRO<SelectionKey>,
-            RefRW<ProductionStructure>>().WithAll<UnitSelecetedTag>())
+        foreach (var (key, selected, prod) in SystemAPI.Query<
+            RefRO<SelectionKey>, RefRO<Selected>,
+            RefRW<ProductionStructure>>())
         {
             //check that it is the type that needs to be modified
-            if (key.ValueRO.Value != targetKey) continue;
+            if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
             
             prod.ValueRW.RallyPoint = hit.Position;
             //UnityEngine.Debug.Log($"Set rally point to{hit.Position}");
@@ -218,12 +304,13 @@ public partial struct UnitActionSystem : ISystem
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (key, prod) in SystemAPI.Query<
+        foreach (var (key, selected, prod) in SystemAPI.Query<
             RefRO<SelectionKey>,
-            RefRW<ProductionStructure>>().WithAll<UnitSelecetedTag>())
+            RefRO<Selected>,
+            RefRW<ProductionStructure>>())
         {
             //check that it is the type that needs to be modified
-            if (key.ValueRO.Value != targetKey) continue;
+            if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
             if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize)
 
             prod.ValueRW.QueueCount++;
@@ -255,7 +342,7 @@ public partial struct UnitActionSystem : ISystem
         };
 
         // This is the first index of the selected units
-        if (physicsWorld.CastRay(raycastInput, out RaycastHit hit))
+        if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit hit))
         {
             //round the raycast pos
             float3 roundPos = SnapToGrid(physicsWorld, hit.Position);
@@ -264,7 +351,7 @@ public partial struct UnitActionSystem : ISystem
             foreach (var (orders, key, work, entity) in SystemAPI.Query<
                 RefRW<OrderList>,
                 RefRO<SelectionKey>,
-                RefRW<Worker>>().WithAll<UnitSelecetedTag>().WithEntityAccess())
+                RefRW<Worker>>().WithAll<Selected>().WithEntityAccess())
             {
             //need to add position rounding
             
@@ -347,7 +434,7 @@ public partial struct UnitActionSystem : ISystem
             Filter = TERRAIN_FILTER,
         };
 
-        if (world.CastRay(ray, out RaycastHit hit))
+        if (world.CastRay(ray, out Unity.Physics.RaycastHit hit))
         {
             result = hit.Position;
             return true;

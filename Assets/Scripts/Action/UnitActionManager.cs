@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using Unity.NetCode;
+
 public struct ActionData
 {
     public bool Shifting;
@@ -29,6 +30,9 @@ public class UnitActionManager : MonoBehaviour
     public UnitGUIActionElement[] elements;
     public ConstructionData[] structures;
     public int team = 0;
+    
+    [Header("Update Settings")]
+    public float updateInterval = 0.1f; // Update every 0.1 seconds
 
     private EntityManager entityManager;
     private EntityQuery query;
@@ -36,6 +40,12 @@ public class UnitActionManager : MonoBehaviour
     private EntityData curGUIData;
     private Camera cam;
     private List<ActionData> buffer = new List<ActionData>();
+    
+    // Cache for change detection
+    private int lastSelectedKey = -1;
+    private int lastSelectedCount = 0;
+    
+    private UnityEngine.Coroutine updateCoroutine;
 
     public static Action<ActionData, int> OnAction;
     public static event Action<ConstructData> VisualizeStructure;
@@ -49,22 +59,34 @@ public class UnitActionManager : MonoBehaviour
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
 
-        World defaultWorld = World.DefaultGameObjectInjectionWorld;
+        World defaultWorld = ClientServerBootstrap.ClientWorld;
         entityManager = defaultWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
 
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
         
-        if (GameSettings.InReplayMode) this.enabled = false;
+        if (GameSettings.InReplayMode) 
+        {
+            this.enabled = false;
+            return;
+        }
 
         cam = Camera.main;
+        
+        // Start continuous update
+        updateCoroutine = StartCoroutine(ContinuousUpdateCoroutine());
     }
 
     private void OnDestroy()
     {
         InputBridge.OnUpdateGUI -= OnUpdateGUI;
         UnitGUIActionElement.OnAction -= OnElementAction;
+        
+        if (updateCoroutine != null)
+        {
+            StopCoroutine(updateCoroutine);
+        }
     }
     
     #endregion
@@ -79,7 +101,7 @@ public class UnitActionManager : MonoBehaviour
         {
             var record = InputRecordUtil.AssembleRecord(input, team);
             PlaybackInput(record);
-            UnityEngine.Debug.Log($"Action executed - Shifting: {record.Action.Shifting}");
+            //UnityEngine.Debug.Log($"Action executed - Shifting: {record.Action.Shifting}");
         }
         
         buffer.Clear();
@@ -194,26 +216,40 @@ public class UnitActionManager : MonoBehaviour
 
     #region GUI Update
     
+    // Continuous update coroutine
+    System.Collections.IEnumerator ContinuousUpdateCoroutine()
+    {
+        while (true)
+        {
+            UpdateGUI();
+            yield return new WaitForSeconds(updateInterval);
+        }
+    }
+    
+    // Optional: Immediate update triggered by event
     public void OnUpdateGUI()
     {
-        foreach (var e in elements)
-        {
-            e.Clear();
-        }
-        StopAllCoroutines();
-        StartCoroutine(ReadSelection());
+        UpdateGUI();
     }
 
-    System.Collections.IEnumerator ReadSelection()
+    void UpdateGUI()
     {
-        yield return new WaitForSeconds(1f); // Wait one frame for the system to update
-
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
-            yield break;
+        {
+            // No selection - clear if we had something selected before
+            if (lastSelectedKey != -1)
+            {
+                ClearAllElements();
+                lastSelectedKey = -1;
+                lastSelectedCount = 0;
+            }
+            return;
+        }
 
         // Find first non-empty bucket
         bool found = false;
-        SelectedUnitBucket toDisplay = new SelectedUnitBucket { Key = 0, Count = 0};
+        SelectedUnitBucket toDisplay = new SelectedUnitBucket { Key = 0, Count = 0 };
+        
         foreach (var bucket in selectedUnits.Buckets)
         {
             found = true;
@@ -224,28 +260,70 @@ public class UnitActionManager : MonoBehaviour
         // Clear all elements if no selection
         if (!found)
         {
-            foreach (var e in elements)
+            if (lastSelectedKey != -1)
             {
-                e.Clear();
+                ClearAllElements();
+                lastSelectedKey = -1;
+                lastSelectedCount = 0;
             }
-            yield break;
+            return;
         }
 
-        curGUIData = null;
+        // Check if selection has changed
+        if (toDisplay.Key == lastSelectedKey && toDisplay.Count == lastSelectedCount)
+        {
+            return; // No change, skip update
+        }
 
-        if (!manifest.TryGetData(toDisplay.Key, out EntityData data)) 
-            yield break;
+        // Update cache
+        lastSelectedKey = toDisplay.Key;
+        lastSelectedCount = toDisplay.Count;
 
-        if (data.actions == null) 
-            yield break;
+        // Get and validate data
+        if (!manifest.TryGetData(toDisplay.Key, out EntityData data))
+        {
+            ClearAllElements();
+            curGUIData = null;
+            return;
+        }
+
+        if (data.actions == null)
+        {
+            ClearAllElements();
+            curGUIData = null;
+            return;
+        }
 
         curGUIData = data;
-        
+
         // Populate action elements
-        for (int i = 0; i < data.actions.Length; i++)
+        for (int i = 0; i < elements.Length; i++)
         {
-            elements[i].SetData(data, (byte)i);
+            if (i < data.actions.Length)
+            {
+                elements[i].SetData(data, (byte)i);
+            }
+            else
+            {
+                elements[i].Clear();
+            }
         }
+    }
+
+    void ClearAllElements()
+    {
+        foreach (var e in elements)
+        {
+            e.Clear();
+        }
+        curGUIData = null;
+    }
+
+    // Kept for backwards compatibility but now just calls UpdateGUI
+    System.Collections.IEnumerator ReadSelection()
+    {
+        yield return new WaitForSeconds(0.2f);
+        UpdateGUI();
     }
     
     #endregion

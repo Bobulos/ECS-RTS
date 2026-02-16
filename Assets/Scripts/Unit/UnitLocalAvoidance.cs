@@ -14,6 +14,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
     public float TimeHorizon;
     public const float FIXED_DT = 1f / 50f;
     public const float MIN_OVERLAP = 0.1f;
+    [BurstCompile]
     void Execute(
         ref UnitMovement mov,
         in LocalTransform transform,
@@ -106,6 +107,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
 
 
     }
+    [BurstCompile]
     void AddORCALine(float3 pos, float2 vel, float radius, in UnitSpatialData other, ref FixedList4096Bytes<Line> lines)
     {
         float2 relPos = new float2(other.Position.x - pos.x, other.Position.z - pos.z);
@@ -167,7 +169,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
         lines.Add(line);
     }
 
-
+    [BurstCompile]
     float2 SolveORCA(FixedList4096Bytes<Line> lines, float2 preferred, float maxSpeed)
     {
         float2 result = preferred;
@@ -221,7 +223,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
     //     }
     //     return result;
     // }
-
+    [BurstCompile]
     bool SolveLine(
         FixedList4096Bytes<Line> lines,
         int index,
@@ -281,7 +283,7 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
         result = line.Point + tFinal * line.Direction;
         return true;
     }
-
+    [BurstCompile]
     float2 FindLeastBadSolution(
         FixedList4096Bytes<Line> lines,
         int index,
@@ -351,8 +353,9 @@ public partial struct UnitLocalAvoidanceJob : IJobEntity
 
         return bestVelocity;
     }
-
-    static float Cross(float2 a, float2 b)
+    //te
+    [BurstCompile]
+    float Cross(float2 a, float2 b)
     {
         return a.x * b.y - a.y * b.x;
     }

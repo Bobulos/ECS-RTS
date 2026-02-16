@@ -60,7 +60,7 @@ public partial class ConstructionSystem : SystemBase
     
     void CancelConstruction()
     {
-        UnityEngine.Debug.Log("Cancel construction");
+        //UnityEngine.Debug.Log("Cancel construction");
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var lookup = SystemAPI.GetBufferLookup<LinkedEntityGroup>();
         foreach (var (t, e) in SystemAPI.Query<StructureVisualTag>().WithEntityAccess())

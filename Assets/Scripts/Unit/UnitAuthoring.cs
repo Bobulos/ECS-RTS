@@ -82,6 +82,8 @@ class UnitBaker : Baker<UnitAuthoring>
             QuerySet = false,
         });
         
+        AddComponent(entity, new Selected { Value = false});
+
         AddComponent(entity, new SelectionKey {Value = authoring.data.keyGUI });
         //buffers
         AddComponent(entity, new OrderList{Value = new FixedList4096Bytes<OrderElement>()});
@@ -160,10 +162,10 @@ public struct UnitTag : IComponentData
 {
 
 }
-[GhostComponent]
-public struct UnitSelecetedTag : IComponentData
+[GhostComponent(PrefabType = GhostPrefabType.All)]
+public struct Selected : IComponentData
 {
-    [GhostField] public byte Value;
+    [GhostField] public bool Value;
 }
 [GhostComponent]
 public struct UnitTarget : IComponentData
