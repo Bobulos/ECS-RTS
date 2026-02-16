@@ -123,6 +123,8 @@ GameObject:
   - component: {fileID: 6979272470599860493}
   - component: {fileID: -2951004401357442426}
   - component: {fileID: 2601531472761946144}
+  - component: {fileID: -7335274388486164442}
+  - component: {fileID: -4973679507097968610}
   m_Layer: 8
   m_Name: PallisadeSegement
   m_TagString: Untagged
@@ -159,8 +161,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 5a4c7d049e138fb449eb527345650e1f, type: 2}
+  teamID: 0
   selectionKey: 2
   visionRadius: 5
+  hp: 100
 --- !u!65 &2601531472761946144
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -182,3 +186,41 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 4.91, z: 1}
   m_Center: {x: 0, y: 2.41, z: 0}
+--- !u!114 &-7335274388486164442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2237129365714276474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c16549610bfe4458aa9389201d072bb6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Entities.Hybrid::Unity.Entities.Hybrid.Baking.LinkedEntityGroupAuthoring
+--- !u!114 &-4973679507097968610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2237129365714276474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c79d771cedb4794bf100ce60df5f764, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.NetCode.Authoring.Hybrid::Unity.NetCode.GhostAuthoringComponent
+  DefaultGhostMode: 0
+  SupportedGhostModes: 3
+  OptimizationMode: 0
+  Importance: 1
+  MaxSendRate: 0
+  prefabId: 6f117903cc9d581449e41ae7ff94d66e
+  HasOwner: 0
+  SupportAutoCommandTarget: 1
+  TrackInterpolationDelay: 0
+  GhostGroup: 0
+  UsePreSerialization: 0
+  UseSingleBaseline: 0
+  RollbackPredictedSpawnedGhostState: 0
+  RollbackPredictionOnStructuralChanges: 1

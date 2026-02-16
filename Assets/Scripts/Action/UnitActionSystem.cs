@@ -8,6 +8,8 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using ConstructionMan;
+using Unity.NetCode;
+
 [InternalBufferCapacity(16)]
 public struct ConstructRequest : IBufferElementData
 {   
@@ -15,66 +17,77 @@ public struct ConstructRequest : IBufferElementData
     //add end pos later
     public ConstructionDataBaked Data;
 }
-
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
-partial class UnitActionSystem : SystemBase
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
+public partial struct UnitActionSystem : ISystem
 {
     const float MAX_RAY_LENGTH = 300f;
     const float UNIT_RADIUS_MULTIPLIER = 0.9f;
 
-    private CollisionFilter TERRAIN_FILTER = new CollisionFilter
+    private CollisionFilter TERRAIN_FILTER;
+
+    private CollisionFilter STRUCTURE_MASK;
+    public void OnCreate(ref SystemState state)
     {
-        CollidesWith = 1 << 7,
-        BelongsTo = CollisionFilter.Default.BelongsTo,
-        GroupIndex = 0
-    };
-    
-    private CollisionFilter STRUCTURE_MASK = new CollisionFilter
-    {
-        CollidesWith = 1 << 8,
-        BelongsTo = CollisionFilter.Default.BelongsTo,
-        GroupIndex = 0
-    };
-    protected override void OnCreate()
-    {
+        TERRAIN_FILTER = new CollisionFilter
+        {
+            CollidesWith = 1 << 7,
+            BelongsTo = CollisionFilter.Default.BelongsTo,
+            GroupIndex = 0
+        };
+        STRUCTURE_MASK = new CollisionFilter
+        {
+            CollidesWith = 1 << 8,
+            BelongsTo = CollisionFilter.Default.BelongsTo,
+            GroupIndex = 0
+        };
         //_count = 100;
-        UnitActionManager.OnAction += OnAction;
+        //UnitActionManager.OnAction += OnAction;
         // EntityManager.CreateSingletonBuffer<ConstructRequest>();
         // var entity = EntityManager.CreateEntity(typeof(ConstructRequests));
         // EntityManager.AddBuffer<ConstructRequests>(entity);
 
     }
-    protected override void OnDestroy()
+    public void OnDestroy(ref SystemState state)
     {
-        UnitActionManager.OnAction -= OnAction;
+        //UnitActionManager.OnAction -= OnAction;
     }
-    private void OnAction(ActionData action, int team)
+    private void OnAction(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
     {
         switch (action.Info.ActionType)
         {
             case  ActionType.AddUnitToQueue:
-                AddUnitToQueue(action, team);
+                AddUnitToQueue(ref state, action, team);
                 break;
             case ActionType.Move:
-                Move(action, team);
+                Move(ref state, ref ecb, action, team);
                 break;
             case ActionType.SetRallyPoint:
-                SetRallyPoint(action, team);
+                SetRallyPoint(ref state, action, team);
                 break;
             case ActionType.BuildStructure:
-                BuildStructure(action, team);
+                BuildStructure(ref state, ref ecb, action, team);
                 break;
         }
     }
-    protected override void OnUpdate()
+    public void OnUpdate(ref SystemState state)
     {
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        foreach (var (rpc, rpcSource, entity) in
+         SystemAPI.Query<RefRO<ActionRpc>, RefRO<ReceiveRpcCommandRequest>>()
+         .WithEntityAccess())
+        {
+            OnAction(ref state, ref ecb, rpc.ValueRO.Action, rpc.ValueRO.Team);
+            ecb.DestroyEntity(entity);
+        }
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
     }
     #region  Move
     //shared no check for key
     [BurstCompile]
-    private void Move(ActionData action, int team)
+    private void Move(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var raycastInput = new RaycastInput
         {
@@ -157,13 +170,11 @@ partial class UnitActionSystem : SystemBase
         }
 
         unitPositions.Dispose();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
     }
     #endregion
     #region Rallypoint
     [BurstCompile]
-    private void SetRallyPoint(ActionData action, int team)
+    private void SetRallyPoint(ref SystemState state, ActionData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return;
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
@@ -198,7 +209,7 @@ partial class UnitActionSystem : SystemBase
     }
     #region  Add Unit to Queue
     [BurstCompile]
-    private void AddUnitToQueue(ActionData action, int team)
+    private void AddUnitToQueue(ref SystemState state, ActionData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
 
@@ -226,11 +237,10 @@ partial class UnitActionSystem : SystemBase
     //public static Action s;
     //[BurstCompile]
     #region  Build Structure
-    private void BuildStructure(ActionData action, int team)
+    private void BuildStructure(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
     {
         //UnityEngine.Debug.Log("Build structure");
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
         //var structures = SystemAPI.GetSingletonBuffer<StructureManifest>();
 
@@ -290,12 +300,9 @@ partial class UnitActionSystem : SystemBase
                 //ecb.AddComponent(entity, new UnitMoveOrder {Dest = roundPos});
             }
         }
-
-        
-
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
     }
+    #endregion
+    #region Helpers
     const float STRUCTURE_CHECK_BEVEL = 0.3f;
     bool CheckValidStructurePlacement(PhysicsWorldSingleton world, float3 position, int3 size)
     {

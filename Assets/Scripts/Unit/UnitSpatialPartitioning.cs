@@ -19,6 +19,7 @@ public struct TargSpatialData
     public int TeamID;
     public Entity Entity;
 }
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitMovementSystem))]
 [BurstCompile]
 public partial struct UnitSpatialPartitioning : ISystem

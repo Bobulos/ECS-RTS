@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
@@ -26,7 +27,7 @@ public class RuntimeColliderConverter : MonoBehaviour
             return Entity.Null;
         }
 
-        World defaultWorld = World.DefaultGameObjectInjectionWorld;
+        World defaultWorld = ClientServerBootstrap.ServerWorld;
         if (defaultWorld == null)
         {
             Debug.LogError("Default ECS World is not initialized.");

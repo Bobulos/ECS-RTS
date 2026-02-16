@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
-
+using Unity.NetCode;
 public struct ActionData
 {
     public bool Shifting;
@@ -206,7 +206,7 @@ public class UnitActionManager : MonoBehaviour
 
     System.Collections.IEnumerator ReadSelection()
     {
-        yield return null; // Wait one frame for the system to update
+        yield return new WaitForSeconds(1f); // Wait one frame for the system to update
 
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
             yield break;

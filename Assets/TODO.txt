@@ -1,0 +1,3 @@
+Make input logger record server side and sent data back when game complete
+
+Overhaul game reset events

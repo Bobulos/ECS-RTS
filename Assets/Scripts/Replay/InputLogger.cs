@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
+//MAKE THIS INTO
 public class InputLogger : MonoBehaviour
 {
     const int FLUSH_THRESHOLD = 128;
@@ -108,9 +111,9 @@ public class InputLogger : MonoBehaviour
         TryFlush();
     }
     //0 is reg 1 is all
-    public void OnSelectUnits(Entity _, SelectionData vertecies, int team)
+    public void OnSelectUnits(FixedSelectionData vertecies, int team)
     {
-        if (vertecies == null || vertecies.value.Length < 8) { return; }
+        if (vertecies.Value.Length == 0 || vertecies.Value.Length < 8) { return; }
         buffer.Add(new InputRecord
         {
             Step = step,
@@ -176,8 +179,8 @@ public class InputLogger : MonoBehaviour
                     // FIX: We must always write exactly 8 vectors to match the Reader's array
                     for (int i = 0; i < 8; i++)
                     {
-                        if (r.Select.value != null && i < r.Select.value.Length)
-                            WriteVector3(r.Select.value[i]);
+                        if (r.Select.Value.Length == 0 && i < r.Select.Value.Length)
+                            WriteVector3(r.Select.Value[i]);
                         else
                             WriteVector3(Vector3.zero); // Padding to maintain alignment
                     }
@@ -248,9 +251,9 @@ public static class InputDecoder
                             break;
                         case InputType.SelectUnits:
                             //byte code = reader.ReadByte();
-                            Vector3[] verts = new Vector3[8];
+                            var verts = new FixedList128Bytes<float3>();
                             for (int i = 0; i < 8; i++) verts[i] = ReadVector3(reader);
-                            record.Select = new SelectionData(verts);
+                            record.Select = new FixedSelectionData { Value = verts};
                             break;
                         case InputType.CodeSelectUnits:
                             record.CodeSelect = reader.ReadByte();
@@ -299,7 +302,7 @@ public struct InputRecord
     public ConstructWallData Wall;
     public ConstructData Structure;
     public MoveUnitsData Move;
-    public SelectionData Select;
+    public FixedSelectionData Select;
     public byte CodeSelect;
 }
 public static class InputRecordUtil
@@ -350,7 +353,7 @@ public static class InputRecordUtil
         };
     }
     
-    public static InputRecord AssembleRecord(SelectionData d, int team)
+    public static InputRecord AssembleRecord(FixedSelectionData d, int team)
     {
         return new InputRecord
         {

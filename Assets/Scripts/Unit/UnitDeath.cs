@@ -11,6 +11,7 @@ using Unity.Transforms;
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitStateSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct DestroyDeadUnitsSystem : ISystem
 {
     JobHandle _prevJob;

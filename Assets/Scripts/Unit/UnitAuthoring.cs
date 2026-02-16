@@ -2,7 +2,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-
+using Unity.NetCode;
 public class UnitAuthoring : MonoBehaviour
 {
     
@@ -108,33 +108,40 @@ class UnitBaker : Baker<UnitAuthoring>
     }
 }
 
-public struct UnitInitFlag : IComponentData { }
+[GhostComponent]
+public struct UnitInitFlag : IComponentData
+{
+}
+[GhostComponent]
 public struct UnitAttack : IComponentData
 {
-    public bool ShootWhileMoveing;
-    public float RangeSq;
-    public int Dmg;
-    public float Rate;
-    public float Last;
+    [GhostField] public bool ShootWhileMoveing;
+    [GhostField] public float RangeSq;
+    [GhostField] public int Dmg;
+    [GhostField] public float Rate;
+    [GhostField] public float Last;
 }
 
+[GhostComponent]
 public struct UnitMovement : IComponentData
 {
-    public float2 Velocity;
-    public float2 PreferredVelocity;
-    public float MaxSpeed;
-    public float Radius;
-    public float3 Dest;
+    [GhostField] public float2 Velocity;
+    [GhostField] public float2 PreferredVelocity;
+    [GhostField] public float MaxSpeed;
+    [GhostField] public float Radius;
+    [GhostField] public float3 Dest;
 }
+[GhostComponent]
 public struct Team : IComponentData
 {
-    public int TeamID;
+    [GhostField] public int TeamID;
     public int UnitID;
 }
 
+[GhostComponent]
 public struct UnitState : IComponentData
 {
-    public UnitStates State;
+    [GhostField] public UnitStates State;
 }
 public enum UnitStates
 {
@@ -143,32 +150,33 @@ public enum UnitStates
     Chase,
     Attack,
 }
+[GhostComponent]
 public struct Vision : IComponentData
 {
-    public float Radius;
+    [GhostField] public float Radius;
 }
+[GhostComponent]
 public struct UnitTag : IComponentData
 {
 
 }
+[GhostComponent]
 public struct UnitSelecetedTag : IComponentData
 {
+    [GhostField] public byte Value;
 }
+[GhostComponent]
 public struct UnitTarget : IComponentData
 {
-    public float Range;
-    public Entity Targ;
-    public float DistSq;
-    public float3 TargetPos;
+    [GhostField] public float Range;
+    [GhostField] public Entity Targ;
+    [GhostField] public float DistSq;
+    [GhostField] public float3 TargetPos;
     //in one of 16 buckets
-    public int Bucket;
+    [GhostField] public int Bucket;
 }
+[GhostComponent]
 public struct UnitHP : IComponentData
 {
-    public int HP;
-}
-// orders very sigma
-public struct UnitAttackMoveOrder : IComponentData
-{
-    public float3 Dest;
+    [GhostField] public int HP;
 }

@@ -3,8 +3,11 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine;
+
 public struct MoveUnitsData
 {
     public bool Shifting;
@@ -14,7 +17,9 @@ public struct MoveUnitsData
     public float3 RayDirection;
 }
 
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovement)), BurstCompile]
+
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -27,6 +32,66 @@ public partial class InputHandlerSystem : SystemBase
         BelongsTo = CollisionFilter.Default.BelongsTo,
         GroupIndex = 0
     };
+
+    //SelectionBox _selectionBox = null;
+    #region Receive rpcs
+    protected override void OnUpdate()
+    {
+        /*        if (_selectionBox == null)
+                {
+                    _selectionBox = GameObject.FindFirstObjectByType<SelectionBox>();
+                }*/
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+        foreach (var (rpc, rpcSource, entity) in
+                 SystemAPI.Query<RefRO<FixedSelectionRpc>, RefRO<ReceiveRpcCommandRequest>>()
+                 .WithEntityAccess())
+        {
+            
+            //_selectionBox.UpdatePerspectiveSelection(rpc.ValueRO.Select);
+            //var e = _selectionBox.GetColliderEntity();
+            HandleUnitSelect(ref ecb, rpc.ValueRO.Select, rpc.ValueRO.Team);
+            ecb.DestroyEntity(entity);
+        }
+        foreach (var (rpc, rpcSource, entity) in
+         SystemAPI.Query<RefRO<CodeSelectRpc>, RefRO<ReceiveRpcCommandRequest>>()
+         .WithEntityAccess())
+        {
+
+            //_selectionBox.UpdatePerspectiveSelection(rpc.ValueRO.Select);
+            //var e = _selectionBox.GetColliderEntity();
+            OnCodeSelectUnits(ref ecb, rpc.ValueRO.CodeSelect, rpc.ValueRO.Team);
+            ecb.DestroyEntity(entity);
+        }
+        foreach (var (rpc, rpcSource, entity) in
+         SystemAPI.Query<RefRO<MoveUnitsRpc>, RefRO<ReceiveRpcCommandRequest>>()
+         .WithEntityAccess())
+        {
+
+            //_selectionBox.UpdatePerspectiveSelection(rpc.ValueRO.Select);
+            //var e = _selectionBox.GetColliderEntity();
+            /*UnityEngine.Debug.
+                Log($"received move units rpc {rpc.ValueRO.Move.RayOrigin}, {rpc.ValueRO.Move.RayDirection}");*/
+
+            
+            OnMoveUnits(ref ecb, rpc.ValueRO.Move, rpc.ValueRO.Team);
+            ecb.DestroyEntity(entity);
+        }
+        foreach (var (rpc, rpcSource, entity) in
+         SystemAPI.Query<RefRO<ClearUnitsRpc>, RefRO<ReceiveRpcCommandRequest>>()
+         .WithEntityAccess())
+        {
+
+            //_selectionBox.UpdatePerspectiveSelection(rpc.ValueRO.Select);
+            //var e = _selectionBox.GetColliderEntity();
+            OnClearSelection(ref ecb, rpc.ValueRO.Team);
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+    #endregion
     //private EntityQuery _assetQuery;
 
     //DEPRECATED
@@ -36,10 +101,10 @@ public partial class InputHandlerSystem : SystemBase
     private float3 terrainSize;*/
     protected override void OnCreate()
     {
-        InputBridge.OnClearUnits += OnClearSelection;
+/*        InputBridge.OnClearUnits += OnClearSelection;
         InputBridge.OnMoveUnits += OnMoveUnits;
         InputBridge.OnSelectUnits += HandleUnitSelect;
-        InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
+        InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;*/
         
         
         //DEPRECATED
@@ -55,18 +120,18 @@ public partial class InputHandlerSystem : SystemBase
     protected override void OnDestroy()
     {
         //_assetQuery.Dispose();
-        InputBridge.OnClearUnits -= OnClearSelection;
+/*        InputBridge.OnClearUnits -= OnClearSelection;
         InputBridge.OnMoveUnits -= OnMoveUnits;
         InputBridge.OnSelectUnits -= HandleUnitSelect;
-        InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
+        InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;*/
     }
     #region CodeSelect
-    private void OnCodeSelectUnits(byte code, int team)
+    private void OnCodeSelectUnits(ref EntityCommandBuffer ecb, byte code, int team)
     {
 
         if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
 
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        //var ecb = new EntityCommandBuffer(Allocator.Temp);
         //0 is all others are command groups
         foreach (var (t, e) in 
             SystemAPI.Query<RefRO<Team>>().
@@ -77,61 +142,79 @@ public partial class InputHandlerSystem : SystemBase
                 AddSelection(ref ecb, e, assetSingleton);
             }
         }
-
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
     }
     #endregion
     #region  SelectUnits
-    private void HandleUnitSelect(Entity selectionEntity, SelectionData unused, int t)
+    private void HandleUnitSelect(ref EntityCommandBuffer ecb, FixedSelectionData selectionData, int teamID)
     {
         if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) { return; }
 
-        if (selectionEntity == Entity.Null) { return; }
-        //UnityEngine.Debug.Log("Events working properly");
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        // Validate we have 8 vertices
+        if (selectionData.Value.Length != 8)
+        {
+            Debug.LogError("Invalid selection data - expected 8 vertices");
+            return;
+        }
 
-        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+
         var collisionWorld = physicsWorld.CollisionWorld;
 
         var tag = SystemAPI.GetComponentLookup<UnitTag>(true);
         var structureTag = SystemAPI.GetComponentLookup<StructureTag>(true);
         var team = SystemAPI.GetComponentLookup<Team>(true);
 
-        // Get collider from your selection entity
-        var collider = EntityManager.GetComponentData<PhysicsCollider>(selectionEntity);
+        float3 center = float3.zero;
+        for (int i = 0; i < 8; i++)
+            center += selectionData.Value[i];
 
-        // Build an input for OverlapCollider
-        float3 pos = EntityManager.GetComponentData<LocalTransform>(selectionEntity).Position;
-        var input = new ColliderCastInput(collider.Value, pos, pos + new float3(0.01f, 0, 0), quaternion.identity);
-        // Collect results
+        center /= 8f;
+
+        // Convert to LOCAL space
+        var localVerts = new NativeArray<float3>(8, Allocator.Temp);
+        for (int i = 0; i < 8; i++)
+            localVerts[i] = selectionData.Value[i] - center;
+
+        // Create collider
+        BlobAssetReference<Unity.Physics.Collider> collider =
+            ConvexCollider.Create(localVerts, ConvexHullGenerationParameters.Default, CollisionFilter.Default);
+
+        ColliderDebugUtil.DrawSelectionPrism(localVerts, center);
+
+        localVerts.Dispose();
+
+        if (!collider.IsCreated)
+        {
+            Debug.LogError("Failed to create selection collider");
+            return;
+        }
+        var input = new ColliderCastInput(collider, center, center + new float3(0.01f, 0, 0), quaternion.identity, 1f);
         var hits = new NativeList<ColliderCastHit>(Allocator.Temp);
-
-        //UnityEngine.Debug.Log(hits.Length);
         collisionWorld.CastCollider(input, ref hits);
+
+        //collider.Value.CastCollider(input, out var s);
+        //UnityEngine.Debug.Log($"S hits of {hits.Length}");
 
         bool onlyStructures = true;
         NativeList<Entity> hitStructures = new NativeList<Entity>(16, Allocator.Temp);
 
-
-        // --- Process results ---
+        //UnityEngine.Debug.Log($"Hit {hits.Length} entitys");
         foreach (var h in hits)
         {
-            //UnityEngine.Debug.Log("There are elemts");
             Entity hitEntity = h.Entity;
 
-            if (hitEntity == selectionEntity) continue; // skip self
-
-            if (tag.HasComponent(hitEntity) && team.GetRefRO(hitEntity).ValueRO.TeamID == t)
+            if (tag.HasComponent(hitEntity) && team.GetRefRO(hitEntity).ValueRO.TeamID == teamID)
             {
                 onlyStructures = false;
                 AddSelection(ref ecb, hitEntity, assetSingleton);
-            } else if (onlyStructures && structureTag.HasComponent(hitEntity))
+            }
+            else if (onlyStructures && structureTag.HasComponent(hitEntity))
             {
                 hitStructures.Add(hitEntity);
             }
         }
-        //handle structure selection
+
         if (onlyStructures && hitStructures.Length > 0)
         {
             foreach (var h in hitStructures)
@@ -140,42 +223,28 @@ public partial class InputHandlerSystem : SystemBase
             }
         }
 
-        //your use has exspired me
-        ecb.DestroyEntity(selectionEntity);
+        // Clean up
+        collider.Dispose();
         hits.Dispose();
         hitStructures.Dispose();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+        //ecb.Playback(EntityManager);
+        //ecb.Dispose();
     }
-    #endregion
-    //private bool terrainInitialized => terrain != null;
-    protected override void OnUpdate()
-    {
-    }
-    /*private void EnsureTerrain()
-    {
-        if (terrainInitialized) return;
-
-        var t = GameObject.FindFirstObjectByType<Terrain>();
-        if (t == null) return; // still nothing in scene
-
-        terrain = t;
-        terrainData = t.terrainData;
-        terrainPos = t.transform.position;
-        terrainSize = terrainData.size;
-    }*/
     #region OnMoveUnits
     [BurstCompile]
-    private void OnMoveUnits(MoveUnitsData m, int team)
+    private void OnMoveUnits(ref EntityCommandBuffer ecb, MoveUnitsData m, int team)
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var raycastInput = new RaycastInput
         {
             Start = m.RayOrigin, // Ray origin
             End = m.RayOrigin + m.RayDirection * MAX_RAY_LENGTH,   // Ray end point
-            Filter = CollisionFilter.Default // Or a custom filter
+            Filter = TERRAIN_FILTER // Or a custom filter
         };
+
+        UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.red, 10f);
 
         float3 calculatedCenter = float3.zero;
 
@@ -186,7 +255,7 @@ public partial class InputHandlerSystem : SystemBase
         var unitPositions = new NativeList<float3>(64, Allocator.Temp);
         if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
         {
-
+            UnityEngine.Debug.Log($"Sent move order to {movCenter.Position}");
             foreach (var transform in SystemAPI.Query<LocalTransform>().WithAll<UnitSelecetedTag>())
             {
                 unitCount++;
@@ -232,6 +301,7 @@ public partial class InputHandlerSystem : SystemBase
                 };
                 if (physicsWorld.CastRay(ray, out var hit))
                 {
+                    //UnityEngine.Debug.Log($"Move units to {hit.Position}");
                     if (!m.Shifting) orders.ValueRW.Value.Clear();
                     orders.ValueRW.Value.Add(new OrderElement
                     {
@@ -245,16 +315,16 @@ public partial class InputHandlerSystem : SystemBase
         }
 
         unitPositions.Dispose();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+       /* ecb.Playback(EntityManager);
+        ecb.Dispose();*/
     }
     #endregion
     #region  ClearSelection
     [BurstCompile]
-    private void OnClearSelection(int team)
+    private void OnClearSelection(ref EntityCommandBuffer ecb, int team)
     {
 
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+        //EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
         // Query for all units that are currently selected (the Parents)
         var selectedUnitsQuery = SystemAPI.QueryBuilder().WithAll<UnitSelecetedTag>().Build();
 
@@ -285,8 +355,8 @@ public partial class InputHandlerSystem : SystemBase
         var jobHandle = clearJob.Schedule();
         jobHandle.Complete();
 
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+        //ecb.Playback(EntityManager);
+        //ecb.Dispose();
         visualEntities.Dispose();
         selectedParentEntities.Dispose();
     }
@@ -317,10 +387,7 @@ public partial class InputHandlerSystem : SystemBase
     [BurstCompile]
     private void AddSelection(ref EntityCommandBuffer ecb, Entity unit, AssetSingleton assetSingleton)
     {
-
-
-        
-        ecb.AddComponent<UnitSelecetedTag>(unit);
+        ecb.AddComponent(unit, new UnitSelecetedTag {Value = 1 });
 
         if (!EntityManager.HasBuffer<Child>(unit))
         {
@@ -381,3 +448,4 @@ public partial struct ClearSelectionJob : IJob
 #endregion
 
 public struct SelectedVisualTag : IComponentData { }
+#endregion

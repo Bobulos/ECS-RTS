@@ -1,6 +1,6 @@
 using Unity.Entities;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using Unity.NetCode;
 public class ECSWorldBootstrapper : MonoBehaviour
 {
     void Awake()

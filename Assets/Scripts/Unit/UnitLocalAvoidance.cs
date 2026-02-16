@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 [BurstCompile]
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct UnitLocalAvoidanceJob : IJobEntity
 {
     [ReadOnly] public NativeParallelMultiHashMap<int, UnitSpatialData> SpatialMap;

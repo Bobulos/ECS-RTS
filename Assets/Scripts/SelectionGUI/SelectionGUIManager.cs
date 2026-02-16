@@ -115,7 +115,7 @@ public class SelectionGUIManager : MonoBehaviour
         ReturnAllToPool();
         
         // Wait for end of frame to ensure all ECS systems have run
-        yield return new WaitForEndOfFrame();
+        yield return new WaitForSeconds(1f);
         
         // Read selection data
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))

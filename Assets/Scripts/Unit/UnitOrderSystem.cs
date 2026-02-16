@@ -2,12 +2,14 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 /// <summary>
 /// This system handles incomming orders for units
 /// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup)),UpdateAfter(typeof(NavSystem))]
 public partial struct UnitOrderSystem : ISystem
 {
@@ -126,9 +128,10 @@ public partial struct OrderJob : IJobEntity
     #endregion
 }
 
+[GhostComponent]
 public struct OrderList : IComponentData
 {
-    public FixedList512Bytes<OrderElement> Value;
+    [GhostField] public FixedList512Bytes<OrderElement> Value;
 }
 // Prob dont use for instant 
 // actions like set rally point

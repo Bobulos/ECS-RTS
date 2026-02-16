@@ -1,11 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-// ... (usings and class definition) ...
+public struct FixedSelectionData
+{
+    public FixedList128Bytes<float3> Value;
 
+    public float3 GetVertex(int index)
+    {
+        if (index < 0 || index >= Value.Length) return float3.zero;
+        return Value[index];
+    }
+}
 public class InputBridge : MonoBehaviour
 {
     // ... (fields) ...
@@ -15,7 +24,7 @@ public class InputBridge : MonoBehaviour
     public SelectionBox selectionBox;
 
     // Action<SelectActionData> is the signature.
-    public static event Action<Entity, SelectionData, int> OnSelectUnits;
+    public static event Action<FixedSelectionData, int> OnSelectUnits;
     public static event Action<byte, int> OnCodeSelectUnits;
     public static event Action<MoveUnitsData, int> OnMoveUnits;
     public static event Action<int> OnClearUnits;
@@ -56,7 +65,7 @@ public class InputBridge : MonoBehaviour
     }
     #endregion
 
-    SelectionData selectionData;
+    FixedSelectionData selectionData;
     //fix in a seccond
     #region MainLoop
     void Update()
@@ -153,7 +162,8 @@ public class InputBridge : MonoBehaviour
                 break;
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
-                OnSelectUnits.Invoke(selectionBox.GetColliderEntity(), r.Select, team);
+                //Debug.Log(selectionBox.GetColliderEntity());
+                OnSelectUnits.Invoke(r.Select, team);
                 affectsGUI = true;
                 break;
             case InputType.MoveUnits:

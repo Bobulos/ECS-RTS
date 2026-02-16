@@ -4,24 +4,25 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine.Experimental.AI; // NavMesh types
 
-
+[GhostComponent]
 public struct Pather : IComponentData
 {
-    public int AgentID;
-    public bool NeedsUpdate;
-    public float3 Dest;
-    public float IndexDistance;
-    public int WaypointIndex;
-    public bool PathCalculated;
+    [GhostField] public int AgentID;
+    [GhostField] public bool NeedsUpdate;
+    [GhostField] public float3 Dest;
+    [GhostField] public float IndexDistance;
+    [GhostField] public int WaypointIndex;
+    [GhostField] public bool PathCalculated;
 
-    public bool QuerySet;
+    [GhostField] public bool QuerySet;
 
-    public int QueryIndex;
+    [GhostField] public int QueryIndex;
 
-    public int Bucket;
+    [GhostField] public int Bucket;
 }
 
 [InternalBufferCapacity(32)]
@@ -34,6 +35,7 @@ public struct PatherCleanup : ICleanupComponentData
     public int QuerieIndex;
 }
 
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial struct NavSystem : ISystem

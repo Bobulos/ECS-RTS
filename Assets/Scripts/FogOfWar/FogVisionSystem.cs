@@ -8,7 +8,7 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial class FogSystem : SystemBase
 {
     private Material _material;
@@ -42,6 +42,7 @@ public partial class FogSystem : SystemBase
 
 
         if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
+        
         //if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();
 
 /*        if (_fogRender != null && !_fogRender.set)
@@ -121,12 +122,14 @@ public partial class FogSystem : SystemBase
 
             if (team.ValueRO.TeamID == playerData.TeamID)
             {
+                //UnityEngine.Debug.Log($"Fog running for units");
                 // Imp mov threshold
                 float3 p = transform.ValueRO.Position;
                 _unitArray[idx] = new float3(p.x, p.z, vision.ValueRO.Radius);
                 idx++;
             }
         }
+        
 
         int count = math.min(idx, MAX_UNITS);
         if (count == 0) return;

@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using Unity.Entities;
 using UnityEngine;
+using Unity.NetCode;
 
 public class KilledDisplay : MonoBehaviour
 {

@@ -1,6 +1,7 @@
-﻿using Unity.Entities;
+﻿using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
-
+using Unity.Mathematics;
 
 
 [RequireComponent(typeof(MeshFilter), typeof(UnityEngine.MeshCollider))]
@@ -62,7 +63,7 @@ public class SelectionBox : MonoBehaviour
     /// <param name="cam">The camera to cast rays from.</param>
     /// <param name="screenStart">The screen start point of the drag.</param>
     /// <param name="screenEnd">The screen end point of the drag.</param>
-    public SelectionData UpdatePerspectiveSelection(Camera cam, Vector2 screenStart, Vector2 screenEnd)
+    public FixedSelectionData UpdatePerspectiveSelection(Camera cam, Vector2 screenStart, Vector2 screenEnd)
     {
         // 1. Get the 4 screen corners of the drag box
         Vector2 min = Vector2.Min(screenStart, screenEnd);
@@ -85,41 +86,34 @@ public class SelectionBox : MonoBehaviour
             UnityEngine.Ray ray = cam.ScreenPointToRay(screenCorners[i]);
             Vector3 intersection;
 
-            // *** NEW LOGIC: Raycast against the fixed Y=0 plane ***
             if (RaycastAgainstYPlane(ray, out intersection))
             {
-                // The intersection point already lies on the Y=0 plane
                 projectedXZPoints[i] = intersection;
             }
             else
             {
-                // This typically means the ray is parallel to the plane, 
-                // but we flag it just in case.
                 Debug.LogWarning("Selection ray failed to intersect Y=0 plane for corner " + i);
                 projectedXZPoints[i] = Vector3.zero;
                 allHitsValid = false;
             }
         }
 
-        // Only continue if the projection worked for all points
-        if (!allHitsValid) return null;
+        if (!allHitsValid) return new FixedSelectionData();
 
         // Define the fixed Y-coordinates
         float bottomY = 0f;
-        //float topY = cam.transform.position.y; // Top vertices height set to camera's Y position
+        float topY = cam.transform.position.y; // FIXED: Store this as a variable
 
-        // 3. Generate the 3D Vertices (8 total)
+        // 3. Generate the 3D Vertices (8 total) - FIXED: Create proper box
         Vector3[] vertices = new Vector3[8];
         for (int i = 0; i < 4; i++)
         {
             Vector3 xzAnchor = projectedXZPoints[i];
 
-            // Bottom vertex: Projected XZ position onto the fixed Y=0 plane
-            // (Note: xzAnchor.y is already 0, but we set it explicitly for clarity)
+            // Bottom vertex: At Y=0
             vertices[i] = new Vector3(xzAnchor.x, bottomY, xzAnchor.z);
 
-            // Top vertex: Projected XZ position using the camera's Y position
-            //vertices[i + 4] = new Vector3(xzAnchor.x, topY, xzAnchor.z);
+            // Top vertex: Same XZ but at camera height - FIXED
             vertices[i + 4] = cam.transform.position;
         }
 
@@ -128,32 +122,46 @@ public class SelectionBox : MonoBehaviour
         mesh.Clear();
         mesh.vertices = vertices;
 
-        // Define the box triangles (6 faces * 2 triangles/face * 3 vertices/triangle = 36 indices)
         mesh.triangles = new int[]
         {
-            // Bottom face (at Y=0)
-            0, 1, 2, 2, 3, 0,
-            // Top face (at Camera Y)
-            4, 7, 6, 6, 5, 4,
-            // Sides
-            0, 4, 5, 5, 1, 0,
-            1, 5, 6, 6, 2, 1,
-            2, 6, 7, 7, 3, 2,
-            3, 7, 4, 4, 0, 3
+        // Bottom face (at Y=0)
+        0, 1, 2, 2, 3, 0,
+        // Top face (at Camera Y)
+        4, 7, 6, 6, 5, 4,
+        // Sides
+        0, 4, 5, 5, 1, 0,
+        1, 5, 6, 6, 2, 1,
+        2, 6, 7, 7, 3, 2,
+        3, 7, 4, 4, 0, 3
         };
 
-        // Finalize mesh
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-        return new SelectionData(vertices);
+
+        // Convert to FixedSelectionData
+        var fsd = new FixedList128Bytes<float3>();
+        foreach (var v in vertices)
+        {
+            fsd.Add(v);
+        }
+
+        return new FixedSelectionData { Value = fsd };
     }
-    public void UpdatePerspectiveSelection(SelectionData verticies)
+    //one for replay
+    public void UpdatePerspectiveSelection(FixedSelectionData verticies)
     {
-        if (verticies == null || verticies.value == null) return;
+        if (verticies.Value.Length == 0) return;
         // 4. Assign to mesh
         Mesh mesh = selectionMesh;
         mesh.Clear();
-        mesh.vertices = verticies.value;
+
+        //convert it
+        Vector3[] verts = new Vector3[verticies.Value.Length];
+        for (int i = 0; i < verticies.Value.Length; i++)
+        {
+            verts[i] = verticies.Value[i];
+        }
+        mesh.vertices = verts;
 
         // Define the box triangles (6 faces * 2 triangles/face * 3 vertices/triangle = 36 indices)
         mesh.triangles = new int[]
@@ -176,7 +184,7 @@ public class SelectionBox : MonoBehaviour
     /// <summary>
     /// Creates and returns a new ECS Entity with a PhysicsCollider based on the current mesh.
     /// </summary>
-    public Entity GetColliderEntity()
+    /*public Entity GetColliderEntity()
     {
         // 2. Ensure the converter has the up-to-date mesh data to read from.
         if (collider.sharedMesh == null || collider.sharedMesh.vertexCount == 0)
@@ -188,7 +196,7 @@ public class SelectionBox : MonoBehaviour
         // 3. Use the converter component to perform the actual baking and entity creation.
         // Assuming RuntimeColliderConverter has a method to bake the assigned mesh.
         return conv.ConvertToEntityWithCollider();
-    }
+    }*/
 
     public void ClearBox()
     {
