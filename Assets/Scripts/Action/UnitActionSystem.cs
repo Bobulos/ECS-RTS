@@ -15,8 +15,8 @@ public struct ConstructRequest : IBufferElementData
     //add end pos later
     public ConstructionDataBaked Data;
 }
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
+
+[UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile]
 public partial struct UnitActionSystem : ISystem
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -50,6 +50,7 @@ public partial struct UnitActionSystem : ISystem
     {
         //UnitActionManager.OnAction -= OnAction;
     }
+    #region  Read input commands
     private void OnAction(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
     {
         switch (action.Info.ActionType)
@@ -61,7 +62,6 @@ public partial struct UnitActionSystem : ISystem
                 Move(ref state, action, team);
                 break;
             case ActionType.SetRallyPoint:
-                UnityEngine.Debug.Log("Received rally point");
                 SetRallyPoint(ref state, action, team);
                 break;
             case ActionType.BuildStructure:
@@ -69,19 +69,36 @@ public partial struct UnitActionSystem : ISystem
                 break;
         }
     }
+
     public void OnUpdate(ref SystemState state)
     {
+        if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
+            return;
+
+        if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
+            return;
+
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
-        foreach (var (rpc, rpcSource, entity) in 
-            SystemAPI.Query<RefRO<ActionRpc>, RefRO<ReceiveRpcCommandRequest>>()
-            .WithEntityAccess())
-        {
-            OnAction(ref state, ref ecb, rpc.ValueRO.Action, rpc.ValueRO.Team);
-            ecb.DestroyEntity(entity);
-        }
+
+        ProcessInput(ref state, ref ecb, turnInput.Input0);
+        ProcessInput(ref state, ref ecb, turnInput.Input1);
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
+
+    private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput c)
+    {
+        if (c.Type == InputType.None) return;
+
+        switch (c.Type)
+        {
+            case InputType.Action:
+                OnAction(ref state, ref ecb, c.Action, c.Team);
+                break;
+        }
+    }
+    #endregion
     #region  Move
     //shared no check for key
     [BurstCompile]
@@ -170,93 +187,6 @@ public partial struct UnitActionSystem : ISystem
 
         unitPositions.Dispose();
     }
-    // private void Move(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
-    // {
-    //     var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
-    //     var raycastInput = new RaycastInput
-    //     {
-    //         Start = action.RayOrigin, // Ray origin
-    //         End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,   // Ray end point
-    //         Filter = CollisionFilter.Default // Or a custom filter
-    //     };
-
-    //     UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.green, 10f);
-
-    //     float3 calculatedCenter = float3.zero;
-
-    //     //assigned after the center has been calculated;
-    //     int unitCount = 0;
-
-    //     //given 64 to reduce memory churn
-    //     var unitPositions = new NativeList<float3>(64, Allocator.Temp);
-    //     if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit movCenter))
-    //     {
-
-    //         foreach (var transform in 
-    //         SystemAPI.Query<LocalTransform>()
-    //         .WithAll<Selected>()
-    //         .WithNone<StructureTag>())
-    //         {
-    //             unitCount++;
-    //             calculatedCenter += transform.Position;
-    //             unitPositions.Add(transform.Position);
-    //         }
-    //         if (unitCount == 0)
-    //         {
-    //             ecb.Dispose();
-    //             unitPositions.Dispose();
-    //             return;
-    //         }
-
-    //         float calculatedRadius = 0;
-    //         calculatedCenter /= unitCount;
-    //         //calculate avg radius arround center
-    //         foreach (float3 p in unitPositions)
-    //         {
-    //             calculatedRadius += BMath.DistXZ(p, calculatedCenter);
-    //         }
-
-    //         //average everything out
-    //         calculatedRadius /= unitCount;
-    //         calculatedRadius *= UNIT_RADIUS_MULTIPLIER;
-
-    //         bool mode = BMath.DistXZ(movCenter.Position, calculatedCenter) < calculatedRadius;
-
-    //         float3 offset = new float3(0,10,0);
-
-    //         foreach (var (transform, orders, entity) in 
-    //         SystemAPI.Query<LocalTransform, RefRW<OrderList>>().WithAll<Selected>().WithEntityAccess())
-    //         {
-    //             //if its outside then
-    //             float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
-    //             //if its inside then
-    //             if (mode)
-    //             {
-    //                 movPos = (transform.Position - calculatedCenter)/2f + movCenter.Position;
-    //             }
-    //             //UnitOrderUtil.UnitMoveOrder(ref ecb, physicsWorld, entity, movPos);
-    //             var ray = new RaycastInput
-    //             {
-    //                 Start = movPos + offset,
-    //                 End = movPos - offset,
-    //                 Filter = TERRAIN_FILTER
-    //             };
-    //             if (physicsWorld.CastRay(ray, out var hit))
-    //             {
-    //                 if (!action.Shifting) orders.ValueRW.Value.Clear();
-    //                 orders.ValueRW.Value.Add( new OrderElement
-    //                 {
-    //                     Type = OrderType.Move,
-    //                     Position = hit.Position,
-    //                     //not needed for this guy
-    //                     Data = -1,
-    //                 });
-    //             }
-    //         }
-    //     }
-
-    //     unitPositions.Dispose();
-    // }
     #endregion
     #region Rallypoint
     [BurstCompile]
@@ -293,6 +223,7 @@ public partial struct UnitActionSystem : ISystem
             // Set the structures rally point
         }
     }
+    #endregion
     #region  Add Unit to Queue
     [BurstCompile]
     private void AddUnitToQueue(ref SystemState state, ActionData action, int team)
@@ -311,7 +242,7 @@ public partial struct UnitActionSystem : ISystem
         {
             //check that it is the type that needs to be modified
             if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
-            if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize)
+            if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize && prod.ValueRO.QueueCount < prod.ValueRO.Queue.Capacity)
 
             prod.ValueRW.QueueCount++;
             prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.Info.PrefabIndex]);
@@ -348,16 +279,17 @@ public partial struct UnitActionSystem : ISystem
             float3 roundPos = SnapToGrid(physicsWorld, hit.Position);
 
             int targetKey = selectedUnits.Buckets[0].Key;
-            foreach (var (orders, key, work, entity) in SystemAPI.Query<
+            foreach (var (orders, key, work, selected, entity) in SystemAPI.Query<
                 RefRW<OrderList>,
                 RefRO<SelectionKey>,
-                RefRW<Worker>>().WithAll<Selected>().WithEntityAccess())
+                RefRW<Worker>,
+                RefRO<Selected>>().WithEntityAccess())
             {
             //need to add position rounding
             
                 //UnityEngine.Debug.Log("GOGOGOGOOG");
                 //check that it is the type that needs to be modified
-                if (key.ValueRO.Value != targetKey) continue;
+                if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
                 // Get the construction data
                 var cD = constructionData[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]];
                 //UnityEngine.Debug.Log($"Built as index {work.ValueRO.ConstructKeys[action.Info.PrefabIndex]}");
@@ -451,7 +383,7 @@ namespace ConstructionMan
     [InternalBufferCapacity(8)]
     public struct ConstructionDataManifest : IBufferElementData
     {
-        //public ConstructionDataBaked Value;
+        public ConstructionDataBaked Value;
         public ConstructionMode Mode;
         public float Spacing;
         public int3 Size;
@@ -468,4 +400,3 @@ public struct ConstructionDataBaked
     public int PrimaryKey;
     public int SecondaryKey;
 }
-#endregion

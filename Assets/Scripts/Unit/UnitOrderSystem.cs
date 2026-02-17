@@ -9,8 +9,8 @@ using UnityEngine;
 /// <summary>
 /// This system handles incomming orders for units
 /// </summary>
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup)),UpdateAfter(typeof(NavSystem))]
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(NavSystem))]
 public partial struct UnitOrderSystem : ISystem
 {
     private ComponentLookup<Worker> _workerLookup;
@@ -128,10 +128,11 @@ public partial struct OrderJob : IJobEntity
     #endregion
 }
 
-[GhostComponent]
+//[GhostComponent]
 public struct OrderList : IComponentData
 {
-    [GhostField] public FixedList512Bytes<OrderElement> Value;
+    //[GhostField] 
+    public FixedList512Bytes<OrderElement> Value;
 }
 // Prob dont use for instant 
 // actions like set rally point

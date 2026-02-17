@@ -110,40 +110,42 @@ class UnitBaker : Baker<UnitAuthoring>
     }
 }
 
-[GhostComponent]
+//[GhostComponent]
 public struct UnitInitFlag : IComponentData
 {
 }
-[GhostComponent]
+//[GhostComponent]
 public struct UnitAttack : IComponentData
 {
-    [GhostField] public bool ShootWhileMoveing;
-    [GhostField] public float RangeSq;
-    [GhostField] public int Dmg;
-    [GhostField] public float Rate;
-    [GhostField] public float Last;
+    public bool ShootWhileMoveing;
+    public float RangeSq;
+    public int Dmg;
+    public float Rate;
+    public float Last;
 }
 
-[GhostComponent]
+//[GhostComponent]
 public struct UnitMovement : IComponentData
 {
-    [GhostField] public float2 Velocity;
-    [GhostField] public float2 PreferredVelocity;
-    [GhostField] public float MaxSpeed;
-    [GhostField] public float Radius;
-    [GhostField] public float3 Dest;
+    //[GhostField]
+    public float2 Velocity;
+    public float2 PreferredVelocity;
+    public float MaxSpeed;
+    public float Radius;
+    //[GhostField]
+    public float3 Dest;
 }
-[GhostComponent]
+//[GhostComponent]
 public struct Team : IComponentData
 {
-    [GhostField] public int TeamID;
+    public int TeamID;
     public int UnitID;
 }
 
-[GhostComponent]
+//[GhostComponent]
 public struct UnitState : IComponentData
 {
-    [GhostField] public UnitStates State;
+    public UnitStates State;
 }
 public enum UnitStates
 {
@@ -152,33 +154,33 @@ public enum UnitStates
     Chase,
     Attack,
 }
-[GhostComponent]
+//[GhostComponent]
 public struct Vision : IComponentData
 {
-    [GhostField] public float Radius;
+    public float Radius;
 }
-[GhostComponent]
+//[GhostComponent]
 public struct UnitTag : IComponentData
 {
 
 }
-[GhostComponent(PrefabType = GhostPrefabType.All)]
+//[GhostComponent]
 public struct Selected : IComponentData
 {
-    [GhostField] public bool Value;
+    public bool Value;
 }
-[GhostComponent]
+//[GhostComponent]
 public struct UnitTarget : IComponentData
 {
-    [GhostField] public float Range;
-    [GhostField] public Entity Targ;
-    [GhostField] public float DistSq;
-    [GhostField] public float3 TargetPos;
+    public float Range;
+    public Entity Targ;
+    public float DistSq;
+    public float3 TargetPos;
     //in one of 16 buckets
-    [GhostField] public int Bucket;
+    public int Bucket;
 }
 [GhostComponent]
 public struct UnitHP : IComponentData
 {
-    [GhostField] public int HP;
+    public int HP;
 }

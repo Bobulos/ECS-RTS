@@ -282,6 +282,7 @@ public static class InputDecoder
 
 public enum InputType : byte
 {
+    None, //used for no input
     ConstructWalls,
     Construct,
     MoveUnits,

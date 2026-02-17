@@ -1,8 +1,7 @@
 using Unity.Burst;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
+using Unity.NetCode;
 using Unity.Mathematics;
 using Unity.Transforms;
 public struct UnitSpatialData
@@ -19,6 +18,7 @@ public struct TargSpatialData
     public int TeamID;
     public Entity Entity;
 }
+
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitMovementSystem))]
 [BurstCompile]

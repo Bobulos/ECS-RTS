@@ -42,7 +42,8 @@ public class MinimapRenderer : MonoBehaviour
     }
     void Start()
     {
-        entityManager = ClientServerBootstrap.ServerWorld.EntityManager;
+        //runs pon client world
+        entityManager = ClientServerBootstrap.ClientWorld.EntityManager;
         //mapQuery = entityManager.CreateEntityQuery(ComponentType.ReadOnly<MinimapData>());
         query = entityManager.CreateEntityQuery(
             ComponentType.ReadOnly<LocalTransform>(),

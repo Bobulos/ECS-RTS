@@ -4,18 +4,12 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-
-using Unity.Burst;
-using Unity.Collections;
-using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Physics;
-using Unity.Transforms;
+using Unity.NetCode;
 
 #region System Definition
 
 [BurstCompile]
-[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(UnitSpatialPartitioning))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitSpatialPartitioning))]
 public partial struct UnitStateSystem : ISystem
 {
     [BurstCompile]

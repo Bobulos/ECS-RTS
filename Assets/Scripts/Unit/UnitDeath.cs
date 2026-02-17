@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -25,14 +26,15 @@ public partial struct DestroyDeadUnitsSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingleton<FXManifest>(out var m)) return;
+        if (!SystemAPI.TryGetSingleton<FXManifest>(out var m) || !SystemAPI.TryGetSingletonRW<GameStats>(out var stats)) return;
 
         var ecbSys = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+
 
         //try readback previous job
         if (_jobSet && _prevJob.IsCompleted)
         {
-            SystemAPI.GetSingletonRW<GameStats>().ValueRW.Killed += _prevKilled.Value;
+            stats.ValueRW.Killed += _prevKilled.Value;
             _prevKilled.Dispose();
         }
 
@@ -78,11 +80,12 @@ public partial struct DestroyAndTagDeadJob : IJobEntity
             Scale = 1f
         });
 
-        Ecb.AddComponent<DeadTag>(entity);
+        Ecb.AddComponent(entity, new DeadTag{Value = 1});
         // Destroy the entity safely at the end of the frame
         Ecb.DestroyEntity(entity);
     }
 }
 
 // Simple tag component
-public struct DeadTag : IComponentData { }
+[GhostComponent]
+public struct DeadTag : IComponentData { [GhostField] public byte Value; }

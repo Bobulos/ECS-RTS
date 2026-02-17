@@ -14,7 +14,7 @@ public class KilledDisplay : MonoBehaviour
     private EntityQuery query;
     private void Start()
     {
-        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        var entityManager = ClientServerBootstrap.ClientWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(GameStats));
         InvokeRepeating(nameof(UpdateKilled), readRate, readRate);
     }

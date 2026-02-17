@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.NetCode;
 using UnityEngine;
 
 class GameStatsAuthoring : MonoBehaviour
@@ -14,7 +15,8 @@ class GameStatsAuthoringBaker : Baker<GameStatsAuthoring>
         AddComponent(new GameStats { Killed = 0 });
     }
 }
+[GhostComponent]
 public struct GameStats : IComponentData
 {
-    public int Killed;
+    [GhostField] public int Killed;
 }

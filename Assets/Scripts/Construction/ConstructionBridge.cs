@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+/// <summary>
+/// Deprecated being replaced by unit action manager
+/// </summary>
 
 public class ConstructionBridge : MonoBehaviour
 {

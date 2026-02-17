@@ -3,7 +3,12 @@ guid: 5ad8dcde7272e724cacad50adb1c7ce0
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ScoutMat
+    second: {fileID: 2100000, guid: fe41e016ae86fda44aec4ea572f86093, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

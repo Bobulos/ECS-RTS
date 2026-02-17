@@ -5,6 +5,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.NetCode;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
@@ -45,7 +46,8 @@ public partial struct ConstructionRequestHandler : ISystem
     // }
     //const float BUILD_ARRIVE = 5f;
     const float STRUCTURE_CHECK_BEVEL = 0.3f;
-    private void OnUpdate(ref SystemState state)
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var physicsWorld)) return;
         if (!SystemAPI.TryGetSingletonBuffer<StructureManifest>(out var manifest)) return;

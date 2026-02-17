@@ -8,21 +8,27 @@ using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine.Experimental.AI; // NavMesh types
 
-[GhostComponent]
+
+/// <summary>
+/// Probalbly all these shouldnt be synced causing issues deterministic anyway
+/// Server owns dest and everything else not to worried abt cheating lmao
+/// </summary>
+//[GhostComponent]
 public struct Pather : IComponentData
 {
-    [GhostField] public int AgentID;
-    [GhostField] public bool NeedsUpdate;
-    [GhostField] public float3 Dest;
-    [GhostField] public float IndexDistance;
-    [GhostField] public int WaypointIndex;
-    [GhostField] public bool PathCalculated;
+    public int AgentID;
+    public bool NeedsUpdate;
+    //[GhostField] 
+    public float3 Dest;
+    public float IndexDistance;
+    public int WaypointIndex;
+    public bool PathCalculated;
 
-    [GhostField] public bool QuerySet;
+    public bool QuerySet;
 
-    [GhostField] public int QueryIndex;
+    public int QueryIndex;
 
-    [GhostField] public int Bucket;
+    public int Bucket;
 }
 
 [InternalBufferCapacity(32)]
@@ -38,6 +44,7 @@ public struct PatherCleanup : ICleanupComponentData
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
+//[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct NavSystem : ISystem
 {
     private NavMeshWorld _navWorld;

@@ -17,8 +17,9 @@ public struct MoveUnitsData
 
 public struct SelectedVisualTag : IComponentData { }
 
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
+
+[UpdateAfter(typeof(UnitActionSystem))]
+[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -32,45 +33,53 @@ public partial class InputHandlerSystem : SystemBase
         GroupIndex = 0
     };
 
-    #region Receive rpcs
+    #region Read input commands
     protected override void OnUpdate()
     {
+        if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
+            return;
+        if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
+            return;
+        //UnityEngine.Debug.Log($"Processing handler received");
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
-        foreach (var (rpc, rpcSource, entity) in
-                 SystemAPI.Query<RefRO<FixedSelectionRpc>, RefRO<ReceiveRpcCommandRequest>>()
-                 .WithEntityAccess())
-        {
-            HandleUnitSelect(ref ecb, rpc.ValueRO.Select, rpc.ValueRO.Team);
-            ecb.DestroyEntity(entity);
-        }
-        
-        foreach (var (rpc, rpcSource, entity) in
-         SystemAPI.Query<RefRO<CodeSelectRpc>, RefRO<ReceiveRpcCommandRequest>>()
-         .WithEntityAccess())
-        {
-            OnCodeSelectUnits(ref ecb, rpc.ValueRO.CodeSelect, rpc.ValueRO.Team);
-            ecb.DestroyEntity(entity);
-        }
-        
-        foreach (var (rpc, rpcSource, entity) in
-         SystemAPI.Query<RefRO<MoveUnitsRpc>, RefRO<ReceiveRpcCommandRequest>>()
-         .WithEntityAccess())
-        {
-            OnMoveUnits(rpc.ValueRO.Move, rpc.ValueRO.Team);
-            ecb.DestroyEntity(entity);
-        }
-        
-        foreach (var (rpc, rpcSource, entity) in
-         SystemAPI.Query<RefRO<ClearUnitsRpc>, RefRO<ReceiveRpcCommandRequest>>()
-         .WithEntityAccess())
-        {
-            OnClearSelection(ref ecb, rpc.ValueRO.Team);
-            ecb.DestroyEntity(entity);
-        }
+        // Process both players' inputs for this turn
+        ProcessInput(ref ecb, turnInput.Input0);
+        ProcessInput(ref ecb, turnInput.Input1);
 
         ecb.Playback(EntityManager);
         ecb.Dispose();
+
+        // Clear ready flag so we don't process the same turn twice
+        var turnInputEntity = SystemAPI.GetSingletonEntity<CurrentTurnInput>();
+        EntityManager.SetComponentData(turnInputEntity, new CurrentTurnInput { Ready = false });
+    }
+
+    private void ProcessInput(ref EntityCommandBuffer ecb, BittableInput c)
+    {   
+        //UnityEngine.Debug.Log($"Processing input of type {c.Type} for team {c.Team}");
+        
+        if (c.Type == InputType.None) return;
+        //UnityEngine.Debug.Log($"Processing input of type {c.Type} for team {c.Team}");
+        switch (c.Type)
+        {
+            case InputType.MoveUnits:
+                OnMoveUnits(c.Move, c.Team);
+                break;
+            case InputType.ClearUnits:
+                OnClearSelection(ref ecb, c.Team);
+                break;
+            case InputType.Action:
+                // handled by action system
+                break;
+            case InputType.CodeSelectUnits:
+                OnCodeSelectUnits(ref ecb, c.CodeSelect, c.Team);
+                break;
+            case InputType.SelectUnits:
+                //UnityEngine.Debug.Log($"Handling select units input for team {c.Team}");
+                HandleUnitSelect(ref ecb, c.Select, c.Team);
+                break;
+        }
     }
     #endregion
 

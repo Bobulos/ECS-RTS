@@ -2,11 +2,16 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
-
+/// <summary>
+/// Only good for visuals now DO NOT USE OTHER METHODS
+/// Construction bridge is deprecated
+/// </summary>
 [UpdateAfter(typeof(TurretLookSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial class ConstructionSystem : SystemBase
 {
     const float SEGEMENT_SIZE_OFFSET = 1f;
@@ -246,6 +251,7 @@ public partial class ConstructionSystem : SystemBase
                 //vision
                 EntityManager.RemoveComponent<Vision>(e);
                 EntityManager.RemoveComponent<LocalVisibility>(e);
+                EntityManager.RemoveComponent<GhostInstance>(e);
                 if (EntityManager.HasComponent<ProductionStructure>(e))
                 {
                     EntityManager.RemoveComponent<ProductionStructure>(e);

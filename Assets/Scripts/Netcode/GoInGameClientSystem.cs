@@ -14,7 +14,7 @@ partial struct GoInGameClientSystem : ISystem
         .WithNone<NetworkStreamInGame>().WithEntityAccess())
         {
             ecb.AddComponent<NetworkStreamInGame>(entity);
-            UnityEngine.Debug.Log("Client boot as InGame");
+            UnityEngine.Debug.Log("Client sent go in game request");
 
 
             var rpcEntity = ecb.CreateEntity();

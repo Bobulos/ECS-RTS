@@ -212,7 +212,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.NetCode.Authoring.Hybrid::Unity.NetCode.GhostAuthoringComponent
   DefaultGhostMode: 0
   SupportedGhostModes: 3
-  OptimizationMode: 0
+  OptimizationMode: 1
   Importance: 1
   MaxSendRate: 0
   prefabId: 6f117903cc9d581449e41ae7ff94d66e

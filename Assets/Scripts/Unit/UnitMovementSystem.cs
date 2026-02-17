@@ -5,7 +5,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile, UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitSpatialPartitioning))]
 public partial struct UnitMovementSystem : ISystem
 {
@@ -31,6 +31,7 @@ public partial struct UnitMovementSystem : ISystem
 }
 
 [WithNone(typeof(DeadTag))]
+[BurstCompile]
 public partial struct MovementJob : IJobEntity
 {
     //private const float CLUSTER_WAYPOINT_INDEX_DIST = 0.9f;
@@ -64,7 +65,7 @@ public partial struct MovementJob : IJobEntity
         //                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              DrawDebugDest(mov.Dest, transform.Position);
         //DrawDebugVelocities(transform.Position, mov.PreferredVelocity, mov.Velocity);
     }
-
+    [BurstCompile]
     private float3 GetTargetPosition(
         Entity entity,
         ref Pather pather,
@@ -90,7 +91,7 @@ public partial struct MovementJob : IJobEntity
             
         return UpdateWaypointIndex(ref pather, ref mov, waypoints, currentPosition);
     }
-
+    [BurstCompile]
     private float3 UpdateWaypointIndex(
         ref Pather pather,
         ref UnitMovement mov,
@@ -124,7 +125,7 @@ public partial struct MovementJob : IJobEntity
 
         return currentWaypoint;
     }
-
+    [BurstCompile]
     private void UpdatePreferredVelocity(
         Entity entity,
         ref UnitMovement mov,
@@ -171,7 +172,7 @@ public partial struct MovementJob : IJobEntity
             mov.PreferredVelocity = float2.zero;
         }
     }
-
+    [BurstCompile]
     private void ApplyMovement(
         ref LocalTransform transform,
         float2 velocity,
@@ -197,11 +198,11 @@ public partial struct MovementJob : IJobEntity
                     transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
                 }
             }*/
-
+    [BurstCompile]
     private void GroundUnit(
         ref LocalTransform transform,
         float3 targetPosition
-)
+    )
     {
         bool applyRotation = true;
         // Fallback forward if target is basically the same position
@@ -249,29 +250,29 @@ public partial struct MovementJob : IJobEntity
         }
     }
 
+    // [BurstCompile]
+    // private void DrawDebugVelocities(float3 position, float2 preferredVelocity, float2 actualVelocity)
+    // {
+    //     float3 basePosition = position;
 
-    private void DrawDebugVelocities(float3 position, float2 preferredVelocity, float2 actualVelocity)
-    {
-        float3 basePosition = position;
+    //     // Yellow line for preferred velocity
+    //     float3 preferredDirection = new float3(preferredVelocity.x, 0f, preferredVelocity.y);
+    //     UnityEngine.Debug.DrawLine(
+    //         basePosition,
+    //         basePosition + preferredDirection * DEBUG_LINE_LENGTH,
+    //         UnityEngine.Color.yellow,
+    //         FIXED_DT);
 
-        // Yellow line for preferred velocity
-        float3 preferredDirection = new float3(preferredVelocity.x, 0f, preferredVelocity.y);
-        UnityEngine.Debug.DrawLine(
-            basePosition,
-            basePosition + preferredDirection * DEBUG_LINE_LENGTH,
-            UnityEngine.Color.yellow,
-            FIXED_DT);
-
-        // Red line for actual velocity
-        float3 actualDirection = new float3(actualVelocity.x, 0f, actualVelocity.y);
-        UnityEngine.Debug.DrawLine(
-            basePosition,
-            basePosition + actualDirection * DEBUG_LINE_LENGTH,
-            UnityEngine.Color.red,
-            FIXED_DT);
-    }
-    private void DrawDebugDest(float3 pos, float3 dest)
-    {
-        UnityEngine.Debug.DrawLine(pos, dest, UnityEngine.Color.cyan, FIXED_DT);
-    }
+    //     // Red line for actual velocity
+    //     float3 actualDirection = new float3(actualVelocity.x, 0f, actualVelocity.y);
+    //     UnityEngine.Debug.DrawLine(
+    //         basePosition,
+    //         basePosition + actualDirection * DEBUG_LINE_LENGTH,
+    //         UnityEngine.Color.red,
+    //         FIXED_DT);
+    // }
+    // private void DrawDebugDest(float3 pos, float3 dest)
+    // {
+    //     UnityEngine.Debug.DrawLine(pos, dest, UnityEngine.Color.cyan, FIXED_DT);
+    // }
 }
