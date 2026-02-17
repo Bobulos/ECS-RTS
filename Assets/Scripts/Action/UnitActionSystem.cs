@@ -72,8 +72,8 @@ public partial struct UnitActionSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
-            return;
+        // if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
+        //     return;
 
         if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
             return;

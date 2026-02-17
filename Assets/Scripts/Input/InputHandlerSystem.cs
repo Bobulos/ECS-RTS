@@ -18,7 +18,7 @@ public struct MoveUnitsData
 public struct SelectedVisualTag : IComponentData { }
 
 
-[UpdateAfter(typeof(UnitActionSystem))]
+//[UpdateAfter(typeof(UnitActionSystem))]
 [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
@@ -36,8 +36,8 @@ public partial class InputHandlerSystem : SystemBase
     #region Read input commands
     protected override void OnUpdate()
     {
-        if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
-            return;
+        // if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
+        //     return;
         if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
             return;
         //UnityEngine.Debug.Log($"Processing handler received");

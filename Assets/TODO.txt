@@ -2,6 +2,10 @@ Make input logger record server side and sent data back when game complete
 
 Overhaul game reset events
 
-add support for build orders
+Use ghost to sync entity order
 
-fix cant un agro units
+Make structures follow the lockstep pattern
+
+DONE add support for build orders
+
+DONE fix cant un agro units
