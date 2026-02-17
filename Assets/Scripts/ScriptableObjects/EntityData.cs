@@ -50,7 +50,7 @@ public enum EntityType
     Unit,
     Structure,
 }
-public enum InteractionType
+public enum InteractionType : byte
 {
     Instant,
     Target,

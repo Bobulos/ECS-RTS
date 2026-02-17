@@ -365,7 +365,6 @@ public partial class ConstructionSystem : SystemBase
         }
 
         hits.Dispose();
-
         // Ground snap if not snapped to a node
         if (!snappedToNode && TryGetGroundPoint(world, snappedPos, out float3 groundPos))
         {

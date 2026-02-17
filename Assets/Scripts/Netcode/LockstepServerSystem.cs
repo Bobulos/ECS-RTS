@@ -10,13 +10,13 @@ using Unity.VisualScripting;
 public partial class LockstepServerSystem : SystemBase
 {
     // Map from NetworkId → input for this turn
-    private NativeHashMap<int, BittableInput> _collectedInputs;
+    private NativeHashMap<int, PackedBittableInput> _collectedInputs;
     private int _expectedPlayers = 1; // or track dynamically
-    private int _currentTurn = 0;
+    private ushort _currentTurn = 0;
 
     protected override void OnCreate()
     {
-        _collectedInputs = new NativeHashMap<int, BittableInput>(8, Allocator.Persistent);
+        _collectedInputs = new NativeHashMap<int, PackedBittableInput>(8, Allocator.Persistent);
         RequireForUpdate<NetworkStreamInGame>();
     }
 
@@ -33,7 +33,7 @@ public partial class LockstepServerSystem : SystemBase
         {
             //UnityEngine.Debug.Log($"Received input for turn {rpc.ValueRO.TurnNumber} from connection {request.ValueRO.SourceConnection}");
             var networkId = SystemAPI.GetComponent<NetworkId>(request.ValueRO.SourceConnection);
-            _collectedInputs[networkId.Value] = rpc.ValueRO.Input;
+            _collectedInputs[networkId.Value] = rpc.ValueRO.Value;
 
             ecb.DestroyEntity(entity);
         }

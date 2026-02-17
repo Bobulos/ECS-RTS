@@ -7,6 +7,7 @@ using UnityEditor;
 using System.Linq;
 using Unity.NetCode;
 
+//32
 public struct ActionData
 {
     public bool Shifting;
@@ -14,6 +15,7 @@ public struct ActionData
     public byte ActionByte;
 
     //NOT FOR REPLAY FETCHED DYNAMICALLY
+    //6 B
     public ActionInfo Info;
 
     //for stuff like set rally points WRITE

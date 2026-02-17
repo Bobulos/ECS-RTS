@@ -6,6 +6,9 @@ using UnityEngine.Rendering;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Entities.UniversalDelegates;
+using System;
+using System;
+using System.Runtime.InteropServices;
 
 public struct BittableInput
 {
@@ -28,51 +31,17 @@ public struct LockstepInput : IComponentData
 // Client → Server: "here is my input for turn N"
 public struct ClientInputRpc : IRpcCommand
 {
-    public int TurnNumber;
-    public BittableInput Input;
+    //public ushort TurnNumber;
+    public PackedBittableInput Value;
 }
 
 // Server → All Clients: "all inputs for turn N, go simulate"
 public struct TurnReadyRpc : IRpcCommand
 {
-    public int TurnNumber;
+    public ushort TurnNumber;
     public BittableInput Input0; // Player 0's input
     public BittableInput Input1; // Player 1's input
     // Expand for max player count, or use a fixed array
-}
-//rpcs
-/// <summary>
-/// Get rid of these just no more input rpcs,
-/// </summary>
-public struct MoveUnitsRpc : IRpcCommand
-{
-    public int Team;
-    public MoveUnitsData Move;
-}
-public struct ClearUnitsRpc : IRpcCommand
-{
-    public int Team;
-}
-public struct ActionRpc : IRpcCommand
-{
-    public int Team;
-    public ActionData Action;
-}
-public struct CodeSelectRpc : IRpcCommand
-{
-    public int Team;
-    public byte CodeSelect;
-}
-public struct FixedSelectionRpc : IRpcCommand
-{
-    public int Team;
-    public FixedSelectionData Select;
-}
-
-
-public struct PlayerInputRpc : IRpcCommand
-{
-    public BittableInput Value;
 }
 
 //[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
@@ -81,8 +50,8 @@ public struct PlayerInputRpc : IRpcCommand
 public partial class LockstepInputSenderSystem : SystemBase
 {
 
-    const int LOCKSTEP_TICKS = 6; // e.g. 100ms at 60hz
-    private int _currentTurn = 0;
+    const ushort LOCKSTEP_TICKS = 6; // 100ms at 60hz
+    private ushort _currentTurn = 0;
     private BittableInput _pendingInput;
     private NativeList<BittableInput> _buffer;
 
@@ -90,6 +59,16 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     protected override void OnCreate()
     {
+        int size = Marshal.SizeOf<BittableInput>();
+        UnityEngine.Debug.Log($"Marshaled size of BittableInput: {size} bytes");
+        size = Marshal.SizeOf<MoveUnitsData>();
+        UnityEngine.Debug.Log($"Marshaled size of MoveUnitsData: {size} bytes");
+        size = Marshal.SizeOf<ActionData>();
+        UnityEngine.Debug.Log($"Marshaled size of ActionData: {size} bytes");
+        size = Marshal.SizeOf<FixedSelectionData>();
+        UnityEngine.Debug.Log($"Marshaled size of BittableInput: {size} bytes");
+        
+
         RequireForUpdate<NetworkStreamInGame>();
         // if (!SystemAPI.TryGetSingleton<NetworkStreamInGame>(out var inGame))
         //     return;
@@ -100,6 +79,8 @@ public partial class LockstepInputSenderSystem : SystemBase
         InputBridge.OnSelectUnits += OnSelectUnits;
         InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
         UnitActionManager.OnAction += OnAction;
+
+
     }
 
     protected override void OnDestroy()
@@ -129,14 +110,11 @@ public partial class LockstepInputSenderSystem : SystemBase
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkStreamInGame>>().WithEntityAccess())
         {
-            if (_pendingInput.Type == InputType.None) continue; // Skip if no input to send
-            UnityEngine.Debug.Log($"Sending input for turn from client");
+            //if (_pendingInput.Type == InputType.None) continue; // Skip if no input to send
+            //UnityEngine.Debug.Log($"Sending input for turn from client");
             var rpcEntity = EntityManager.CreateEntity();
-            ecb.AddComponent(rpcEntity, new ClientInputRpc
-            {
-                TurnNumber = _currentTurn,
-                Input = _pendingInput
-            });
+            ecb.AddComponent(rpcEntity, new ClientInputRpc 
+            { Value = PackerUtil.Pack(_currentTurn,_pendingInput)});
             ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
             {
                 TargetConnection = connectionEntity
@@ -198,9 +176,3 @@ public partial class LockstepInputSenderSystem : SystemBase
 // public struct CommandSource : IComponentData {}
 
 // public struct CommandTarget : IComponentData {}
-
-
-public struct PlayerInputCommand : IInputComponentData
-{
-    public BittableInput Value;
-}

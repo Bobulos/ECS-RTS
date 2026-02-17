@@ -11,18 +11,12 @@ public class PlayerAuthoring : MonoBehaviour
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             
+            //probably this is no longer neccesary
             //AddComponent<GhostOwner>(entity);
             AddComponent<Simulate>(entity);
             AddComponent<CommandSource>(entity);
             AddComponent<CommandTarget>(entity);
             //AddBuffer<RtsCommand>(entity);
-
-
-
-            // Stuff for input
-            AddComponent(entity, new PlayerInputCommand
-            {
-            });
         }
     }
 }
