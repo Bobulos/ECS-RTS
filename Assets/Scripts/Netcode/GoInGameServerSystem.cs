@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.Networking.Transport;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct GoInGameServerSystem : ISystem
@@ -53,7 +54,19 @@ partial struct GoInGameServerSystem : ISystem
     }
 }
 
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial class StartServerListenSystem : SystemBase
+{
+    protected override void OnCreate()
+    {
+        var ep = NetworkEndpoint.AnyIpv4.WithPort(7979);
+        SystemAPI.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
+        UnityEngine.Debug.Log("Server listening on port 7979");
+        Enabled = false;
+    }
 
+    protected override void OnUpdate() { }
+}
 
 // This component is used to identify the source of commands in a predicted system
 [GhostComponent(PrefabType = GhostPrefabType.PredictedClient)]
