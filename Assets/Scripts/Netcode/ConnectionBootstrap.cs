@@ -12,22 +12,23 @@ public class ConnectionBootstrap : ClientServerBootstrap
         bool isServer = System.Array.IndexOf(args, "-server") >= 0;
         bool isHost = System.Array.IndexOf(args, "-host") >= 0;
 
-        if (isServer)
-        {
-            CreateServerWorld("ServerWorld");
-            return true;
-        }
+        // if (isServer)
+        // {
+        //     CreateServerWorld("ServerWorld");
+        //     return true;
+        // }
 
-        if (isHost)
-        {
-            // Both worlds — host plays and serves
-            CreateServerWorld("ServerWorld");
-            CreateClientWorld("ClientWorld");
-            return true;
-        }
+        // if (isHost)
+        // {
+        //     // Both worlds — host plays and serves
+        //     CreateServerWorld("ServerWorld");
+        //     CreateClientWorld("ClientWorld");
+        //     return true;
+        // }
 
-        // Pure client
-        CreateClientWorld("ClientWorld");
+        // // Pure client
+        // CreateServerWorld("ServerWorld");
+        // CreateClientWorld("ClientWorld");
         return true;
     }
 }
