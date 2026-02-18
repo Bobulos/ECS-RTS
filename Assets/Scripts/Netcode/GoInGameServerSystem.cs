@@ -53,19 +53,21 @@ partial struct GoInGameServerSystem : ISystem
         //     lockstepSystem.SetExpectedPlayers(playerCount);
     }
 }
-
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial class StartServerListenSystem : SystemBase
 {
     protected override void OnCreate()
+    {
+        RequireForUpdate<NetworkStreamDriver>();
+    }
+
+    protected override void OnUpdate()
     {
         var ep = NetworkEndpoint.AnyIpv4.WithPort(7979);
         SystemAPI.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
         UnityEngine.Debug.Log("Server listening on port 7979");
         Enabled = false;
     }
-
-    protected override void OnUpdate() { }
 }
 
 // This component is used to identify the source of commands in a predicted system
