@@ -63,8 +63,17 @@ public partial class StartServerListenSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        ref var driver = ref SystemAPI.GetSingletonRW<NetworkStreamDriver>().ValueRW;
+        
+        if (driver.GetLocalEndPoint() != NetworkEndpoint.AnyIpv4)
+        {
+            UnityEngine.Debug.Log("Already listening, skipping");
+            Enabled = false;
+            return;
+        }
+
         var ep = NetworkEndpoint.AnyIpv4.WithPort(7979);
-        SystemAPI.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
+        driver.Listen(ep);
         UnityEngine.Debug.Log("Server listening on port 7979");
         Enabled = false;
     }
