@@ -9,6 +9,7 @@ using Unity.Entities.UniversalDelegates;
 using System;
 using System;
 using System.Runtime.InteropServices;
+using Unity.Physics;
 
 public struct BittableInput
 {
@@ -39,8 +40,8 @@ public struct ClientInputRpc : IRpcCommand
 public struct TurnReadyRpc : IRpcCommand
 {
     public ushort TurnNumber;
-    public BittableInput Input0; // Player 0's input
-    public BittableInput Input1; // Player 1's input
+    public PackedBittableInput Input0; // Player 0's input
+    public PackedBittableInput Input1; // Player 1's input
     // Expand for max player count, or use a fixed array
 }
 
@@ -50,7 +51,7 @@ public struct TurnReadyRpc : IRpcCommand
 public partial class LockstepInputSenderSystem : SystemBase
 {
 
-    const ushort LOCKSTEP_TICKS = 6; // 100ms at 60hz
+    const ushort LOCKSTEP_TICKS = 12; // 30hz
     private ushort _currentTurn = 0;
     private BittableInput _pendingInput;
     private NativeList<BittableInput> _buffer;
@@ -59,14 +60,8 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     protected override void OnCreate()
     {
-        int size = Marshal.SizeOf<BittableInput>();
-        UnityEngine.Debug.Log($"Marshaled size of BittableInput: {size} bytes");
-        size = Marshal.SizeOf<MoveUnitsData>();
-        UnityEngine.Debug.Log($"Marshaled size of MoveUnitsData: {size} bytes");
-        size = Marshal.SizeOf<ActionData>();
-        UnityEngine.Debug.Log($"Marshaled size of ActionData: {size} bytes");
-        size = Marshal.SizeOf<FixedSelectionData>();
-        UnityEngine.Debug.Log($"Marshaled size of BittableInput: {size} bytes");
+        int size = Marshal.SizeOf<PackedBittableInput>();
+        UnityEngine.Debug.Log($"Marshaled size of PackedBittableInput: {size} bytes");
         
 
         RequireForUpdate<NetworkStreamInGame>();
@@ -93,28 +88,39 @@ public partial class LockstepInputSenderSystem : SystemBase
         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
         UnitActionManager.OnAction -= OnAction;
     }
-
+    private ushort _confirmedTurn = 0;
     protected override void OnUpdate()
     {
-        var tick = SystemAPI.GetSingleton<NetworkTime>().ServerTick;
-        if (!tick.IsValid) return;
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        foreach (var (rpc, entity) in
+            SystemAPI.Query<RefRO<TurnReadyRpc>>()
+            .WithAll<ReceiveRpcCommandRequest>()
+            .WithEntityAccess())
+        {
+            if (rpc.ValueRO.TurnNumber >= _confirmedTurn)
+                _confirmedTurn = (ushort)(rpc.ValueRO.TurnNumber + 1);
+            // don't destroy here — let SimulationGate handle it
+        }
 
-        // Send at the boundary of each lockstep interval
+        var tick = SystemAPI.GetSingleton<NetworkTime>().ServerTick;
+        var phys = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+
+        if (!tick.IsValid) return;
         if (tick.TickIndexForValidTick % LOCKSTEP_TICKS != 0) return;
 
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
-
-         //Don't allow for inputs when lockste isnt ready
+        // Only send if we haven't gotten ahead of confirmed turns
+        if (_currentTurn > _confirmedTurn) return;
 
         // Find connection entity and send RPC
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkStreamInGame>>().WithEntityAccess())
         {
-            //if (_pendingInput.Type == InputType.None) continue; // Skip if no input to send
+            //if (_pendingInput.Type != InputType.None) UnityEngine.Debug.Log($"Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}"); // Skip if no input to send
             //UnityEngine.Debug.Log($"Sending input for turn from client");
+            
             var rpcEntity = EntityManager.CreateEntity();
             ecb.AddComponent(rpcEntity, new ClientInputRpc 
-            { Value = PackerUtil.Pack(_currentTurn,_pendingInput)});
+            { Value = PackerUtil.Pack(phys, _currentTurn, _pendingInput)});
             ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
             {
                 TargetConnection = connectionEntity
@@ -150,29 +156,3 @@ public partial class LockstepInputSenderSystem : SystemBase
         _pendingInput = new BittableInput { Team = team, Type = InputType.SelectUnits, Select = verts };
     }
 }
-
-
-/// <summary>
-/// Test reading system
-/// </summary>
-// [UpdateInGroup(typeof(SimulationSystemGroup))]
-// partial struct TestInputReaderSystem : ISystem
-// {
-//     public void OnUpdate(ref SystemState state)
-//     {
-//         foreach (var input in SystemAPI.Query<RefRW<PlayerInputCommand>>().WithAll<Simulate>())
-//         {
-//             var c = input.ValueRO.Value;
-//             if (c.Type == InputType.None) continue; // Skip if no input
-//             //if (!c.Active) continue; // Only read if active, otherwise skip (and keep inactive for next frame)
-//             UnityEngine.Debug.Log($"Read input command of type {c.Type} for team {c.Team}");
-//             //input.ValueRW.Active = false;
-//             //input.ValueRW = new PlayerInputCommand(); // Clear after reading, not really necessary but just to be safe
-//         }
-//     }
-// }
-
-// [GhostComponent(PrefabType = GhostPrefabType.PredictedClient)]
-// public struct CommandSource : IComponentData {}
-
-// public struct CommandTarget : IComponentData {}

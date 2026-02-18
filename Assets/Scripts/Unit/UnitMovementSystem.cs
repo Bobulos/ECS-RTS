@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile, UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitSpatialPartitioning))]
 public partial struct UnitMovementSystem : ISystem
 {

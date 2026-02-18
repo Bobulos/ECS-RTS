@@ -19,6 +19,7 @@ public struct TargSpatialData
     public Entity Entity;
 }
 
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitMovementSystem))]
 [BurstCompile]

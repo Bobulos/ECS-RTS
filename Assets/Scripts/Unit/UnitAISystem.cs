@@ -9,6 +9,7 @@ using Unity.NetCode;
 #region System Definition
 
 [BurstCompile]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateBefore(typeof(UnitSpatialPartitioning))]
 public partial struct UnitStateSystem : ISystem
 {
@@ -37,6 +38,7 @@ public partial struct UnitStateSystem : ISystem
 
 [BurstCompile]
 [WithNone(typeof(DeadTag))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct UnitStateMachineJob : IJobEntity
 {
     #region Constants

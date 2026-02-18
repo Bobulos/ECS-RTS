@@ -14,6 +14,7 @@ using UnityEngine.Experimental.AI; // NavMesh types
 /// Server owns dest and everything else not to worried abt cheating lmao
 /// </summary>
 //[GhostComponent]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public struct Pather : IComponentData
 {
     public int AgentID;

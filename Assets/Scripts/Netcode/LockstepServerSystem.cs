@@ -4,8 +4,7 @@ using Unity.Collections;
 using Unity.VisualScripting;
 
 
-// ---- Server: collect inputs, broadcast when all ready ----
-
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial class LockstepServerSystem : SystemBase
 {
@@ -24,6 +23,8 @@ public partial class LockstepServerSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        //UnityEngine.Debug.Log("Server system running");
+
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         // Receive inputs from clients
@@ -31,13 +32,32 @@ public partial class LockstepServerSystem : SystemBase
             SystemAPI.Query<RefRO<ClientInputRpc>, RefRO<ReceiveRpcCommandRequest>>()
             .WithEntityAccess())
         {
-            //UnityEngine.Debug.Log($"Received input for turn {rpc.ValueRO.TurnNumber} from connection {request.ValueRO.SourceConnection}");
-            var networkId = SystemAPI.GetComponent<NetworkId>(request.ValueRO.SourceConnection);
-            _collectedInputs[networkId.Value] = rpc.ValueRO.Value;
+            var packed = rpc.ValueRO.Value;
+            var networkId = SystemAPI.GetComponent<NetworkId>(request.ValueRO.SourceConnection).Value;
 
+            // Ignore old inputs
+            if (packed.Turn < _currentTurn)
+            {
+                ecb.DestroyEntity(entity);
+                continue;
+            }
+
+            // Ignore future inputs (client ahead)
+            if (packed.Turn > _currentTurn)
+            {
+                // optional: store in future buffer later
+                ecb.DestroyEntity(entity);
+                continue;
+            }
+
+            _collectedInputs[networkId] = packed;
             ecb.DestroyEntity(entity);
         }
 
+        //UnityEngine.Debug.Log($"Collected {_collectedInputs.Count} inputs for turn {_currentTurn}, waiting for {_expectedPlayers}");
+
+        _collectedInputs.TryGetValue(1, out var inp);
+        //UnityEngine.Debug.Log($"Dif in turns {inp.Turn - _currentTurn}");
         // Once all players have submitted, broadcast TurnReady
         if (_collectedInputs.Count >= _expectedPlayers)
         {
@@ -57,16 +77,19 @@ public partial class LockstepServerSystem : SystemBase
                     Input0 = input0,
                     Input1 = input1,
                 });
+                //UnityEngine.Debug.Log($"Packed input0 for turn {_currentTurn}: ");
                 ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
                 {
                     TargetConnection = connectionEntity
                 });
+                var dType = PackerUtil.Unpack(input0).Type;
+                //if (dType != InputType.None) UnityEngine.Debug.Log($"Broadcasted turn to clients {_currentTurn} with inputs of type {dType}");
             }
-
-            _collectedInputs.Clear();
             _currentTurn++;
-        }
+            _collectedInputs.Clear();
 
+        }
+        
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }

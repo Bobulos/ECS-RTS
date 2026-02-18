@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateAfter(typeof(UnitStateSystem)),UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 partial struct UnitAttackSystem : ISystem
 {

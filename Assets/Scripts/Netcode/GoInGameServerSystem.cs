@@ -6,56 +6,53 @@ using Unity.NetCode;
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct GoInGameServerSystem : ISystem
 {
-    //private ComponentLookup<NetworkId> _networkIdLookup;
-    
     public void OnCreate(ref SystemState state)
     {
-        //_networkIdLookup = state.GetComponentLookup<NetworkId>(true);
-        state.RequireForUpdate<PlayerSpawner>(); // Assumes you have a player spawner singleton
+        state.RequireForUpdate<PlayerSpawner>();
     }
 
-    //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        
-        //_networkIdLookup.Update(ref state);
-        
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         var playerPrefab = SystemAPI.GetSingleton<PlayerSpawner>().PlayerPrefab;
 
-        //UnityEngine.Debug.Log($"PlayerPrefab: {playerPrefab}");
-        
-        foreach (var (rpc, entity) in 
+        foreach (var (rpc, entity) in
             SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>()
             .WithAll<GoInGameRequestRpc>()
             .WithEntityAccess())
         {
-            UnityEngine.Debug.Log($"Client go in game request received, player spawned added input components, and linked to connection");
             var connectionEntity = rpc.ValueRO.SourceConnection;
-            
+            var networkId = SystemAPI.GetComponent<NetworkId>(connectionEntity);
 
-            /// Mark connection in-game
+            UnityEngine.Debug.Log($"Client {networkId.Value} joined, spawning player");
+
             ecb.AddComponent(connectionEntity, new NetworkStreamInGame());
+           
 
-            // Spawn the player ghost
+
             var playerEntity = ecb.Instantiate(playerPrefab);
-
-            // Assign ghost ownership
-            var networkId = SystemAPI.GetComponent<NetworkId>(rpc.ValueRO.SourceConnection);
-            ecb.AddComponent(playerEntity, new GhostOwner { NetworkId = networkId.Value  });
-
-            // Set command target on connection
+            ecb.AddComponent(playerEntity, new GhostOwner { NetworkId = networkId.Value });
             //ecb.SetComponent(connectionEntity, new CommandTarget { Value = playerEntity });
 
-            // Clean up the RPC request entity
+
             ecb.DestroyEntity(entity);
-            
         }
-        
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+
+        // Count connected in-game players and update LockstepServerSystem
+        int playerCount = 0;
+        foreach (var _ in SystemAPI.Query<RefRO<NetworkStreamInGame>>())
+            playerCount++;
+
+        // Update expected player count dynamically
+        // var lockstepSystem = state.World.GetExistingSystemManaged<LockstepServerSystem>();
+        // if (lockstepSystem != null)
+        //     lockstepSystem.SetExpectedPlayers(playerCount);
     }
 }
+
 
 
 // This component is used to identify the source of commands in a predicted system

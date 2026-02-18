@@ -19,6 +19,7 @@ public struct SelectedVisualTag : IComponentData { }
 
 
 //[UpdateAfter(typeof(UnitActionSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
@@ -55,29 +56,32 @@ public partial class InputHandlerSystem : SystemBase
         EntityManager.SetComponentData(turnInputEntity, new CurrentTurnInput { Ready = false });
     }
 
-    private void ProcessInput(ref EntityCommandBuffer ecb, BittableInput c)
+    private void ProcessInput(ref EntityCommandBuffer ecb, BittableInput unpacked)
     {   
-        //UnityEngine.Debug.Log($"Processing input of type {c.Type} for team {c.Team}");
+        //UnityEngine.Debug.Log($"Processing input of type {unpacked.Type} for team {unpacked.Team}");
         
-        if (c.Type == InputType.None) return;
-        //UnityEngine.Debug.Log($"Processing input of type {c.Type} for team {c.Team}");
-        switch (c.Type)
+        if (unpacked.Type == InputType.None) return;
+        //UnityEngine.Debug.Log($"Processing input of type {unpacked.Type} for team {unpacked.Team}");
+        switch (unpacked.Type)
         {
             case InputType.MoveUnits:
-                OnMoveUnits(c.Move, c.Team);
+                //UnityEngine.Debug.Log($"Move units for team {unpacked.Team}");
+                OnMoveUnits(unpacked.Move, unpacked.Team);
                 break;
             case InputType.ClearUnits:
-                OnClearSelection(ref ecb, c.Team);
+                //UnityEngine.Debug.Log($"Clearing selection for team {unpacked.Team}");
+                OnClearSelection(ref ecb, unpacked.Team);
                 break;
             case InputType.Action:
                 // handled by action system
                 break;
             case InputType.CodeSelectUnits:
-                OnCodeSelectUnits(ref ecb, c.CodeSelect, c.Team);
+                //UnityEngine.Debug.Log($"Code selection for team {unpacked.Team}");
+                OnCodeSelectUnits(ref ecb, unpacked.CodeSelect, unpacked.Team);
                 break;
             case InputType.SelectUnits:
-                //UnityEngine.Debug.Log($"Handling select units input for team {c.Team}");
-                HandleUnitSelect(ref ecb, c.Select, c.Team);
+                //UnityEngine.Debug.Log($"Handling select units input for team {unpacked.Team}");
+                HandleUnitSelect(ref ecb, unpacked.Select, unpacked.Team);
                 break;
         }
     }

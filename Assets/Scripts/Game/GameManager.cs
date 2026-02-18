@@ -37,7 +37,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Instantiate(inputLogger);
+            //Instantiate(inputLogger);
         }
     }
     private void Update()

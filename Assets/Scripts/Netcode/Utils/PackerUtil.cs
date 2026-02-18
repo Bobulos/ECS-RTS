@@ -31,11 +31,12 @@ public static class PackerUtil
         ushort turn, 
         BittableInput input)
     {
-        var pack = new PackedBittableInput();
-
         //things tha need to be done regardless
-        pack.Turn = turn;
-        pack.Op = (byte)input.Type;
+        var pack = new PackedBittableInput
+        {
+            Turn = turn,
+            Op = (byte)input.Type,
+        };
 
         switch (input.Type)
         {
@@ -54,24 +55,28 @@ public static class PackerUtil
                 break;
             // 1 + 3 B
             case InputType.CodeSelectUnits:
-                
+                PackCodeSelect(input.CodeSelect, ref pack);
                 break;
             //32 + 3B
             case InputType.Action:
+                PackAction(input.Action, ref pack, phys);
                 break;
             
         }
         return pack;
     }
-    public static BittableInput UnPack(
-        PhysicsWorldSingleton phys, 
+    public static BittableInput Unpack(
         PackedBittableInput input)
     {
-        var un = new BittableInput();
+        var un = new BittableInput
+        {
+            Type = (InputType)input.Op,
+            //Add team support
+            Team = 0
+        };
 
         //things tha need to be done regardless
         //un.Turn = turn;
-        un.Type = (InputType)input.Op;
 
         switch (un.Type)
         {
@@ -83,17 +88,19 @@ public static class PackerUtil
             
             // 25 + 3 B
             case InputType.MoveUnits:
-                UnPackMove(input, ref un, phys);
+                UnpackMove(input, ref un);
                 break;
             //dont ask
             case InputType.SelectUnits:
+
                 break;
             // 1 + 3 B
             case InputType.CodeSelectUnits:
-
+                UnpackCodeSelect(input, ref un);
                 break;
             //32 + 3B
             case InputType.Action:
+                UnpackAction(input, ref un);
                 break;
             
         }
@@ -104,14 +111,52 @@ public static class PackerUtil
     // public float3 RayOrigin;
     // public float3 RayDirection;
 
-    //pack move based on local move command 
+    //needs to pack shifing ray stuff and prefab index 
+    private static void PackAction( 
+        ActionData d,
+        ref PackedBittableInput input,
+        PhysicsWorldSingleton phys)
+    {
+        input.BA = Convert.ToByte(d.Shifting);
+        input.LB = (ulong)d.Info.PrefabIndex;
+
+        var raycastInput = new RaycastInput
+        {
+            Start = d.RayOrigin,
+            End = d.RayOrigin + d.RayDirection*MAX_RAY_LENGTH,
+            Filter = TERRAIN_FILTER
+        };
+        if (phys.CastRay(raycastInput, out var hit))
+        {
+            input.BA = Convert.ToByte(d.Shifting);
+            input.LA = Pack2x32(
+                Quantize(hit.Position.x), 
+                Quantize(hit.Position.z));
+        }
+    }
+    private static void UnpackAction( 
+        PackedBittableInput d,
+        ref BittableInput input)
+    {
+        input.Action.Shifting = Convert.ToBoolean(d.BA);
+        input.Action.Info.PrefabIndex = (int)d.LB;
+
+        Unpack2x32(d.LA, out int qx, out int qz);
+
+        float x = Dequantize(qx);
+        float z = Dequantize(qz);
+
+        input.Move.RayOrigin = new float3(x,40f,z);
+        input.Move.RayDirection = math.down();
+        //un.Action = new ActionData { Value = d.LA };
+    }
     private static void PackCodeSelect(
         byte CodeSelect,
         ref PackedBittableInput input)
     {
         input.BA = CodeSelect;
     }
-    private static void UnPackCodeSelect(
+    private static void UnpackCodeSelect(
         PackedBittableInput d,
         ref BittableInput input)
     {
@@ -136,15 +181,14 @@ public static class PackerUtil
                 Quantize(hit.Position.x), 
                 Quantize(hit.Position.z));
         }
-        else
-        {
-            UnityEngine.Debug.LogWarning($"Missed move units ray at turn {input.Turn} pack op fail");
-        }
+        // else
+        // {
+        //     UnityEngine.Debug.LogWarning($"Missed move units ray at turn {input.Turn} pack op fail");
+        // }
     }
-    private static void UnPackMove( 
+    private static void UnpackMove( 
         PackedBittableInput d,
-        ref BittableInput input,
-        PhysicsWorldSingleton phys)
+        ref BittableInput input)
     {
         input.Move.Shifting = Convert.ToBoolean(d.BA);
 
@@ -153,7 +197,7 @@ public static class PackerUtil
         float x = Dequantize(qx);
         float z = Dequantize(qz);
 
-        input.Move.RayOrigin = new float3(x,50f,z);
+        input.Move.RayOrigin = new float3(x,40f,z);
         input.Move.RayDirection = math.down();
     }
     #endregion

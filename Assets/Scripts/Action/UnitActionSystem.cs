@@ -15,7 +15,7 @@ public struct ConstructRequest : IBufferElementData
     //add end pos later
     public ConstructionDataBaked Data;
 }
-
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile]
 public partial struct UnitActionSystem : ISystem
 {
@@ -72,9 +72,6 @@ public partial struct UnitActionSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
-        // if (!SystemAPI.TryGetSingleton<LockstepReady>(out var ready) || !ready.Value)
-        //     return;
-
         if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
             return;
 
@@ -87,14 +84,14 @@ public partial struct UnitActionSystem : ISystem
         ecb.Dispose();
     }
 
-    private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput c)
+    private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput unpacked)
     {
-        if (c.Type == InputType.None) return;
+        if (unpacked.Type == InputType.None) return;
 
-        switch (c.Type)
+        switch (unpacked.Type)
         {
             case InputType.Action:
-                OnAction(ref state, ref ecb, c.Action, c.Team);
+                OnAction(ref state, ref ecb, unpacked.Action, unpacked.Team);
                 break;
         }
     }

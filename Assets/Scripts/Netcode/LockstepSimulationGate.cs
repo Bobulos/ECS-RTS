@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.Collections;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
@@ -9,34 +10,43 @@ public partial class LockstepSimulationGate : SystemBase
     {
         //RequireForUpdate<NetworkStreamInGame>();
         EntityManager.CreateSingleton<CurrentTurnInput>(new CurrentTurnInput { Ready = false });
-        EntityManager.CreateSingleton<LockstepReady>(new LockstepReady { Value = false });
     }
     protected override void OnUpdate()
     {
-        var receiver = World.GetExistingSystemManaged<LockstepTurnReceiverSystem>();
-        if (receiver == null || receiver.PendingTurns.Count == 0) 
-        {
-            // Stall - don't simulate this frame
-            // You can disable downstream systems here
-            return;
-        }
-        //UnityEngine.Debug.Log($"Processing turn {receiver.PendingTurns.Peek().TurnNumber}");
-        var turn = receiver.PendingTurns.Dequeue();
+        // Always reset ready at start of frame
+        foreach (var playerInput in SystemAPI.Query<RefRW<CurrentTurnInput>>())
+            playerInput.ValueRW.Ready = false;
 
-        // Feed inputs into your InputHandlerSystem
-        // Input0 = local player, Input1 = remote player (or look up by NetworkId)
-        foreach (var playerInput in
-            SystemAPI.Query<RefRW<CurrentTurnInput>>())
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        bool turnReady = false;
+        TurnReadyRpc turn = default;
+
+        foreach (var (rpc, entity) in
+            SystemAPI.Query<RefRO<TurnReadyRpc>>()
+            .WithAll<ReceiveRpcCommandRequest>()
+            .WithEntityAccess())
         {
-            playerInput.ValueRW.Input0 = turn.Input0;
-            playerInput.ValueRW.Input1 = turn.Input1;
+            turnReady = true;
+            turn = rpc.ValueRO;
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+
+
+        //---------------------------------
+        //MISSION CRITICAL:
+        //---------------------------------
+        if (!turnReady) return;
+
+        foreach (var playerInput in SystemAPI.Query<RefRW<CurrentTurnInput>>())
+        {
+            playerInput.ValueRW.Input0 = PackerUtil.Unpack(turn.Input0);
+            playerInput.ValueRW.Input1 = PackerUtil.Unpack(turn.Input1);
             playerInput.ValueRW.Ready = true;
         }
     }
-}
-public struct LockstepReady : IComponentData
-{
-    public bool Value;
 }
 // Singleton to hold current turn's inputs for simulation systems to read
 public struct CurrentTurnInput : IComponentData

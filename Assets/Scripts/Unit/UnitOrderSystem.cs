@@ -10,6 +10,7 @@ using UnityEngine;
 /// This system handles incomming orders for units
 /// </summary>
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(NavSystem))]
 public partial struct UnitOrderSystem : ISystem
 {
