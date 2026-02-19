@@ -51,7 +51,7 @@ public struct TurnReadyRpc : IRpcCommand
 public partial class LockstepInputSenderSystem : SystemBase
 {
 
-    private ushort _lockstepTicks = 12; // 30hz
+    private ushort _lockstepTicks = 6; // 30hz
     private ushort _currentTurn = 0;
     private BittableInput _pendingInput;
     private NativeList<BittableInput> _buffer;
@@ -60,7 +60,7 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _lockstepTicks = NetworkConfigLoader.LoadNetwork().networkTicks;
+        //_lockstepTicks = NetworkConfigLoader.LoadNetwork().networkTicks;
         int size = Marshal.SizeOf<PackedBittableInput>();
         UnityEngine.Debug.Log($"Marshaled size of PackedBittableInput: {size} bytes");
         
