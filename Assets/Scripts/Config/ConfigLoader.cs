@@ -2,7 +2,7 @@ using UnityEngine;
 
 public static class SimConfigLoader
 {
-    private const string SIM_CONFIG_PATH = "Default";
+    private const string SIM_CONFIG_PATH = "DefaultSim";
     private static SimulationConfig simConfig;
     public static SimulationConfig LoadSim()
     {
@@ -25,7 +25,7 @@ public static class SimConfigLoader
 }
 public static class NetworkConfigLoader
 {
-    private const string NETWORK_CONFIG_PATH = "Default";
+    private const string NETWORK_CONFIG_PATH = "DefaultNet";
     private static NetworkConfig networkConfig;
     public static NetworkConfig LoadNetwork()
     {
