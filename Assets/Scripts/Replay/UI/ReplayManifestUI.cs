@@ -48,9 +48,9 @@ public class ReplayManifestUI : MonoBehaviour
     // Update is called once per frame
     public void ElementClicked(string path)
     {
-        GameSettings.InReplayMode = true;
-        GameSettings.ReplayPath = path;
-        GameSettings.MapSceneName = "Battles";
+        GameLoadConfig.InReplayMode = true;
+        GameLoadConfig.ReplayPath = path;
+        GameLoadConfig.MapSceneName = "Battles";
         // 1. Start loading the scene asynchronously
         SceneManager.LoadScene("LoadingScene");
 

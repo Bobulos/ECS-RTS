@@ -23,7 +23,7 @@ public struct ActionData
     public float3 RayDirection;
 }
 
-public class UnitActionManager : MonoBehaviour
+public class UnitActionManager : MapLoadedAccess
 {
     #region Fields
     
@@ -57,7 +57,7 @@ public class UnitActionManager : MonoBehaviour
 
     #region Unity Lifecycle
     
-    private void Start()
+    public override void OnLoad()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
 
@@ -68,7 +68,7 @@ public class UnitActionManager : MonoBehaviour
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
         
-        if (GameSettings.InReplayMode) 
+        if (GameLoadConfig.InReplayMode) 
         {
             this.enabled = false;
             return;

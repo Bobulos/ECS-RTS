@@ -40,7 +40,7 @@ public partial class FogSystem : SystemBase
     protected override void OnUpdate()
     {
 
-
+        //UnityEngine.Debug.Log("Fog system running");
         if (!SystemAPI.TryGetSingleton(out MapData settings)) return;
         
         //if (_fogRender == null) _fogRender = GameObject.FindAnyObjectByType<FogOfWarRendering>();

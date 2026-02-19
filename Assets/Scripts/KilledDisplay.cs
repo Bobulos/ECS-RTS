@@ -4,7 +4,7 @@ using Unity.Entities;
 using UnityEngine;
 using Unity.NetCode;
 
-public class KilledDisplay : MonoBehaviour
+public class KilledDisplay : MapLoadedAccess
 {
     [SerializeField] private TextMeshProUGUI text;
     [SerializeField] private float readRate = 1f;
@@ -12,8 +12,9 @@ public class KilledDisplay : MonoBehaviour
 
     //private EntityManager entityManager;
     private EntityQuery query;
-    private void Start()
+    public override void OnLoad()
     {
+        //base.Start();
         var entityManager = ClientServerBootstrap.ClientWorld.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(GameStats));
         InvokeRepeating(nameof(UpdateKilled), readRate, readRate);

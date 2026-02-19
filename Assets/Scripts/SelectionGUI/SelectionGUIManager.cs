@@ -6,7 +6,7 @@ using Unity.Entities;
 using UnityEngine;
 using Unity.NetCode;
 
-public class SelectionGUIManager : MonoBehaviour
+public class SelectionGUIManager : MapLoadedAccess
 {
     public TextMeshProUGUI description;
     public GameObject GUIElementPrefab;
@@ -30,7 +30,7 @@ public class SelectionGUIManager : MonoBehaviour
     // Cache for detecting changes
     private Dictionary<int, int> lastBucketData = new Dictionary<int, int>();
 
-    void Start()
+    public override void OnLoad()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
         World defaultWorld = ClientServerBootstrap.ClientWorld;

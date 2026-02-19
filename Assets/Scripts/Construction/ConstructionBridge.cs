@@ -32,7 +32,7 @@ public class ConstructionBridge : MonoBehaviour
     {
         //constructs = ScriptableObjectUtil.LoadAllScriptableObjects<ConstructionData>().ToArray();
         cam = Camera.main;
-        if (GameSettings.InReplayMode) { this.enabled = false;  }
+        if (GameLoadConfig.InReplayMode) { this.enabled = false;  }
     }
     float3 startBuildPos;
 

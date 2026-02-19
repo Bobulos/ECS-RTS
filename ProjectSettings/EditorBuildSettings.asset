@@ -6,14 +6,23 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/MenueLAN.unity
+    guid: 118d02ac9bde7184ab70b0b49f175709
+  - enabled: 1
     path: Assets/Scenes/Battles.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/MainMenue.unity
     guid: e4b6a557294ab07438679abda6d4a844
   - enabled: 1
     path: Assets/Scenes/LoadingScene.unity
     guid: c4cfe37465a83fa4fb09a4e0cdcfc5fe
+  - enabled: 1
+    path: Assets/Scenes/BattlesMultiplayered.unity
+    guid: 813550309e1865c4cb4fade2537d6b96
+  - enabled: 1
+    path: Assets/Scenes/BattlesMultiplayered/SharedData.unity
+    guid: 00469380c679cdb42b05f7ba13759980
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

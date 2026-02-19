@@ -15,7 +15,7 @@ public struct FixedSelectionData
         return Value[index];
     }
 }
-public class InputBridge : MonoBehaviour
+public class InputBridge : MapLoadedAccess
 {
     // ... (fields) ...
     public SelectionBoxVisual selectionVisual;
@@ -36,9 +36,9 @@ public class InputBridge : MonoBehaviour
     public Transform rig;
 
     public int team;
-    private void Awake()
+    public override void OnLoad()
     {
-        if (GameSettings.InReplayMode) { this.enabled = false; }
+        if (GameLoadConfig.InReplayMode) { this.enabled = false; }
         mainCamera = Camera.main;
         MinimapInteraction.OnClickEvent += MinimapClick;
     }
@@ -68,8 +68,12 @@ public class InputBridge : MonoBehaviour
     FixedSelectionData selectionData;
     //fix in a seccond
     #region MainLoop
-    void Update()
+    public void Update()
     {
+        if (!_ready)
+        {
+            return;
+        }
         //UnityEngine.Debug.Log($"reading input as {InputData.inAction}");
         if (UIUtility.IsPointerOverUI() || InputData.inAction) { return; }
 

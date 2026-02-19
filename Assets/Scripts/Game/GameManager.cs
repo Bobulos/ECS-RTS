@@ -2,7 +2,8 @@ using Unity.Entities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
-public class GameManager : MonoBehaviour
+using Unity.NetCode;
+public class GameManager : MapLoadedAccess
 {
     //Events
     public static Action OnEndGame;
@@ -20,20 +21,20 @@ public class GameManager : MonoBehaviour
     private EntityManager entityManager;
 
     private bool initialized = false;
-    private void Start()
+    public override void OnLoad()
     {
         inputBridge = GameObject.FindFirstObjectByType<InputBridge>();
         constructionBridge = GameObject.FindFirstObjectByType<ConstructionBridge>();
         unitActionManager = GameObject.FindFirstObjectByType<UnitActionManager>();
 
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        entityManager = ClientServerBootstrap.ClientWorld.EntityManager;
 
         localData = entityManager.CreateEntityQuery(typeof(LocalPlayerData));
         
-        if (GameSettings.InReplayMode)
+        if (GameLoadConfig.InReplayMode)
         {
             var p = Instantiate(inputPlayback).GetComponent<InputPlayback>();
-            p.StartReplay(GameSettings.ReplayPath);
+            p.StartReplay(GameLoadConfig.ReplayPath);
         }
         else
         {
@@ -42,6 +43,10 @@ public class GameManager : MonoBehaviour
     }
     private void Update()
     {
+        if (!_ready)
+        {
+            return;
+        }
         if (!initialized)
         {
             OnChangeTeam(localTeam);
@@ -71,8 +76,8 @@ public class GameManager : MonoBehaviour
     {
         OnEndGame?.Invoke();
 
-        GameSettings.InReplayMode = false;
-        GameSettings.ReplayPath = "";
+        GameLoadConfig.InReplayMode = false;
+        GameLoadConfig.ReplayPath = "";
         SceneManager.LoadScene("MainMenue");
     }
 }

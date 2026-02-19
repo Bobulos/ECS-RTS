@@ -6,12 +6,12 @@ using UnityEngine.UI;
 public class SceneLoader : MonoBehaviour
 {
     [SerializeField] private Slider progressBar;
-    [SerializeField] private string sceneToLoad;
+    private string sceneToLoad;
 
     void Start()
     {
-        sceneToLoad = GameSettings.MapSceneName;
-        if (string.IsNullOrEmpty(GameSettings.MapSceneName) || SceneUtility.GetBuildIndexByScenePath(GameSettings.MapSceneName) == -1) { SceneManager.LoadScene("MainMenue"); }
+        sceneToLoad = GameLoadConfig.MapSceneName;
+        if (string.IsNullOrEmpty(GameLoadConfig.MapSceneName) || SceneUtility.GetBuildIndexByScenePath(GameLoadConfig.MapSceneName) == -1) { SceneManager.LoadScene("MainMenue"); }
         // Start the background loading process
         StartCoroutine(LoadAsyncOperation());
     }

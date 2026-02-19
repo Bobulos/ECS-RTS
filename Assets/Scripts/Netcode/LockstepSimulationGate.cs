@@ -42,6 +42,7 @@ public partial class LockstepSimulationGate : SystemBase
 
         foreach (var playerInput in SystemAPI.Query<RefRW<CurrentTurnInput>>())
         {
+            UnityEngine.Debug.Log($"<color=cyan>[Client] Received turn back {turn.TurnNumber} with input types {PackerUtil.Unpack(turn.Input0).Type} and {PackerUtil.Unpack(turn.Input1).Type}</color>");
             playerInput.ValueRW.Input0 = PackerUtil.Unpack(turn.Input0);
             playerInput.ValueRW.Input1 = PackerUtil.Unpack(turn.Input1);
             playerInput.ValueRW.Ready = true;

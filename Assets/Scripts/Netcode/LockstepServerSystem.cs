@@ -3,7 +3,7 @@ using Unity.NetCode;
 using Unity.Collections;
 using Unity.VisualScripting;
 
-
+// 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial class LockstepServerSystem : SystemBase
@@ -80,9 +80,12 @@ public partial class LockstepServerSystem : SystemBase
                 //UnityEngine.Debug.Log($"Packed input0 for turn {_currentTurn}: ");
                 ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
                 {
-                    TargetConnection = connectionEntity
+                    TargetConnection = Entity.Null
                 });
-                var dType = PackerUtil.Unpack(input0).Type;
+                UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input0).Type}</color>");
+                UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input1).Type}</color>");
+                       
+                //var dType = PackerUtil.Unpack(input0).Type;
                 //if (dType != InputType.None) UnityEngine.Debug.Log($"Broadcasted turn to clients {_currentTurn} with inputs of type {dType}");
             }
             _currentTurn++;

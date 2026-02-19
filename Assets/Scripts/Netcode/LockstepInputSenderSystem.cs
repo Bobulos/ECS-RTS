@@ -91,6 +91,7 @@ public partial class LockstepInputSenderSystem : SystemBase
     private ushort _confirmedTurn = 0;
     protected override void OnUpdate()
     {
+        //UnityEngine.Debug.Log("<color=green>[Client] Input sender system running</color>");
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach (var (rpc, entity) in
             SystemAPI.Query<RefRO<TurnReadyRpc>>()
@@ -111,13 +112,18 @@ public partial class LockstepInputSenderSystem : SystemBase
         // Only send if we haven't gotten ahead of confirmed turns
         if (_currentTurn > _confirmedTurn) return;
 
+
+        //
+        // Sending Inputs
+        //
+
         // Find connection entity and send RPC
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkStreamInGame>>().WithEntityAccess())
         {
             //if (_pendingInput.Type != InputType.None) UnityEngine.Debug.Log($"Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}"); // Skip if no input to send
             //UnityEngine.Debug.Log($"Sending input for turn from client");
-            
+            UnityEngine.Debug.Log($"<color=green>[Client] Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}</color>");
             var rpcEntity = EntityManager.CreateEntity();
             ecb.AddComponent(rpcEntity, new ClientInputRpc 
             { Value = PackerUtil.Pack(phys, _currentTurn, _pendingInput)});

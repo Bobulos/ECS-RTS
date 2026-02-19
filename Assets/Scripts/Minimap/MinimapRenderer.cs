@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Unity.NetCode;
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-public class MinimapRenderer : MonoBehaviour
+public class MinimapRenderer : MapLoadedAccess
 {
     public ComputeShader minimapComputeShader;
     public RenderTexture minimapTexture;
@@ -32,16 +32,14 @@ public class MinimapRenderer : MonoBehaviour
 
     private NativeList<float2> friendly;
     private NativeList<float2> enemy;
-    void Awake()
+
+    public override void OnLoad()
     {
         minimapTexture = new RenderTexture(textureSize, textureSize, 0, RenderTextureFormat.ARGB32);
         minimapTexture.enableRandomWrite = true;
         minimapTexture.filterMode = FilterMode.Point;
         minimapTexture.Create();
         GetComponent<RawImage>().texture = minimapTexture;
-    }
-    void Start()
-    {
         //runs pon client world
         entityManager = ClientServerBootstrap.ClientWorld.EntityManager;
         //mapQuery = entityManager.CreateEntityQuery(ComponentType.ReadOnly<MinimapData>());
@@ -63,6 +61,11 @@ public class MinimapRenderer : MonoBehaviour
     }
     void Update()
     {
+        if (!_ready)
+        {
+            return;
+        }
+        
         minimap.rotation = Quaternion.Euler(0, 0, cam.rotation.eulerAngles.y);
         UpdatePlayerIcon();
         

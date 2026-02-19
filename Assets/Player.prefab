@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &6826437568940429329
+--- !u!1 &3782454528260129249
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,10 +8,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 743451547237364383}
-  - component: {fileID: 4912826484555872963}
-  - component: {fileID: 8704627967799492009}
-  - component: {fileID: 5417938863405682104}
+  - component: {fileID: 3888720027955120107}
+  - component: {fileID: 4810620370295753805}
+  - component: {fileID: 9014532002724937691}
+  - component: {fileID: 1556963983187284680}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -19,67 +19,67 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &743451547237364383
+--- !u!4 &3888720027955120107
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6826437568940429329}
+  m_GameObject: {fileID: 3782454528260129249}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 77.3404, y: 0.08214, z: 64.71924}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4912826484555872963
+--- !u!114 &4810620370295753805
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6826437568940429329}
+  m_GameObject: {fileID: 3782454528260129249}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53cf0e94f5f080648bd976f2673036af, type: 3}
+  m_Script: {fileID: 11500000, guid: 3e8a3c60057428a42980fad61d116740, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAuthoring
---- !u!114 &8704627967799492009
+--- !u!114 &9014532002724937691
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6826437568940429329}
+  m_GameObject: {fileID: 3782454528260129249}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c16549610bfe4458aa9389201d072bb6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Entities.Hybrid::Unity.Entities.Hybrid.Baking.LinkedEntityGroupAuthoring
---- !u!114 &5417938863405682104
+--- !u!114 &1556963983187284680
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6826437568940429329}
+  m_GameObject: {fileID: 3782454528260129249}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7c79d771cedb4794bf100ce60df5f764, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.NetCode.Authoring.Hybrid::Unity.NetCode.GhostAuthoringComponent
-  DefaultGhostMode: 2
+  DefaultGhostMode: 0
   SupportedGhostModes: 3
   OptimizationMode: 0
-  Importance: 283
+  Importance: 1
   MaxSendRate: 0
-  prefabId: fee488f25d558bc43886b6ab54e043ed
+  prefabId: a4e8b9c7b13aebe4d97b8289cd413180
   HasOwner: 1
   SupportAutoCommandTarget: 1
   TrackInterpolationDelay: 0
-  GhostGroup: 0
+  GhostGroup: 1
   UsePreSerialization: 0
   UseSingleBaseline: 0
   RollbackPredictedSpawnedGhostState: 0
