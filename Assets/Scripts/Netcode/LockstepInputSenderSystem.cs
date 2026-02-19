@@ -51,7 +51,7 @@ public struct TurnReadyRpc : IRpcCommand
 public partial class LockstepInputSenderSystem : SystemBase
 {
 
-    const ushort LOCKSTEP_TICKS = 12; // 30hz
+    private ushort _lockstepTicks = 12; // 30hz
     private ushort _currentTurn = 0;
     private BittableInput _pendingInput;
     private NativeList<BittableInput> _buffer;
@@ -60,6 +60,7 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     protected override void OnCreate()
     {
+        _lockstepTicks = NetworkConfigLoader.LoadNetwork().networkTicks;
         int size = Marshal.SizeOf<PackedBittableInput>();
         UnityEngine.Debug.Log($"Marshaled size of PackedBittableInput: {size} bytes");
         
@@ -107,7 +108,7 @@ public partial class LockstepInputSenderSystem : SystemBase
         var phys = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
 
         if (!tick.IsValid) return;
-        if (tick.TickIndexForValidTick % LOCKSTEP_TICKS != 0) return;
+        if (tick.TickIndexForValidTick % _lockstepTicks != 0) return;
 
         // Only send if we haven't gotten ahead of confirmed turns
         if (_currentTurn > _confirmedTurn) return;

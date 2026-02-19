@@ -28,7 +28,7 @@ public class MapConnectionBootstrap : MonoBehaviour
             Host();
         else if (GameLoadConfig.IsClient)
             Join(GameLoadConfig.ServerIp, 7979);
-        SceneManager.LoadScene(_sharedScene.SceneName, LoadSceneMode.Additive);
+        //SceneManager.LoadScene(_sharedScene.SceneGUID, LoadSceneMode.Additive);
     }
 
     private void Host()

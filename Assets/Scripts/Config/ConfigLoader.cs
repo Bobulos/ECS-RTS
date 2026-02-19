@@ -1,14 +1,14 @@
 using UnityEngine;
 
-public static class ConfigLoader
+public static class SimConfigLoader
 {
-    private const string SIM_SETTINGS_PATH = "Default";
+    private const string SIM_CONFIG_PATH = "Default";
     private static SimulationConfig simConfig;
     public static SimulationConfig LoadSim()
     {
         if (simConfig == null)
         {
-            simConfig = Resources.Load<SimulationConfig>(SIM_SETTINGS_PATH);
+            simConfig = Resources.Load<SimulationConfig>(SIM_CONFIG_PATH);
         }
         return simConfig;
         
@@ -21,6 +21,19 @@ public static class ConfigLoader
         }
 
         return JsonUtility.FromJson<T>(textAsset.text);*/
+    }
+}
+public static class NetworkConfigLoader
+{
+    private const string NETWORK_CONFIG_PATH = "Default";
+    private static NetworkConfig networkConfig;
+    public static NetworkConfig LoadNetwork()
+    {
+        if (networkConfig == null)
+        {
+            networkConfig = Resources.Load<NetworkConfig>(NETWORK_CONFIG_PATH);
+        }
+        return networkConfig;
     }
 }
 /*[System.Serializable]

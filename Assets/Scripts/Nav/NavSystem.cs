@@ -56,7 +56,7 @@ public partial struct NavSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         _navWorld = NavMeshWorld.GetDefaultWorld();
-        _maxQueries = ConfigLoader.LoadSim().maxNavQueries;
+        _maxQueries = SimConfigLoader.LoadSim().maxNavQueries;
 
         _queries = new NativeArray<NavMeshQuery>(_maxQueries, Allocator.Persistent);
         _freeIndices = new NativeList<int>(_maxQueries, Allocator.Persistent);

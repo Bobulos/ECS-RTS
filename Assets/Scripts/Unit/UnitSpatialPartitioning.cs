@@ -41,7 +41,7 @@ public partial struct UnitSpatialPartitioning : ISystem
     {
 
         //SimulationSettings
-        var config = ConfigLoader.LoadSim();
+        var config = SimConfigLoader.LoadSim();
         _maxNavBucket = config.navBucketCount;
         _timeHorizon = config.timeHorizon;
         _navBucket = 0;

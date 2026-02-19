@@ -137,6 +137,10 @@ public class InputBridge : MapLoadedAccess
     //playback buffer
     private void FixedUpdate()
     {
+        if (!_ready)
+        {
+            return;
+        }
         bool needsGUIUpdate = false;
         
         foreach (InputRecord r in buffer)

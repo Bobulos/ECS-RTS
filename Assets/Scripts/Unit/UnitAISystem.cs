@@ -307,7 +307,7 @@ public partial struct UnitInitSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         //load settings
-        var config = ConfigLoader.LoadSim();
+        var config = SimConfigLoader.LoadSim();
         _targBucket = 0;
         _navBucket = 0;
         _maxTargBucket = config.targetBucketCount;
