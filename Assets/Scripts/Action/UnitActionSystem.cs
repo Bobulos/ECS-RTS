@@ -16,7 +16,7 @@ public struct ConstructRequest : IBufferElementData
     public ConstructionDataBaked Data;
 }
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile, UpdateBefore(typeof(InputHandlerSystem))]
+[UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile, UpdateAfter(typeof(InputHandlerSystem))]
 public partial struct UnitActionSystem : ISystem
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -59,6 +59,7 @@ public partial struct UnitActionSystem : ISystem
                 AddUnitToQueue(ref state, action, team);
                 break;
             case ActionType.Move:
+                //UnityEngine.
                 Move(ref state, action, team);
                 break;
             case ActionType.SetRallyPoint:
@@ -74,6 +75,8 @@ public partial struct UnitActionSystem : ISystem
     {
         if (!SystemAPI.TryGetSingleton<CurrentTurnInput>(out var turnInput) || !turnInput.Ready)
             return;
+
+        //UnityEngine.Debug.Log("Action system running");
 
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
@@ -92,8 +95,9 @@ public partial struct UnitActionSystem : ISystem
 
     private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput unpacked)
     {
+        
         if (unpacked.Type == InputType.None) return;
-
+        UnityEngine.Debug.Log("Action system proccessing unpacked input");
         switch (unpacked.Type)
         {
             case InputType.Action:
@@ -115,8 +119,8 @@ public partial struct UnitActionSystem : ISystem
             Filter = TERRAIN_FILTER
         };
 
-        UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.red, 10f);
-
+        UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.aquamarine, 100f);
+        UnityEngine.Debug.Log($"Move data at {raycastInput.Start} to {raycastInput.End}");
         float3 calculatedCenter = float3.zero;
         int unitCount = 0;
         var unitPositions = new NativeList<float3>(64, Allocator.Temp);

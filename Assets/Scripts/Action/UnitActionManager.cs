@@ -119,7 +119,7 @@ public class UnitActionManager : MapLoadedAccess
             RayOrigin = r.Action.RayOrigin,
             RayDirection = r.Action.RayDirection
         };
-        OnAction.Invoke(data, r.Team);
+        OnAction?.Invoke(data, r.Team);
     }
     
     #endregion

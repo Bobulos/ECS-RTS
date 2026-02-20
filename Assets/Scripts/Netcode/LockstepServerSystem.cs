@@ -12,9 +12,10 @@ public partial class LockstepServerSystem : SystemBase
     private NativeHashMap<int, PackedBittableInput> _collectedInputs;
     private int _expectedPlayers = 1; // or track dynamically
     private ushort _currentTurn = 0;
-
+    bool _logging;
     protected override void OnCreate()
     {
+        //_logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         _collectedInputs = new NativeHashMap<int, PackedBittableInput>(8, Allocator.Persistent);
         RequireForUpdate<NetworkStreamInGame>();
     }
@@ -82,8 +83,12 @@ public partial class LockstepServerSystem : SystemBase
                 {
                     TargetConnection = Entity.Null
                 });
-                UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input0).Type}</color>");
+                if (_logging)
+                {
+                    UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input0).Type}</color>");
                 UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input1).Type}</color>");
+                }
+                
                        
                 //var dType = PackerUtil.Unpack(input0).Type;
                 //if (dType != InputType.None) UnityEngine.Debug.Log($"Broadcasted turn to clients {_currentTurn} with inputs of type {dType}");

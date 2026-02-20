@@ -15,6 +15,7 @@ public struct PackedBittableInput
     
     public byte BA; // for shiftin
     public byte BB;
+    public byte BC;
     public ulong LA;
     public ulong LB;
     public ulong LC;
@@ -107,6 +108,7 @@ public static class PackerUtil
             //32 + 3B
             case InputType.Action:
                 UnpackAction(input, ref un);
+                //UnityEngine.Debug.Log("Unpacking action");
                 break;
             
         }
@@ -226,6 +228,8 @@ public static class PackerUtil
 
         input.BB = d.ActionByte;
 
+        input.BC = (byte)d.Info.ActionType;
+
         input.LB = (ulong)d.Info.PrefabIndex;
 
         var raycastInput = new RaycastInput
@@ -248,6 +252,7 @@ public static class PackerUtil
         input.Action.Shifting = Convert.ToBoolean(d.BA);
 
         input.Action.ActionByte = d.BB;
+        input.Action.Info.ActionType = (ActionType)d.BC;
         
         input.Action.Info.PrefabIndex = (int)d.LB;
 
@@ -256,8 +261,9 @@ public static class PackerUtil
         float x = Dequantize(qx);
         float z = Dequantize(qz);
 
+        UnityEngine.Debug.DrawRay(new float3(x,40f,z),math.down()*MAX_RAY_LENGTH, UnityEngine.Color.aquamarine, 10f);
         input.Action.RayOrigin = new float3(x,40f,z);
-        input.Action.RayDirection = math.down();
+        input.Action.RayDirection = math.down()*MAX_RAY_LENGTH;
         //un.Action = new ActionData { Value = d.LA };
     }
     #endregion

@@ -20,7 +20,7 @@ public struct SelectedVisualTag : IComponentData { }
 
 //[UpdateAfter(typeof(UnitActionSystem))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(LockstepSimulationGate)),UpdateAfter(typeof(UnitActionSystem)), BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(LockstepSimulationGate)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;

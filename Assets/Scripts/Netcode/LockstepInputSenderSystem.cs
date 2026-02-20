@@ -56,10 +56,13 @@ public partial class LockstepInputSenderSystem : SystemBase
     private BittableInput _pendingInput;
     private NativeList<BittableInput> _buffer;
 
+    private bool _logging = false;
+
     //private BittableInput _tempInput;
 
     protected override void OnCreate()
     {
+        //_logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         //_lockstepTicks = NetworkConfigLoader.LoadNetwork().networkTicks;
         int size = Marshal.SizeOf<PackedBittableInput>();
         UnityEngine.Debug.Log($"Marshaled size of PackedBittableInput: {size} bytes");
@@ -124,7 +127,9 @@ public partial class LockstepInputSenderSystem : SystemBase
         {
             //if (_pendingInput.Type != InputType.None) UnityEngine.Debug.Log($"Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}"); // Skip if no input to send
             //UnityEngine.Debug.Log($"Sending input for turn from client");
-            UnityEngine.Debug.Log($"<color=green>[Client] Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}</color>");
+            if (_logging) UnityEngine.Debug.Log($"<color=green>[Client] Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}</color>");
+            
+            //if (_pendingInput.Type == InputType.Action) UnityEngine.Debug.Log("Sending action rpc");
             var rpcEntity = EntityManager.CreateEntity();
             ecb.AddComponent(rpcEntity, new ClientInputRpc 
             { Value = PackerUtil.Pack(phys, _currentTurn, _pendingInput)});
