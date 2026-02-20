@@ -20,7 +20,7 @@ public struct SelectedVisualTag : IComponentData { }
 
 //[UpdateAfter(typeof(UnitActionSystem))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(LockstepSimulationGate)), BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(LockstepSimulationGate)),UpdateAfter(typeof(UnitActionSystem)), BurstCompile]
 public partial class InputHandlerSystem : SystemBase
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -48,12 +48,12 @@ public partial class InputHandlerSystem : SystemBase
         ProcessInput(ref ecb, turnInput.Input0);
         ProcessInput(ref ecb, turnInput.Input1);
 
+        
+
+
+
         ecb.Playback(EntityManager);
         ecb.Dispose();
-
-        // Clear ready flag so we don't process the same turn twice
-        var turnInputEntity = SystemAPI.GetSingletonEntity<CurrentTurnInput>();
-        EntityManager.SetComponentData(turnInputEntity, new CurrentTurnInput { Ready = false });
     }
 
     private void ProcessInput(ref EntityCommandBuffer ecb, BittableInput unpacked)

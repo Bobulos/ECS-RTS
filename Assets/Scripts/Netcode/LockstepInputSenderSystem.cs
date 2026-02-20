@@ -142,8 +142,7 @@ public partial class LockstepInputSenderSystem : SystemBase
         ecb.Dispose();
     }
 
-    // ==== UI EVENTS ====
-
+    #region  Collection
     void OnMoveUnits(MoveUnitsData d, int team)
         => _pendingInput = new BittableInput { Team = team, Type = InputType.MoveUnits, Move = d };
 
@@ -162,4 +161,5 @@ public partial class LockstepInputSenderSystem : SystemBase
         if (verts.Value.Length < 8) return;
         _pendingInput = new BittableInput { Team = team, Type = InputType.SelectUnits, Select = verts };
     }
+    #endregion
 }

@@ -16,7 +16,7 @@ public struct ConstructRequest : IBufferElementData
     public ConstructionDataBaked Data;
 }
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup)), BurstCompile, UpdateBefore(typeof(InputHandlerSystem))]
 public partial struct UnitActionSystem : ISystem
 {
     const float MAX_RAY_LENGTH = 300f;
@@ -80,8 +80,14 @@ public partial struct UnitActionSystem : ISystem
         ProcessInput(ref state, ref ecb, turnInput.Input0);
         ProcessInput(ref state, ref ecb, turnInput.Input1);
 
+        // Clear ready flag so we don't process the same turn twice
+        var turnInputEntity = SystemAPI.GetSingletonEntity<CurrentTurnInput>();
+        ecb.SetComponent(turnInputEntity, new CurrentTurnInput { Ready = false });
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+
+        
     }
 
     private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput unpacked)

@@ -7,6 +7,7 @@ using UnityEngine;
 
 public struct FixedSelectionData
 {
+    public bool Shifting;
     public FixedList128Bytes<float3> Value;
 
     public float3 GetVertex(int index)
@@ -111,6 +112,15 @@ public class InputBridge : MapLoadedAccess
         // LEFT CLICK UP (End Drag/Box Select/Single Select)
         else if (Input.GetMouseButtonUp(0))
         {
+            //Check for shift select
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                selectionData.Shifting = true;
+            }
+            else
+            {
+                selectionData.Shifting = false;
+            }
             /*OnSelectUnits?.Invoke(selectionBox.GetColliderEntity(), verts, team);*/
             buffer.Add(InputRecordUtil.AssembleRecord(selectionData, team));
             isDraggingLeft = false;
