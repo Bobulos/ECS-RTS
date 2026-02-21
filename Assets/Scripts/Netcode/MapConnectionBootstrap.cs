@@ -13,30 +13,92 @@ public class MapConnectionBootstrap : MonoBehaviour
 
     private bool _initialized;
     private int _framesWaited;
-
+    private Entity _serverSceneEntity;
+    private Entity _clientSceneEntity;
     private void Update()
     {
         if (_initialized) return;
 
-        // Wait 2 frames after scene load for subscenes to bake
-        _framesWaited++;
-        if (_framesWaited < 10) return;
+        // 1. First, we must ensure the Default World is gone so systems don't clash
+        if (World.DefaultGameObjectInjectionWorld != null && 
+            World.DefaultGameObjectInjectionWorld.Name == "Default World")
+        {
+            DestroyDefaultWorld();
+            SetupWorlds();
+            return;
+        }
 
-        _initialized = true;
+        // 2. Wait until SubScenes are fully loaded in their respective worlds
+        // This is crucial to prevent "Ghost Prefab Not Found" errors
+        if (IsMapReady())
+        {
+            StartConnection();
+            _initialized = true;
+        }
+    }
+
+    private void SetupWorlds()
+    {
+        if (GameLoadConfig.IsHost)
+        {
+            var serverWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");
+            var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
+            _serverSceneEntity = SceneSystem.LoadSceneAsync(serverWorld.Unmanaged, _sharedScene.SceneGUID);
+            _clientSceneEntity = SceneSystem.LoadSceneAsync(clientWorld.Unmanaged, _sharedScene.SceneGUID);
+        }
+        else if (GameLoadConfig.IsClient)
+        {
+            var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
+            _clientSceneEntity = SceneSystem.LoadSceneAsync(clientWorld.Unmanaged, _sharedScene.SceneGUID);
+        }
+    }
+
+    private bool IsMapReady()
+    {
+        bool serverReady = true;
+        bool clientReady = true;
 
         if (GameLoadConfig.IsHost)
+        {
+            var sw = GetWorld("ServerWorld");
+            serverReady = sw != null && SceneSystem.IsSceneLoaded(sw.Unmanaged, _serverSceneEntity);
+        }
+
+        var cw = GetWorld("ClientWorld");
+        clientReady = cw != null && SceneSystem.IsSceneLoaded(cw.Unmanaged, _clientSceneEntity);
+
+        return serverReady && clientReady;
+    }
+    private World GetWorld(string name)
+    {
+        foreach (var world in World.All)
+        {
+            if (world.Name == name) return world;
+        }
+        return null;
+    }
+    private void StartConnection()
+    {
+        if (GameLoadConfig.IsHost)
+        {
             Host();
+        }
         else if (GameLoadConfig.IsClient)
+        {
             Join(GameLoadConfig.ServerIp, 7979);
-        //SceneManager.LoadScene(_sharedScene.SceneGUID, LoadSceneMode.Additive);
+        }
+        
+        OnMapLoaded?.Invoke();
     }
 
     private void Host()
     {
+        
+        DestroyDefaultWorld();
         var serverWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        DestroyDefaultWorld();
+        
 
         LoadSubSceneIntoWorld(serverWorld);
         LoadSubSceneIntoWorld(clientWorld);
@@ -50,10 +112,12 @@ public class MapConnectionBootstrap : MonoBehaviour
 
     private void Join(string ip, ushort port)
     {
+
+        DestroyDefaultWorld();
         UnityEngine.Debug.Log($"[MapBootstrap] Joining server at {ip}:{port}");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        DestroyDefaultWorld();
+        
 
         LoadSubSceneIntoWorld(clientWorld);
 
