@@ -2,7 +2,22 @@ using Unity.Entities;
 using Unity.NetCode;
 using Unity.Collections;
 using Unity.VisualScripting;
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class DebugConnectionSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        foreach (var (conn, state) in SystemAPI.Query<RefRO<NetworkStreamConnection>, RefRO<NetworkSnapshotAck>>())
+        {
+            UnityEngine.Debug.Log($"[Client] Connection state: {conn.ValueRO.CurrentState}");
+        }
 
+        // Log if no connection entity exists at all
+        var q = EntityManager.CreateEntityQuery(ComponentType.ReadOnly<NetworkStreamConnection>());
+        if (q.CalculateEntityCount() == 0)
+            UnityEngine.Debug.LogWarning("[Client] No NetworkStreamConnection entity found");
+    }
+}
 // 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
