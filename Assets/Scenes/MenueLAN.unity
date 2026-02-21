@@ -523,6 +523,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1166629325}
+  - component: {fileID: 1166629326}
   m_Layer: 0
   m_Name: ConfigBootstrap
   m_TagString: Untagged
@@ -545,6 +546,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1166629326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1166629324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c2310ec18511854c8604b4d47390e29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ConfigBootstrap
 --- !u!1001 &1443130226
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -633,13 +646,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1544474211148048177, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
-      propertyPath: _mapSceneName
-      value: BattlesMultiplayered
-      objectReference: {fileID: 0}
     - target: {fileID: 6221093419000528711, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
       propertyPath: m_Name
       value: Join IP
+      objectReference: {fileID: 0}
+    - target: {fileID: 6467071549412485566, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
+      propertyPath: m_text
+      value: Expected Players
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
