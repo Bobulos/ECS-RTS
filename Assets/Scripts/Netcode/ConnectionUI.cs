@@ -23,13 +23,6 @@ public class ConnectionUI : MonoBehaviour
         // var query = em.CreateEntityQuery(ComponentType.ReadOnly<PlayerSpawner>());
         // _spawner = query.GetSingleton<PlayerSpawner>();
     }
-    private void FetchSpawner()
-    {
-        return;
-        var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-        var query = em.CreateEntityQuery(ComponentType.ReadOnly<PlayerSpawner>());
-        _spawner = query.GetSingleton<PlayerSpawner>();
-    }
     public void OnHostPressed()
     {
         GameLoadConfig.ServerIp = "127.0.0.1";

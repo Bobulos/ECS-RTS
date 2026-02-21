@@ -17,6 +17,7 @@ public class ExpectedPlayersDropdown : MonoBehaviour
             dropdown = GetComponent<TMP_Dropdown>();
 
         PopulateDropdown();
+        OnNumberSelected(defaultValue);
     }
 
     void PopulateDropdown()
@@ -24,7 +25,7 @@ public class ExpectedPlayersDropdown : MonoBehaviour
         dropdown.ClearOptions();
 
         List<string> options = new List<string>();
-        for (int i = 1; i <= 8; i++)
+        for (int i = 1; i <= maxValue; i++)
         {
             options.Add(i.ToString());
         }

@@ -50,6 +50,7 @@ public class MapConnectionBootstrap : MonoBehaviour
 
     private void Join(string ip, ushort port)
     {
+        UnityEngine.Debug.Log($"[MapBootstrap] Joining server at {ip}:{port}");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
         DestroyDefaultWorld();
