@@ -36,7 +36,7 @@ public class MapConnectionBootstrap : MonoBehaviour
         var serverWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        DestroyDefaultWorld();
+        //DestroyDefaultWorld();
 
         LoadSubSceneIntoWorld(serverWorld);
         LoadSubSceneIntoWorld(clientWorld);
@@ -53,7 +53,7 @@ public class MapConnectionBootstrap : MonoBehaviour
         UnityEngine.Debug.Log($"[MapBootstrap] Joining server at {ip}:{port}");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        DestroyDefaultWorld();
+        //DestroyDefaultWorld();
 
         LoadSubSceneIntoWorld(clientWorld);
 
@@ -75,14 +75,21 @@ public class MapConnectionBootstrap : MonoBehaviour
             .Listen(ClientServerBootstrap.DefaultListenAddress.WithPort(7979));
         Debug.Log("<color=blue>[Server] Listening on port 7979</color>");
     }
-
     private void ConnectClient(World clientWorld, string serverIp, ushort serverPort)
     {
+        using var existingQuery = clientWorld.EntityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<NetworkStreamConnection>());
+        
+        if (existingQuery.CalculateEntityCount() > 0)
+        {
+            Debug.LogWarning("[Client] Connection already exists, skipping Connect()");
+            return;
+        }
+        Debug.Log("<color=green>[Client] Connecting to server on port 7979</color>");
         using var query = clientWorld.EntityManager.CreateEntityQuery(
             ComponentType.ReadWrite<NetworkStreamDriver>());
         query.GetSingletonRW<NetworkStreamDriver>().ValueRW
             .Connect(clientWorld.EntityManager, NetworkEndpoint.Parse(serverIp, serverPort));
-        Debug.Log("<color=green>[Client] Connecting to server on port 7979</color>");
     }
 
     private void DestroyDefaultWorld()
