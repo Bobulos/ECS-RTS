@@ -36,7 +36,7 @@ public class MapConnectionBootstrap : MonoBehaviour
         var serverWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        //DestroyDefaultWorld();
+        DestroyDefaultWorld();
 
         LoadSubSceneIntoWorld(serverWorld);
         LoadSubSceneIntoWorld(clientWorld);
@@ -53,7 +53,7 @@ public class MapConnectionBootstrap : MonoBehaviour
         UnityEngine.Debug.Log($"[MapBootstrap] Joining server at {ip}:{port}");
         var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
 
-        //DestroyDefaultWorld();
+        DestroyDefaultWorld();
 
         LoadSubSceneIntoWorld(clientWorld);
 
@@ -71,8 +71,11 @@ public class MapConnectionBootstrap : MonoBehaviour
     {
         using var query = serverWorld.EntityManager.CreateEntityQuery(
             ComponentType.ReadWrite<NetworkStreamDriver>());
+
+        var endpoint = NetworkEndpoint.AnyIpv4.WithPort(7979);
+
         query.GetSingletonRW<NetworkStreamDriver>().ValueRW
-            .Listen(ClientServerBootstrap.DefaultListenAddress.WithPort(7979));
+            .Listen(endpoint);
         Debug.Log("<color=blue>[Server] Listening on port 7979</color>");
     }
     private void ConnectClient(World clientWorld, string serverIp, ushort serverPort)
@@ -102,5 +105,21 @@ public class MapConnectionBootstrap : MonoBehaviour
                 break;
             }
         }
+    }
+}
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class DebugConnectionSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        foreach (var (conn, state) in SystemAPI.Query<RefRO<NetworkStreamConnection>, RefRO<NetworkSnapshotAck>>())
+        {
+            UnityEngine.Debug.Log($"[Client] Connection state: {conn.ValueRO.CurrentState}");
+        }
+
+        // Log if no connection entity exists at all
+        var q = EntityManager.CreateEntityQuery(ComponentType.ReadOnly<NetworkStreamConnection>());
+        if (q.CalculateEntityCount() == 0)
+            UnityEngine.Debug.LogWarning("<color=green>[Client] No NetworkStreamConnection entity found</color>");
     }
 }
