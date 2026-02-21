@@ -646,13 +646,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1544474211148048177, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
+      propertyPath: _mapSceneName
+      value: BattlesMultiplayered
+      objectReference: {fileID: 0}
     - target: {fileID: 6221093419000528711, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
       propertyPath: m_Name
       value: Join IP
       objectReference: {fileID: 0}
     - target: {fileID: 6467071549412485566, guid: ecd3943119d60fe45906aa106953f7d5, type: 3}
       propertyPath: m_text
-      value: Expected Players
+      value: Option A
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
