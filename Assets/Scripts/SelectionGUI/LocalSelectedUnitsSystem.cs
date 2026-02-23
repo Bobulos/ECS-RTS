@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 
 //[UpdateInGroup(typeof(PresentationSystemGroup))]
-//[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct SelectionGUIManagerSystem : ISystem
 {
     public void OnCreate(ref SystemState state)
