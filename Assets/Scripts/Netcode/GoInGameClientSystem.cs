@@ -5,16 +5,22 @@ using Unity.NetCode;
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 partial struct GoInGameClientSystem : ISystem
 {
+    private EntityQuery _netIdQuery;
+    public void OnCreate(ref SystemState state)
+    {
+        _netIdQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
+    }
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // Connected but not yet in-game → send GoInGame RPC once
+        // Connected but not yet in-game -> send GoInGame RPC and update team
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkId>>()
             .WithNone<NetworkStreamInGame, SentGoInGame>()
             .WithEntityAccess())
         {
+            SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = _netIdQuery.CalculateEntityCount();
             var rpcEntity = ecb.CreateEntity();
             ecb.AddComponent(rpcEntity, new GoInGameRequestRpc());
             ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
