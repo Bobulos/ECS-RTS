@@ -5,10 +5,10 @@ using Unity.NetCode;
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 partial struct GoInGameClientSystem : ISystem
 {
-    private EntityQuery _netIdQuery;
+    //private EntityQuery _netIdQuery;
     public void OnCreate(ref SystemState state)
     {
-        _netIdQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
+        ///_netIdQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
     }
     public void OnUpdate(ref SystemState state)
     {
@@ -20,7 +20,9 @@ partial struct GoInGameClientSystem : ISystem
             .WithNone<NetworkStreamInGame, SentGoInGame>()
             .WithEntityAccess())
         {
-            SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = _netIdQuery.CalculateEntityCount();
+            //Instead of this send request to the server and let it decide which team the player should be
+
+            //SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = _netIdQuery.CalculateEntityCount();
             var rpcEntity = ecb.CreateEntity();
             ecb.AddComponent(rpcEntity, new GoInGameRequestRpc());
             ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
@@ -33,12 +35,13 @@ partial struct GoInGameClientSystem : ISystem
         }
 
         // Server approved → mark client connection as in-game
-        foreach (var (rpc, entity) in
-            SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>()
-            .WithAll<GoInGameApprovedRpc>()
+        foreach (var (rpc, receive, entity) in
+            SystemAPI.Query<RefRO<GoInGameApprovedRpc>, RefRO<ReceiveRpcCommandRequest>>()
             .WithEntityAccess())
         {
-            ecb.AddComponent<NetworkStreamInGame>(rpc.ValueRO.SourceConnection);
+
+            SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = rpc.ValueRO.TeamID;
+            ecb.AddComponent<NetworkStreamInGame>(receive.ValueRO.SourceConnection);
             ecb.DestroyEntity(entity);
             UnityEngine.Debug.Log("<color=green>[Client] Approved — NetworkStreamInGame added</color>");
         }
@@ -49,7 +52,10 @@ partial struct GoInGameClientSystem : ISystem
 }
 // ─── RPC Definitions ───────────────────────────────────────────────
 public struct GoInGameRequestRpc : IRpcCommand { }
-public struct GoInGameApprovedRpc : IRpcCommand { }
+public struct GoInGameApprovedRpc : IRpcCommand
+{
+    public int TeamID;
+}
 
 // ─── Shared Components ─────────────────────────────────────────────
 public struct SentGoInGame : IComponentData { }

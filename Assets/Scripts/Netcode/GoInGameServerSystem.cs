@@ -5,10 +5,10 @@ using Unity.NetCode;
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 partial struct GoInGameServerSystem : ISystem
 {
-    int _count;
+    int _curTeamID;
     public void OnCreate(ref SystemState state)
     {
-        _count = 0;
+        _curTeamID = 0;
         //need at least one player to join before we run the system
         //state.RequireForUpdate<NetworkId>();
         //state.RequireForUpdate<PlayerSpawner>();
@@ -47,11 +47,15 @@ partial struct GoInGameServerSystem : ISystem
 
             // Tell the client that they where approved
             var approvedRpcEntity = ecb.CreateEntity();
-            ecb.AddComponent(approvedRpcEntity, new GoInGameApprovedRpc());
+            ecb.AddComponent(approvedRpcEntity, new GoInGameApprovedRpc
+            {
+                TeamID = _curTeamID,
+            });
             ecb.AddComponent(approvedRpcEntity, new SendRpcCommandRequest
             {
                 TargetConnection = connectionEntity
             });
+            _curTeamID ++;
         }
 
         ecb.Playback(state.EntityManager);
