@@ -15,7 +15,7 @@ public partial class LockstepServerSystem : SystemBase
     protected override void OnCreate()
     {
         _expectedPlayers = GameLoadConfig.ExpectedPlayers;
-        //_logging = NetworkConfigLoader.LoadNetwork().logNetwork;
+        _logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         _collectedInputs = new NativeHashMap<int, PackedBittableInput>(8, Allocator.Persistent);
         RequireForUpdate<NetworkStreamInGame>();
     }
@@ -86,7 +86,7 @@ public partial class LockstepServerSystem : SystemBase
                 if (_logging)
                 {
                     UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input0).Type}</color>");
-                UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input1).Type}</color>");
+                    UnityEngine.Debug.Log($"<color=blue>[Server] Sending input for turn {_currentTurn} from client with type {PackerUtil.Unpack(input1).Type}</color>");
                 }
                 
                        

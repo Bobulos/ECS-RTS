@@ -253,6 +253,7 @@ public static class PackerUtil
 
         input.Action.ActionByte = d.BB;
         input.Action.Info.ActionType = (ActionType)d.BC;
+        //UnityEngine.Debug.Log($"Unpacked action type {(ActionType)d.BC}");
         
         input.Action.Info.PrefabIndex = (int)d.LB;
 

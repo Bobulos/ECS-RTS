@@ -62,7 +62,7 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     protected override void OnCreate()
     {
-        //_logging = NetworkConfigLoader.LoadNetwork().logNetwork;
+        _logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         //_lockstepTicks = NetworkConfigLoader.LoadNetwork().networkTicks;
         int size = Marshal.SizeOf<PackedBittableInput>();
         UnityEngine.Debug.Log($"Marshaled size of PackedBittableInput: {size} bytes");

@@ -44,17 +44,16 @@ class ProductionStructureBaker : Baker<ProductionStructureAuthoring>
         });
     }
 }
-[GhostComponent]
 public struct ProductionStructure : IComponentData
 {
-    [GhostField] public float3 SpawnOffset;
-    [GhostField] public float3 RallyPoint;
-    [GhostField] public int QueueCount;
-    [GhostField] public int QueueSize;
-    [GhostField] public float StartTime;
+    public float3 SpawnOffset;
+    public float3 RallyPoint;
+    public int QueueCount;
+    public int QueueSize;
+    public float StartTime;
     
     //64 bytes for each unit
     public FixedList64Bytes<int> Prefabs;
     // can hold 512
-    [GhostField] public FixedList64Bytes<int> Queue;
+    public FixedList64Bytes<int> Queue;
 }

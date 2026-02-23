@@ -24,5 +24,4 @@ class StructureBaker : Baker<StructureAuthoring>
         AddComponent(entity, new Selected {Value = false});
     }
 }
-[GhostComponent]
 public struct StructureTag : IComponentData { }

@@ -57,6 +57,7 @@ public partial struct UnitActionSystem : ISystem
         {
             case  ActionType.AddUnitToQueue:
                 AddUnitToQueue(ref state, action, team);
+                UnityEngine.Debug.Log("Added unit to queue");
                 break;
             case ActionType.Move:
                 //UnityEngine.

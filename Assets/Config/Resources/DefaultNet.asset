@@ -9,12 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 884af895db527f740ba79b5f33b1c25d, type: 3}
+  m_Script: {fileID: 11500000, guid: fb516e5ee3a0a6b4ca021b37294a8edb, type: 3}
   m_Name: DefaultNet
-  m_EditorClassIdentifier: Assembly-CSharp::SimulationConfig
-  timeHorizon: 0
-  spatialPartitionTargetCount: 0
-  targetBucketCount: 0
-  cellSize: 10
-  navBucketCount: 0
-  maxNavQueries: 12288
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkConfig
+  port: 7979
+  networkTicks: 6
+  logNetwork: 0

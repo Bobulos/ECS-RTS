@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7843217338672142702}
   - component: {fileID: 346418415964631624}
   - component: {fileID: 2823541664731704838}
-  - component: {fileID: -7129932125962513010}
   m_Layer: 0
   m_Name: Explosion
   m_TagString: Untagged
@@ -197,29 +196,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c16549610bfe4458aa9389201d072bb6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Entities.Hybrid::Unity.Entities.Hybrid.Baking.LinkedEntityGroupAuthoring
---- !u!114 &-7129932125962513010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1907523475199039303}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c79d771cedb4794bf100ce60df5f764, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.NetCode.Authoring.Hybrid::Unity.NetCode.GhostAuthoringComponent
-  DefaultGhostMode: 0
-  SupportedGhostModes: 3
-  OptimizationMode: 0
-  Importance: 1
-  MaxSendRate: 0
-  prefabId: 25fe3de67b0359b42912d886fdb4b8b9
-  HasOwner: 0
-  SupportAutoCommandTarget: 1
-  TrackInterpolationDelay: 0
-  GhostGroup: 0
-  UsePreSerialization: 0
-  UseSingleBaseline: 0
-  RollbackPredictedSpawnedGhostState: 0
-  RollbackPredictionOnStructuralChanges: 1

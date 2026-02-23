@@ -9,7 +9,7 @@ public partial class LockstepSimulationGate : SystemBase
     bool _logging = false;
     protected override void OnCreate()
     {
-        //_logging = NetworkConfigLoader.LoadNetwork().logNetwork;
+        _logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         //RequireForUpdate<NetworkStreamInGame>();
         EntityManager.CreateSingleton<CurrentTurnInput>(new CurrentTurnInput { Ready = false });
     }

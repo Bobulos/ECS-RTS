@@ -12,7 +12,7 @@ using Unity.Transforms;
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitStateSystem))]
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct DestroyDeadUnitsSystem : ISystem
 {
     JobHandle _prevJob;
@@ -62,6 +62,7 @@ public partial struct DestroyDeadUnitsSystem : ISystem
     }
 }
 [BurstCompile]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct DestroyAndTagDeadJob : IJobEntity
 {
     public Entity Explosion;
