@@ -8,12 +8,13 @@ partial struct GoInGameClientSystem : ISystem
     //private EntityQuery _netIdQuery;
     public void OnCreate(ref SystemState state)
     {
+        state.EntityManager.CreateSingleton<LocalPlayerData>(new LocalPlayerData {TeamID = -1});
+
         ///_netIdQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
     }
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
-
         // Connected but not yet in-game -> send GoInGame RPC and update team
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkId>>()

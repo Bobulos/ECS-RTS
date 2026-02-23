@@ -44,8 +44,9 @@ public struct PatherCleanup : ICleanupComponentData
 
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile]
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-//[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(DestroyDeadUnitsSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct NavSystem : ISystem
 {
     private NavMeshWorld _navWorld;
@@ -55,6 +56,8 @@ public partial struct NavSystem : ISystem
 
     public void OnCreate(ref SystemState state)
     {
+        _resolveGrace = 20;
+        _curGraceCount = 0;
         _navWorld = NavMeshWorld.GetDefaultWorld();
         _maxQueries = SimConfigLoader.LoadSim().maxNavQueries;
 
@@ -128,10 +131,13 @@ public partial struct NavSystem : ISystem
         // Add index back to free list
         _freeIndices.Add(index);
     }
-
+    int _resolveGrace;
+    int _curGraceCount;
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (_curGraceCount < _resolveGrace) { _curGraceCount ++; return; }
+
         var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
 

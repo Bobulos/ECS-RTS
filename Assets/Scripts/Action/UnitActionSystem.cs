@@ -121,7 +121,6 @@ public partial struct UnitActionSystem : ISystem
         };
 
         UnityEngine.Debug.DrawLine(raycastInput.Start, raycastInput.End, Color.aquamarine, 100f);
-        UnityEngine.Debug.Log($"Move data at {raycastInput.Start} to {raycastInput.End}");
         float3 calculatedCenter = float3.zero;
         int unitCount = 0;
         var unitPositions = new NativeList<float3>(64, Allocator.Temp);

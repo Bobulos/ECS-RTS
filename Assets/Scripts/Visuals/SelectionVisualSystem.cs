@@ -4,8 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
-[UpdateInGroup(typeof(PresentationSystemGroup))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation), UpdateAfter(typeof(InputHandlerSystem))]
 [BurstCompile]
 public partial class SelectionVisualSystem : SystemBase
 {
