@@ -66,22 +66,22 @@ public partial class InputHandlerSystem : SystemBase
         {
             case InputType.MoveUnits:
                 //UnityEngine.Debug.Log($"Move units for team {unpacked.Team}");
-                OnMoveUnits(unpacked.Move, unpacked.Team);
+                OnMoveUnits(unpacked.Move, unpacked.TeamID);
                 break;
             case InputType.ClearUnits:
                 //UnityEngine.Debug.Log($"Clearing selection for team {unpacked.Team}");
-                OnClearSelection(ref ecb, unpacked.Team);
+                OnClearSelection(ref ecb, unpacked.TeamID);
                 break;
             case InputType.Action:
                 // handled by action system
                 break;
             case InputType.CodeSelectUnits:
                 //UnityEngine.Debug.Log($"Code selection for team {unpacked.Team}");
-                OnCodeSelectUnits(ref ecb, unpacked.CodeSelect, unpacked.Team);
+                OnCodeSelectUnits(ref ecb, unpacked.CodeSelect, unpacked.TeamID);
                 break;
             case InputType.SelectUnits:
                 //UnityEngine.Debug.Log($"Handling select units input for team {unpacked.Team}");
-                HandleUnitSelect(ref ecb, unpacked.Select, unpacked.Team);
+                HandleUnitSelect(ref ecb, unpacked.Select, unpacked.TeamID);
                 break;
         }
     }

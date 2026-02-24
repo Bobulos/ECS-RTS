@@ -10,7 +10,7 @@ public struct PackedBittableInput
     public ushort Turn;   // 0–65535
     
     //Add back later
-    //public sbyte Player;   // signed
+    public sbyte TeamID;   // signed
     public byte Op;       // action type
     
     public byte BA; // for shiftin
@@ -42,6 +42,7 @@ public static class PackerUtil
         {
             Turn = turn,
             Op = (byte)input.Type,
+            TeamID = (sbyte)input.TeamID
         };
 
         switch (input.Type)
@@ -79,7 +80,7 @@ public static class PackerUtil
         {
             Type = (InputType)input.Op,
             //Add team support
-            Team = 0
+            TeamID = input.TeamID
         };
 
         //things tha need to be done regardless

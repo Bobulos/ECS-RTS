@@ -98,11 +98,11 @@ public partial struct UnitActionSystem : ISystem
     {
         
         if (unpacked.Type == InputType.None) return;
-        UnityEngine.Debug.Log("Action system proccessing unpacked input");
+
         switch (unpacked.Type)
         {
             case InputType.Action:
-                OnAction(ref state, ref ecb, unpacked.Action, unpacked.Team);
+                OnAction(ref state, ref ecb, unpacked.Action, unpacked.TeamID);
                 break;
         }
     }

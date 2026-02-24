@@ -9,7 +9,7 @@ using Unity.VisualScripting;
 
 public class MapConnectionBootstrap : MonoBehaviour
 {
-    [Serialize] private float _loadTime = 1f;
+    [Serialize] private float _loadTime = 10f;
     public static Action OnMapLoaded;
     private void Start()
     {

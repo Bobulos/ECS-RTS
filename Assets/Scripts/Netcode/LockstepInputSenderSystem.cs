@@ -13,7 +13,7 @@ using Unity.Physics;
 
 public struct BittableInput
 {
-    public int Team;
+    public int TeamID;
     public InputType Type;
 
     public MoveUnitsData Move;
@@ -149,22 +149,22 @@ public partial class LockstepInputSenderSystem : SystemBase
 
     #region  Collection
     void OnMoveUnits(MoveUnitsData d, int team)
-        => _pendingInput = new BittableInput { Team = team, Type = InputType.MoveUnits, Move = d };
+        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.MoveUnits, Move = d };
 
     void OnClearUnits(int team)
-        => _pendingInput = new BittableInput { Team = team, Type = InputType.ClearUnits };
+        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.ClearUnits };
 
     void OnAction(ActionData d, int team)
-        => _pendingInput = new BittableInput { Team = team, Type = InputType.Action, Action = d };
+        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.Action, Action = d };
 
     void OnCodeSelectUnits(byte code, int team)
-        => _pendingInput = new BittableInput { Team = team, Type = InputType.CodeSelectUnits, CodeSelect = code };
+        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.CodeSelectUnits, CodeSelect = code };
 
     void OnSelectUnits(FixedSelectionData verts, int team)
     {
         //UnityEngine.Debug.Log($"Select units with {verts.Value.Length} verts for team {team} added to buffer");
         if (verts.Value.Length < 8) return;
-        _pendingInput = new BittableInput { Team = team, Type = InputType.SelectUnits, Select = verts };
+        _pendingInput = new BittableInput { TeamID = team, Type = InputType.SelectUnits, Select = verts };
     }
     #endregion
 }
