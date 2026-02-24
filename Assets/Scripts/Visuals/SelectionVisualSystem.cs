@@ -4,7 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation), UpdateAfter(typeof(InputHandlerSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile]
 public partial class SelectionVisualSystem : SystemBase
 {
@@ -21,6 +21,7 @@ public partial class SelectionVisualSystem : SystemBase
             .WithAll<SelectedVisualTag, Parent>()
             .Build();
     }
+    [BurstCompile]
 
     protected override void OnUpdate()
     {

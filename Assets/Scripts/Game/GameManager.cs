@@ -12,8 +12,9 @@ public class GameManager : MapLoadedAccess
     [SerializeField] private GameObject inputPlayback;
     [SerializeField] private GameObject inputLogger;
 
-    [Header("Local Playerdata")]
-    public int localTeam = 1;
+    [Header("Local Playerdata OVERIDE")]
+    public int localTeamOv = 1;
+    private int localTeam = 0;
     [HideInInspector]public InputBridge inputBridge;
     [HideInInspector]public ConstructionBridge constructionBridge;
     [HideInInspector]public UnitActionManager unitActionManager;
@@ -23,6 +24,7 @@ public class GameManager : MapLoadedAccess
     private bool initialized = false;
     public override void OnLoad()
     {
+        //OnChangeTeam()
         inputBridge = GameObject.FindFirstObjectByType<InputBridge>();
         constructionBridge = GameObject.FindFirstObjectByType<ConstructionBridge>();
         unitActionManager = GameObject.FindFirstObjectByType<UnitActionManager>();
@@ -91,6 +93,6 @@ public class GameManager : MapLoadedAccess
 
         GameLoadConfig.InReplayMode = false;
         GameLoadConfig.ReplayPath = "";
-        SceneManager.LoadScene("MainMenue");
+        SceneManager.LoadScene("MenueLAN");
     }
 }
