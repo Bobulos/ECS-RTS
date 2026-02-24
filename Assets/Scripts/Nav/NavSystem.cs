@@ -45,13 +45,14 @@ public struct PatherCleanup : ICleanupComponentData
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-[UpdateAfter(typeof(DestroyDeadUnitsSystem))]
+[UpdateBefore(typeof(DestroyDeadUnitsSystem))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct NavSystem : ISystem
 {
     private NavMeshWorld _navWorld;
     private NativeArray<NavMeshQuery> _queries;
     private NativeList<int> _freeIndices;  // Track free slots explicitly
+    private NativeArray<bool> _queryInitialized;
     private int _maxQueries;
 
     public void OnCreate(ref SystemState state)
@@ -62,6 +63,7 @@ public partial struct NavSystem : ISystem
         _maxQueries = SimConfigLoader.LoadSim().maxNavQueries;
 
         _queries = new NativeArray<NavMeshQuery>(_maxQueries, Allocator.Persistent);
+        _queryInitialized = new NativeArray<bool>(_maxQueries, Allocator.Persistent);
         _freeIndices = new NativeList<int>(_maxQueries, Allocator.Persistent);
 
         // Initialize all as free
@@ -80,55 +82,41 @@ public partial struct NavSystem : ISystem
             return -1;
         }
 
-        // Get a free index
         int index = _freeIndices[_freeIndices.Length - 1];
         _freeIndices.RemoveAt(_freeIndices.Length - 1);
 
-        // Create the query
         _queries[index] = new NavMeshQuery(_navWorld, Allocator.Persistent, 512);
-        ecb.AddComponent(e, new PatherCleanup { QuerieIndex = index });
+        _queryInitialized[index] = true;
 
+        ecb.AddComponent(e, new PatherCleanup { QuerieIndex = index });
         return index;
     }
 
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
-        int numDisposed = 0;
-        // Dispose ALL queries that were ever allocated
+        _freeIndices.Dispose();
+
         for (int i = 0; i < _maxQueries; i++)
         {
-            // Check if this index is NOT in the free list (meaning it's allocated)
-            bool isFree = false;
-            for (int j = 0; j < _freeIndices.Length; j++)
-            {
-                if (_freeIndices[j] == i)
-                {
-                    isFree = true;
-                    break;
-                }
-            }
-
-            if (!isFree)
-            {
-                numDisposed ++;
+            if (_queryInitialized[i])
                 _queries[i].Dispose();
-            }
         }
 
         _queries.Dispose();
-        _freeIndices.Dispose();
-
-        UnityEngine.Debug.Log($"Disposed of {numDisposed} Nav Queries");
+        _queryInitialized.Dispose();
     }
 
     [BurstCompile]
     private void FreeQuery(int index)
     {
-        // Dispose the query
+        if (!_queryInitialized[index])
+        {
+            UnityEngine.Debug.LogWarning($"Attempted to free uninitialized query at index {index}");
+            return;
+        }
         _queries[index].Dispose();
-
-        // Add index back to free list
+        _queryInitialized[index] = false;
         _freeIndices.Add(index);
     }
     int _resolveGrace;

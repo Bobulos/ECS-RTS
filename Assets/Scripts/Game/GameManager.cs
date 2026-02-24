@@ -47,10 +47,23 @@ public class GameManager : MapLoadedAccess
         {
             return;
         }
-        if (!initialized)
+        //Set player systems to local team data
+        if (localData.TryGetSingleton<LocalPlayerData>(out var data))
         {
-            OnChangeTeam(localTeam);
+            if (data.TeamID != localTeam)
+            {
+                OnChangeTeam(data.TeamID);
+            }
         }
+        
+        // if (!_ready)
+        // {
+        //     return;
+        // }
+        // if (!initialized)
+        // {
+        //     OnChangeTeam(localTeam);
+        // }
     }
     public void OnChangeTeam(int newTeam)
     {
