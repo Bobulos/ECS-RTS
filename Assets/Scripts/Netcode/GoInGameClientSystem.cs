@@ -5,25 +5,40 @@ using Unity.NetCode;
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 partial struct GoInGameClientSystem : ISystem
 {
-    //private EntityQuery _netIdQuery;
+    private float _initStartTime;
+    private const float MAX_WAIT_TIME = 10f;
     public void OnCreate(ref SystemState state)
     {
-        state.EntityManager.CreateSingleton<LocalPlayerData>(new LocalPlayerData {TeamID = -1});
-
-        ///_netIdQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
+        _initStartTime = (float)SystemAPI.Time.ElapsedTime;
+        state.EntityManager.CreateSingleton<LocalPlayerData>(new LocalPlayerData { TeamID = -10000 });
     }
+
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.Time.ElapsedTime - _initStartTime > MAX_WAIT_TIME)
+        {
+            
+        }
+        else
+        {
+            return;
+        }
+        // // ── Wait until ghost prefabs are loaded before doing anything ──
+        // if (!SystemAPI.TryGetSingletonEntity<GhostCollection>(out var collectionEntity))
+        //     return;
+
+        // var ghostPrefabs = SystemAPI.GetBuffer<GhostCollectionPrefab>(collectionEntity);
+        // if (ghostPrefabs.Length == 0)
+        //     return;
+        // ───────────────────────────────────────────────────────────────
+
         var ecb = new EntityCommandBuffer(Allocator.Temp);
-        // Connected but not yet in-game -> send GoInGame RPC and update team
+
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkId>>()
             .WithNone<NetworkStreamInGame, SentGoInGame>()
             .WithEntityAccess())
         {
-            //Instead of this send request to the server and let it decide which team the player should be
-
-            //SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = _netIdQuery.CalculateEntityCount();
             var rpcEntity = ecb.CreateEntity();
             ecb.AddComponent(rpcEntity, new GoInGameRequestRpc());
             ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
@@ -35,18 +50,16 @@ partial struct GoInGameClientSystem : ISystem
             UnityEngine.Debug.Log("<color=green>[Client] Sent GoInGameRequestRpc to server</color>");
         }
 
-        // Server approved → mark client connection as in-game
         foreach (var (rpc, receive, entity) in
             SystemAPI.Query<RefRO<GoInGameApprovedRpc>, RefRO<ReceiveRpcCommandRequest>>()
             .WithEntityAccess())
         {
-
             SystemAPI.GetSingletonRW<LocalPlayerData>().ValueRW.TeamID = rpc.ValueRO.TeamID;
             ecb.AddComponent<NetworkStreamInGame>(receive.ValueRO.SourceConnection);
             ecb.DestroyEntity(entity);
             UnityEngine.Debug.Log("<color=green>[Client] Approved — NetworkStreamInGame added</color>");
         }
-        
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
