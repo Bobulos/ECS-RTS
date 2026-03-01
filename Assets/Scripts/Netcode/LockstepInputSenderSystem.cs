@@ -95,6 +95,9 @@ public partial class LockstepInputSenderSystem : SystemBase
     private ushort _confirmedTurn = 0;
     protected override void OnUpdate()
     {
+        // Check that we are loaded into the map
+        if (!SystemAPI.TryGetSingleton<MapData>(out var mapData))
+            return;
         //UnityEngine.Debug.Log("<color=green>[Client] Input sender system running</color>");
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach (var (rpc, entity) in

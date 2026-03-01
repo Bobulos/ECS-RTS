@@ -19,6 +19,13 @@ partial struct GoInGameServerSystem : ISystem
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         //var playerPrefab = SystemAPI.GetSingleton<PlayerSpawner>().PlayerPrefab;
 
+        int connected = state.EntityManager.CreateEntityQuery(typeof(NetworkId)).CalculateEntityCount();
+        if (connected < GameLoadConfig.ExpectedPlayers)
+        {
+            // Wait for all expected players to connect before approving
+            return;
+        }
+
         foreach (var (rpc, rpcEntity) in
             SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>>()
             .WithAll<GoInGameRequestRpc>()

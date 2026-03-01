@@ -1,12 +1,13 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.VisualScripting;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 partial struct GoInGameClientSystem : ISystem
 {
     private float _initStartTime;
-    private const float MAX_WAIT_TIME = 10f;
+    private const float MAX_WAIT_TIME = 1f;
     public void OnCreate(ref SystemState state)
     {
         _initStartTime = (float)SystemAPI.Time.ElapsedTime;
@@ -15,24 +16,16 @@ partial struct GoInGameClientSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
-        if (SystemAPI.Time.ElapsedTime - _initStartTime > MAX_WAIT_TIME)
-        {
-            
-        }
-        else
-        {
-            return;
-        }
-        // // ── Wait until ghost prefabs are loaded before doing anything ──
-        // if (!SystemAPI.TryGetSingletonEntity<GhostCollection>(out var collectionEntity))
+        // if (!SystemAPI.TryGetSingletonEntity<StartGameFlag>(out var flagEntity))
+        // {
         //     return;
+        // }
 
-        // var ghostPrefabs = SystemAPI.GetBuffer<GhostCollectionPrefab>(collectionEntity);
-        // if (ghostPrefabs.Length == 0)
-        //     return;
-        // ───────────────────────────────────────────────────────────────
 
         var ecb = new EntityCommandBuffer(Allocator.Temp);
+        
+        // Send GoInGameRequestRpc to server if loaded into map
+        if (!SystemAPI.HasSingleton<MapData>()) return;
 
         foreach (var (_, connectionEntity) in
             SystemAPI.Query<RefRO<NetworkId>>()

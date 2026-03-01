@@ -6,19 +6,34 @@ using System;
 using Unity.Scenes;
 using UnityEngine.SceneManagement;
 using Unity.VisualScripting;
+using Unity.Entities.UniversalDelegates;
 
 public class MapConnectionBootstrap : MonoBehaviour
 {
-    [Serialize] private float _loadTime = 10f;
+    [Serialize] private float _loadTime = 5f;
     public static Action OnMapLoaded;
-    private void Start()
+    private World _clientWorld;
+    private EntityQuery _inGameQuery;
+    private void Update()
     {
-        Invoke(nameof(OnMapLoadedInternal), _loadTime);
+        if (_clientWorld == null && ClientServerBootstrap.ClientWorld != null)
+        {
+            _clientWorld = ClientServerBootstrap.ClientWorld;
+            _inGameQuery = _clientWorld.EntityManager.CreateEntityQuery(typeof(NetworkStreamInGame));
+            
+        } else if (_clientWorld != null && _inGameQuery.CalculateEntityCount() > 0)
+        {
+            Invoke(nameof(OnMapLoadedInternal), _loadTime);
+            UnityEngine.Debug.Log($"<color=red>[MapConnectionBootstrap] Detected client world, starting map load timer</color>");
+            //UnityEngine.Debug.Log($"<color=red>[MapConnectionBootstrap] Map load timer started, will invoke OnMapLoaded in {_loadTime} seconds</color>");
+        }
+        
     }
     void OnMapLoadedInternal()
     {
         World.DefaultGameObjectInjectionWorld.Dispose();
         OnMapLoaded?.Invoke();
+        Destroy(this.gameObject);
     }
 }
 // [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
