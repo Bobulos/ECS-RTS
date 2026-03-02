@@ -31,7 +31,7 @@ public class MapConnectionBootstrap : MonoBehaviour
     }
     void OnMapLoadedInternal()
     {
-        World.DefaultGameObjectInjectionWorld.Dispose();
+        if (World.DefaultGameObjectInjectionWorld != null) World.DefaultGameObjectInjectionWorld.Dispose();
         OnMapLoaded?.Invoke();
         Destroy(this.gameObject);
     }

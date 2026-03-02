@@ -81,7 +81,7 @@ public partial class FogSystem : SystemBase
             _exploredTex = new RenderTexture(settings.Size.x, settings.Size.y, 0, RenderTextureFormat.RInt)
             {
                 enableRandomWrite = true,
-                filterMode = FilterMode.Point
+                filterMode = FilterMode.Bilinear
             };
             _exploredTex.Create();
 
@@ -91,7 +91,7 @@ public partial class FogSystem : SystemBase
                 enableRandomWrite = true,
                 useMipMap = false,
                 autoGenerateMips = false,
-                filterMode = FilterMode.Point
+                filterMode = FilterMode.Bilinear
             };
             _visibleTex.Create();
 

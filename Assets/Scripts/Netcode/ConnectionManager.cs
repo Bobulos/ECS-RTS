@@ -105,6 +105,10 @@ public class ConnectionManager : MonoBehaviour
         driver.ValueRW.Connect(world.EntityManager, endpoint);
 
         Debug.Log($"<color=green>[Client] Connecting to {ip}:{port}</color>");
+        
+        //enter lobby request
+        var req = world.EntityManager.CreateEntity();
+        world.EntityManager.AddComponentData(req, new EnterLobbyClientRequest { PlayerName = GameLoadConfig.LocalPlayerName });
     }
 
     // ---------------- WORLD CLEANUP ----------------
@@ -117,6 +121,10 @@ public class ConnectionManager : MonoBehaviour
 
         World.DefaultGameObjectInjectionWorld = null;
     }
+}
+public struct EnterLobbyClientRequest : IComponentData
+{
+    public FixedString32Bytes PlayerName;
 }
 
 public struct StartGameHostRequest : IComponentData

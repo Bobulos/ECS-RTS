@@ -1,5 +1,7 @@
+using Unity.Collections;
 public static class GameLoadConfig
 {
+    public static FixedString32Bytes LocalPlayerName;
     public static bool InReplayMode;
     public static string MapSceneName;
     public static string ReplayPath;
