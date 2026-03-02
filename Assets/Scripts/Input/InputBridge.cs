@@ -25,10 +25,10 @@ public class InputBridge : MapLoadedAccess
     public SelectionBox selectionBox;
 
     // Action<SelectActionData> is the signature.
-    public static event Action<FixedSelectionData, int> OnSelectUnits;
-    public static event Action<byte, int> OnCodeSelectUnits;
-    public static event Action<MoveUnitsData, int> OnMoveUnits;
-    public static event Action<int> OnClearUnits;
+    public static event Action<FixedSelectionData> OnSelectUnits;
+    public static event Action<byte> OnCodeSelectUnits;
+    public static event Action<MoveUnitsData> OnMoveUnits;
+    public static event Action OnClearUnits;
     public static event Action OnUpdateGUI;
     // Use Vector2 for screen positions
     private Vector2 startScreenPos;
@@ -36,7 +36,7 @@ public class InputBridge : MapLoadedAccess
     private Camera mainCamera;
     public Transform rig;
 
-    public int team;
+    //public int team;
     public override void OnLoad()
     {
         if (GameLoadConfig.InReplayMode) { this.enabled = false; }
@@ -56,7 +56,7 @@ public class InputBridge : MapLoadedAccess
                     Shifting = Input.GetKey(KeyCode.LeftShift),
                     RayDirection = -Vector3.up,
                     RayOrigin = p + new Vector3(0, 20f, 0),
-                }, team));
+                }));
             //OnMoveUnits?.Invoke();
         }
         else if (b == 0 && rig != null)
@@ -91,7 +91,7 @@ public class InputBridge : MapLoadedAccess
         //Code selection
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            buffer.Add(InputRecordUtil.AssembleRecord(0, team));
+            buffer.Add(InputRecordUtil.AssembleRecord(0));
         }
 
         // LEFT CLICK DOWN (Start Drag/Single Select)
@@ -100,7 +100,7 @@ public class InputBridge : MapLoadedAccess
             if (!Input.GetKey(KeyCode.LeftShift))
             {
                 /*OnClearUnits?.Invoke(team);*/
-                buffer.Add(InputRecordUtil.AssembleDatalessRecord(InputType.ClearUnits, team));
+                buffer.Add(InputRecordUtil.AssembleDatalessRecord(InputType.ClearUnits));
             }
 
             // Capture the screen position
@@ -122,7 +122,7 @@ public class InputBridge : MapLoadedAccess
                 selectionData.Shifting = false;
             }
             /*OnSelectUnits?.Invoke(selectionBox.GetColliderEntity(), verts, team);*/
-            buffer.Add(InputRecordUtil.AssembleRecord(selectionData, team));
+            buffer.Add(InputRecordUtil.AssembleRecord(selectionData));
             isDraggingLeft = false;
             selectionVisual?.EndSelection();
 
@@ -134,7 +134,7 @@ public class InputBridge : MapLoadedAccess
                 Shifting = Input.GetKey(KeyCode.LeftShift),
                 RayDirection = ray.direction,
                 RayOrigin = ray.origin,
-            }, team));
+            }));
         }
         else if (isDraggingLeft)
         {
@@ -175,13 +175,13 @@ public class InputBridge : MapLoadedAccess
         switch (r.Type)
         {
             case InputType.CodeSelectUnits:
-                OnCodeSelectUnits.Invoke(r.CodeSelect, r.Team);
+                OnCodeSelectUnits.Invoke(r.CodeSelect);
                 affectsGUI = true;
                 break;
             case InputType.SelectUnits:
                 selectionBox.UpdatePerspectiveSelection(r.Select);
                 //Debug.Log(selectionBox.GetColliderEntity());
-                OnSelectUnits.Invoke(r.Select, team);
+                OnSelectUnits.Invoke(r.Select);
                 affectsGUI = true;
                 break;
             case InputType.MoveUnits:
@@ -190,10 +190,10 @@ public class InputBridge : MapLoadedAccess
                     Shifting = r.Move.Shifting,
                     RayDirection = r.Move.RayDirection,
                     RayOrigin = r.Move.RayOrigin,
-                }, team);
+                });
                 break;
             case InputType.ClearUnits:
-                OnClearUnits?.Invoke(r.Team);
+                OnClearUnits?.Invoke();
                 affectsGUI = true;
                 break;
         }

@@ -1,79 +1,79 @@
-using System.Collections.Generic;
-using System.IO;
-using System;
-using UnityEngine;
+// using System.Collections.Generic;
+// using System.IO;
+// using System;
+// using UnityEngine;
 
-public class InputPlayback : MonoBehaviour
-{
-    List<InputRecord> record;
+// public class InputPlayback : MonoBehaviour
+// {
+//     List<InputRecord> record;
 
-    //bridges
-    public InputBridge input;
-    public ConstructionBridge construction;
-    public UnitActionManager action;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    bool playing = false;
-    public void StartReplay(string file)
-    {
-        input = GameObject.FindFirstObjectByType<InputBridge>();
-        construction = GameObject.FindFirstObjectByType<ConstructionBridge>();
-        action = GameObject.FindFirstObjectByType<UnitActionManager>();
+//     //bridges
+//     public InputBridge input;
+//     public ConstructionBridge construction;
+//     public UnitActionManager action;
+//     // Start is called once before the first execution of Update after the MonoBehaviour is created
+//     bool playing = false;
+//     public void StartReplay(string file)
+//     {
+//         input = GameObject.FindFirstObjectByType<InputBridge>();
+//         construction = GameObject.FindFirstObjectByType<ConstructionBridge>();
+//         action = GameObject.FindFirstObjectByType<UnitActionManager>();
 
-        playing = true;
-        record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, file));
-    }
+//         playing = true;
+//         record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, file));
+//     }
 
-    // Update is called once per frame
-    uint step;
-    void FixedUpdate()
-    {
-        step++;
-        if (record == null || record.Count == 0 || !playing) return;
+//     // Update is called once per frame
+//     uint step;
+//     void FixedUpdate()
+//     {
+//         step++;
+//         if (record == null || record.Count == 0 || !playing) return;
 
-        // Process all records that are scheduled for this step OR earlier
-        // (The <= handles cases where the game might have hitched)
-        while (record.Count > 0 && record[0].Step <= step)
-        {
-            ProcessRecord(record[0]);
-            record.RemoveAt(0); // ONLY remove here
-        }
-    }
-    void ProcessRecord(InputRecord r)
-    {
-        if (r.Step != step) return;
+//         // Process all records that are scheduled for this step OR earlier
+//         // (The <= handles cases where the game might have hitched)
+//         while (record.Count > 0 && record[0].Step <= step)
+//         {
+//             ProcessRecord(record[0]);
+//             record.RemoveAt(0); // ONLY remove here
+//         }
+//     }
+//     void ProcessRecord(InputRecord r)
+//     {
+//         if (r.Step != step) return;
     
-        try
-        {
-            switch (r.Type)
-            {
-                case InputType.SelectUnits:
-                    input.PlaybackInput(r);
-                    break;
-                case InputType.Action:
-                    action.PlaybackInput(r);
-                    break;
-                case InputType.CodeSelectUnits:
-                    input.PlaybackInput(r); 
-                    break;
-                case InputType.MoveUnits:
-                    input.PlaybackInput(r);
-                    break;
-                case InputType.ClearUnits:
-                    input.PlaybackInput(r);
-                    break;
-                case InputType.Construct:
-                    construction.PlaybackInput(r);
-                    break;
-                case InputType.ConstructWalls:
-                    construction.PlaybackInput(r);
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"Invalid entity during playback at step {step}: {ex.Message}");
-            // Skip this command and continue
-        }
+//         try
+//         {
+//             switch (r.Type)
+//             {
+//                 case InputType.SelectUnits:
+//                     input.PlaybackInput(r);
+//                     break;
+//                 case InputType.Action:
+//                     action.PlaybackInput(r);
+//                     break;
+//                 case InputType.CodeSelectUnits:
+//                     input.PlaybackInput(r); 
+//                     break;
+//                 case InputType.MoveUnits:
+//                     input.PlaybackInput(r);
+//                     break;
+//                 case InputType.ClearUnits:
+//                     input.PlaybackInput(r);
+//                     break;
+//                 case InputType.Construct:
+//                     construction.PlaybackInput(r);
+//                     break;
+//                 case InputType.ConstructWalls:
+//                     construction.PlaybackInput(r);
+//                     break;
+//             }
+//         }
+//         catch (Exception ex)
+//         {
+//             Debug.LogWarning($"Invalid entity during playback at step {step}: {ex.Message}");
+//             // Skip this command and continue
+//         }
         
-    }
-}
+//     }
+// }

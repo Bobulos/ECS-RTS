@@ -98,6 +98,7 @@ public partial class InputHandlerSystem : SystemBase
     #region CodeSelect
     private void OnCodeSelectUnits(ref EntityCommandBuffer ecb, byte code, int team)
     {
+        UnityEngine.Debug.Log($"Code select {code} for team {team}");
         foreach (var (t, selected, e) in 
             SystemAPI.Query<RefRO<Team>, RefRW<Selected>>().
             WithEntityAccess().WithAll<UnitTag>())
@@ -113,6 +114,7 @@ public partial class InputHandlerSystem : SystemBase
     #region SelectUnits
     private void HandleUnitSelect(ref EntityCommandBuffer ecb, FixedSelectionData selectionData, int teamID)
     {
+        UnityEngine.Debug.Log($"Handling unit select for team {teamID}");
         if (selectionData.Value.Length != 8)
         {
             Debug.LogError("Invalid selection data - expected 8 vertices");

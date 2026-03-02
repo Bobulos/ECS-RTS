@@ -7,278 +7,271 @@ using Unity.Mathematics;
 using UnityEngine;
 
 //MAKE THIS INTO
-public class InputLogger : MonoBehaviour
-{
-    const int FLUSH_THRESHOLD = 128;
-    const uint FILE_VERSION = 1;
+// public class InputLogger : MonoBehaviour
+// {
+//     const int FLUSH_THRESHOLD = 128;
+//     const uint FILE_VERSION = 1;
 
-    private List<InputRecord> buffer = new List<InputRecord>(256);
-    private BinaryWriter writer;
+//     private List<InputRecord> buffer = new List<InputRecord>(256);
+//     private BinaryWriter writer;
 
-    private string fileName;
+//     private string fileName;
 
-    void Start()
-    {
-        DateTime now = DateTime.Now;
-        string t = now.ToString("yyyyMMddHHmmss");
-        fileName = $"{t.Substring(0, 4)}I{t.Substring(4, 2)}I{t.Substring(6, 2)}I{t.Substring(8, 2)}.bin";
-        ReplayFileManager.AddFile(fileName);
-        string path = Path.Combine(Application.persistentDataPath, fileName);
+//     void Start()
+//     {
+//         DateTime now = DateTime.Now;
+//         string t = now.ToString("yyyyMMddHHmmss");
+//         fileName = $"{t.Substring(0, 4)}I{t.Substring(4, 2)}I{t.Substring(6, 2)}I{t.Substring(8, 2)}.bin";
+//         ReplayFileManager.AddFile(fileName);
+//         string path = Path.Combine(Application.persistentDataPath, fileName);
 
-        // Use FileStream directly to ensure proper sharing modes
-        var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-        writer = new BinaryWriter(stream);
+//         // Use FileStream directly to ensure proper sharing modes
+//         var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+//         writer = new BinaryWriter(stream);
 
-        // Write a simple header: [Magic Number (4 bytes)][Version (4 bytes)]
-        writer.Write(0x4C474E49); // "INGL" (Input Log)
-        writer.Write(FILE_VERSION);
+//         // Write a simple header: [Magic Number (4 bytes)][Version (4 bytes)]
+//         writer.Write(0x4C474E49); // "INGL" (Input Log)
+//         writer.Write(FILE_VERSION);
 
-        ConstructionBridge.ConstructWalls += OnConstructWalls;
-        ConstructionBridge.ConstructStructure += OnConstructStructure;
-        InputBridge.OnMoveUnits += OnMoveUnits;
-        InputBridge.OnClearUnits += OnClearUnits;
-        InputBridge.OnSelectUnits += OnSelectUnits;
-        InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
-        UnitActionManager.OnAction += OnAction;
-    }
-    uint step;
-    void FixedUpdate()
-    {
-        step++;
-    }
-    public void OnAction(ActionData d, int team)
-    {
-        buffer.Add(new InputRecord { 
-            Step = step, 
-            Team = team, 
-            Type = InputType.Action, 
-            Action = d,
-        });
-        TryFlush();
-    }
-    public void OnCodeSelectUnits(byte code, int team)
-    {
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.CodeSelectUnits,
-            CodeSelect = code
-        });
-        TryFlush();
-    }
-    public void OnConstructWalls(ConstructWallData d, int team)
-    {
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.ConstructWalls,
-            Wall = d,
-        });
-        TryFlush();
-    }
-    public void OnConstructStructure(ConstructData d, int team)
-    {
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.Construct,
-            Structure = d,
-        });
-        TryFlush();
-    }
-    public void OnMoveUnits(MoveUnitsData d, int team)
-    {
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.MoveUnits,
-            Move = d,
-        });
-        TryFlush();
-    }
-    public void OnClearUnits(int team)
-    {
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.ClearUnits,
-        });
-        TryFlush();
-    }
-    //0 is reg 1 is all
-    public void OnSelectUnits(FixedSelectionData vertecies, int team)
-    {
-        if (vertecies.Value.Length == 0 || vertecies.Value.Length < 8) { return; }
-        buffer.Add(new InputRecord
-        {
-            Step = step,
-            Team = team,
-            Type = InputType.SelectUnits,
-            Select = vertecies,
-        });
-        TryFlush();
-    }
-    void TryFlush()
-    {
-        if (buffer.Count >= FLUSH_THRESHOLD)
-            FlushToDisk();
-    }
+//         // ConstructionBridge.ConstructWalls += OnConstructWalls;
+//         // ConstructionBridge.ConstructStructure += OnConstructStructure;
+//         InputBridge.OnMoveUnits += OnMoveUnits;
+//         InputBridge.OnClearUnits += OnClearUnits;
+//         InputBridge.OnSelectUnits += OnSelectUnits;
+//         InputBridge.OnCodeSelectUnits += OnCodeSelectUnits;
+//         UnitActionManager.OnAction += OnAction;
+//     }
+//     uint step;
+//     void FixedUpdate()
+//     {
+//         step++;
+//     }
+//     public void OnAction(ActionData d)
+//     {
+//         buffer.Add(new InputRecord { 
+//             Step = step, 
+//             Type = InputType.Action, 
+//             Action = d,
+//         });
+//         TryFlush();
+//     }
+//     public void OnCodeSelectUnits(byte code)
+//     {
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.CodeSelectUnits,
+//             CodeSelect = code
+//         });
+//         TryFlush();
+//     }
+//     public void OnConstructWalls(ConstructWallData d)
+//     {
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.ConstructWalls,
+//             Wall = d,
+//         });
+//         TryFlush();
+//     }
+//     public void OnConstructStructure(ConstructData d)
+//     {
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.Construct,
+//             Structure = d,
+//         });
+//         TryFlush();
+//     }
+//     public void OnMoveUnits(MoveUnitsData d)
+//     {
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.MoveUnits,
+//             Move = d,
+//         });
+//         TryFlush();
+//     }
+//     public void OnClearUnits()
+//     {
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.ClearUnits,
+//         });
+//         TryFlush();
+//     }
+//     //0 is reg 1 is all
+//     public void OnSelectUnits(FixedSelectionData vertecies)
+//     {
+//         if (vertecies.Value.Length == 0 || vertecies.Value.Length < 8) { return; }
+//         buffer.Add(new InputRecord
+//         {
+//             Step = step,
+//             Type = InputType.SelectUnits,
+//             Select = vertecies,
+//         });
+//         TryFlush();
+//     }
+//     void TryFlush()
+//     {
+//         if (buffer.Count >= FLUSH_THRESHOLD)
+//             FlushToDisk();
+//     }
 
-    void OnDestroy()
-    {
-        FlushToDisk();
-        writer?.Close();
+//     void OnDestroy()
+//     {
+//         FlushToDisk();
+//         writer?.Close();
 
-        // Unsubscribe to prevent memory leaks
-        ConstructionBridge.ConstructWalls -= OnConstructWalls;
-        ConstructionBridge.ConstructStructure -= OnConstructStructure;
-        InputBridge.OnMoveUnits -= OnMoveUnits;
-        InputBridge.OnClearUnits -= OnClearUnits;
-        InputBridge.OnSelectUnits -= OnSelectUnits;
-        InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
-        UnitActionManager.OnAction -= OnAction;
-        /*List<InputRecord> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
-        foreach (InputRecord r in record)
-        {
-            Debug.Log($"record of {r.Type} at {r.Step} step");
-        }*/
-    }
+//         // Unsubscribe to prevent memory leaks
+//         // ConstructionBridge.ConstructWalls -= OnConstructWalls;
+//         // ConstructionBridge.ConstructStructure -= OnConstructStructure;
+//         InputBridge.OnMoveUnits -= OnMoveUnits;
+//         InputBridge.OnClearUnits -= OnClearUnits;
+//         InputBridge.OnSelectUnits -= OnSelectUnits;
+//         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
+//         UnitActionManager.OnAction -= OnAction;
+//         /*List<InputRecord> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
+//         foreach (InputRecord r in record)
+//         {
+//             Debug.Log($"record of {r.Type} at {r.Step} step");
+//         }*/
+//     }
 
-    void FlushToDisk()
-    {
-        if (buffer.Count == 0) return;
+//     void FlushToDisk()
+//     {
+//         if (buffer.Count == 0) return;
 
-        foreach (var r in buffer)
-        {
-            writer.Write((byte)r.Type);
-            writer.Write(r.Step);
-            writer.Write(r.Team);
+//         foreach (var r in buffer)
+//         {
+//             writer.Write((byte)r.Type);
+//             writer.Write(r.Step);
+//             writer.Write(r.Team);
 
-            switch (r.Type)
-            {
-                case InputType.Action:
-                    // only needs to write the index of
-                    // the fella
-                    writer.Write(r.Action.Shifting);
-                    writer.Write(r.Action.ActionByte);
-                    WriteVector3(r.Action.RayOrigin);
-                    WriteVector3(r.Action.RayDirection);
-                    break;
-                case InputType.MoveUnits:
-                    writer.Write(r.Action.Shifting);
-                    WriteVector3(r.Move.RayOrigin);
-                    WriteVector3(r.Move.RayDirection);
-                    break;
-                case InputType.SelectUnits:
-                    //writer.Write(r.Select.code);
-                    // FIX: We must always write exactly 8 vectors to match the Reader's array
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (r.Select.Value.Length == 0 && i < r.Select.Value.Length)
-                            WriteVector3(r.Select.Value[i]);
-                        else
-                            WriteVector3(Vector3.zero); // Padding to maintain alignment
-                    }
-                    break;
-                case InputType.CodeSelectUnits:
-                    writer.Write(r.CodeSelect);
-                    break;
-                case InputType.ClearUnits:
-                    // Already wrote Type, Step, and Team. Nothing else needed.
-                    break;
-                case InputType.ConstructWalls:
-                    WriteVector3(r.Wall.start);
-                    WriteVector3(r.Wall.end);
-                    writer.Write(r.Wall.constructID);
-                    break;
-                case InputType.Construct:
-                    WriteVector3(r.Structure.Origin);
-                    WriteVector3(r.Structure.Dir);
-                    writer.Write(r.Structure.ConstructID);
-                    break;
-            }
-        }
-        writer.Flush();
-        buffer.Clear();
-    }
+//             switch (r.Type)
+//             {
+//                 case InputType.Action:
+//                     // only needs to write the index of
+//                     // the fella
+//                     writer.Write(r.Action.Shifting);
+//                     writer.Write(r.Action.ActionByte);
+//                     WriteVector3(r.Action.RayOrigin);
+//                     WriteVector3(r.Action.RayDirection);
+//                     break;
+//                 case InputType.MoveUnits:
+//                     writer.Write(r.Action.Shifting);
+//                     WriteVector3(r.Move.RayOrigin);
+//                     WriteVector3(r.Move.RayDirection);
+//                     break;
+//                 case InputType.SelectUnits:
+//                     //writer.Write(r.Select.code);
+//                     // FIX: We must always write exactly 8 vectors to match the Reader's array
+//                     for (int i = 0; i < 8; i++)
+//                     {
+//                         if (r.Select.Value.Length == 0 && i < r.Select.Value.Length)
+//                             WriteVector3(r.Select.Value[i]);
+//                         else
+//                             WriteVector3(Vector3.zero); // Padding to maintain alignment
+//                     }
+//                     break;
+//                 case InputType.CodeSelectUnits:
+//                     writer.Write(r.CodeSelect);
+//                     break;
+//                 case InputType.ClearUnits:
+//                     // Already wrote Type, Step, and Team. Nothing else needed.
+//                     break;
+//                 case InputType.ConstructWalls:
+//                     WriteVector3(r.Wall.start);
+//                     WriteVector3(r.Wall.end);
+//                     writer.Write(r.Wall.constructID);
+//                     break;
+//                 case InputType.Construct:
+//                     WriteVector3(r.Structure.Origin);
+//                     WriteVector3(r.Structure.Dir);
+//                     writer.Write(r.Structure.ConstructID);
+//                     break;
+//             }
+//         }
+//         writer.Flush();
+//         buffer.Clear();
+//     }
 
-    private void WriteVector3(Vector3 v)
-    {
-        writer.Write(v.x);
-        writer.Write(v.y);
-        writer.Write(v.z);
-    }
-}
-public static class InputDecoder
-{
-    public static List<InputRecord> LoadLog(string path)
-    {
-        var records = new List<InputRecord>();
-        if (!File.Exists(path)) return records;
+//     private void WriteVector3(Vector3 v)
+//     {
+//         writer.Write(v.x);
+//         writer.Write(v.y);
+//         writer.Write(v.z);
+//     }
+// }
+// public static class InputDecoder
+// {
+//     public static List<InputRecord> LoadLog(string path)
+//     {
+//         var records = new List<InputRecord>();
+//         if (!File.Exists(path)) return records;
 
-        using (var reader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
-        {
-            try
-            {
-                uint magic = reader.ReadUInt32();
-                if (magic != 0x4C474E49) return records;
-                uint version = reader.ReadUInt32();
+//         using (var reader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
+//         {
+//             try
+//             {
+//                 uint magic = reader.ReadUInt32();
+//                 if (magic != 0x4C474E49) return records;
+//                 uint version = reader.ReadUInt32();
 
-                while (reader.BaseStream.Position < reader.BaseStream.Length)
-                {
-                    var record = new InputRecord
-                    {
-                        Type = (InputType)reader.ReadByte(),
-                        Step = reader.ReadUInt32(),
-                        Team = reader.ReadInt32(),
-                    };
+//                 while (reader.BaseStream.Position < reader.BaseStream.Length)
+//                 {
+//                     var record = new InputRecord
+//                     {
+//                         Type = (InputType)reader.ReadByte(),
+//                         Step = reader.ReadUInt32(),
+//                         Team = reader.ReadInt32(),
+//                     };
 
-                    switch (record.Type)
-                    {
-                        case InputType.Action:
-                            record.Action.Shifting = reader.ReadBoolean();
-                            record.Action.ActionByte = reader.ReadByte();
-                            record.Action.RayOrigin = ReadVector3(reader);
-                            record.Action.RayDirection = ReadVector3(reader);
-                            break;
-                        case InputType.MoveUnits:
-                            record.Move = new MoveUnitsData { RayOrigin = ReadVector3(reader), RayDirection = ReadVector3(reader) };
-                            break;
-                        case InputType.SelectUnits:
-                            //byte code = reader.ReadByte();
-                            var verts = new FixedList128Bytes<float3>();
-                            for (int i = 0; i < 8; i++) verts[i] = ReadVector3(reader);
-                            record.Select = new FixedSelectionData { Value = verts};
-                            break;
-                        case InputType.CodeSelectUnits:
-                            record.CodeSelect = reader.ReadByte();
-                            break;
-                        case InputType.ClearUnits:
-                            // No additional data to read
-                            break;
-                        case InputType.ConstructWalls:
-                            //Debug.Log("LOGLOGLOGLOGLOG");
-                            record.Wall = new ConstructWallData { start = ReadVector3(reader), end = ReadVector3(reader), constructID = reader.ReadInt32() };
-                            break;
-                        case InputType.Construct:
-                            record.Structure = new ConstructData { Origin = ReadVector3(reader), Dir = ReadVector3(reader), ConstructID = reader.ReadInt32() };
-                            break;
-                    }
-                    records.Add(record);
-                }
-            }
-            catch (EndOfStreamException) { }
-        }
-        return records;
-    }
+//                     switch (record.Type)
+//                     {
+//                         case InputType.Action:
+//                             record.Action.Shifting = reader.ReadBoolean();
+//                             record.Action.ActionByte = reader.ReadByte();
+//                             record.Action.RayOrigin = ReadVector3(reader);
+//                             record.Action.RayDirection = ReadVector3(reader);
+//                             break;
+//                         case InputType.MoveUnits:
+//                             record.Move = new MoveUnitsData { RayOrigin = ReadVector3(reader), RayDirection = ReadVector3(reader) };
+//                             break;
+//                         case InputType.SelectUnits:
+//                             //byte code = reader.ReadByte();
+//                             var verts = new FixedList128Bytes<float3>();
+//                             for (int i = 0; i < 8; i++) verts[i] = ReadVector3(reader);
+//                             record.Select = new FixedSelectionData { Value = verts};
+//                             break;
+//                         case InputType.CodeSelectUnits:
+//                             record.CodeSelect = reader.ReadByte();
+//                             break;
+//                         case InputType.ClearUnits:
+//                             // No additional data to read
+//                             break;
+//                         case InputType.ConstructWalls:
+//                             //Debug.Log("LOGLOGLOGLOGLOG");
+//                             record.Wall = new ConstructWallData { start = ReadVector3(reader), end = ReadVector3(reader), constructID = reader.ReadInt32() };
+//                             break;
+//                         case InputType.Construct:
+//                             record.Structure = new ConstructData { Origin = ReadVector3(reader), Dir = ReadVector3(reader), ConstructID = reader.ReadInt32() };
+//                             break;
+//                     }
+//                     records.Add(record);
+//                 }
+//             }
+//             catch (EndOfStreamException) { }
+//         }
+//         return records;
+//     }
 
-    private static Vector3 ReadVector3(BinaryReader r) => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
-}
+//     private static Vector3 ReadVector3(BinaryReader r) => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+// }
 
 public enum InputType : byte
 {
@@ -295,7 +288,6 @@ public struct InputRecord
 {
     public InputType Type;
     public uint Step;
-    public int Team;
     // data
 
     //dont write actionData
@@ -308,63 +300,57 @@ public struct InputRecord
 }
 public static class InputRecordUtil
 {
-    public static InputRecord AssembleRecord(byte d, int team)
+    public static InputRecord AssembleRecord(byte d)
     {
         return new InputRecord
         {
             Type = InputType.CodeSelectUnits,
-            Team = team,
             CodeSelect = d
         };
     }
-    public static InputRecord AssembleRecord(ActionData d, int team)
+    public static InputRecord AssembleRecord(ActionData d)
     {
         return new InputRecord
         {
             Type = InputType.Action,
-            Team = team,
             Action = d,
         };
     }
-    public static InputRecord AssembleRecord(ConstructWallData d, int team)
+    public static InputRecord AssembleRecord(ConstructWallData d)
     {
         return new InputRecord
         {
             Type = InputType.ConstructWalls,
-            Team = team,
             Wall = d
         };
     }
-    public static InputRecord AssembleRecord(ConstructData d, int team)
+    public static InputRecord AssembleRecord(ConstructData d)
     {
         return new InputRecord
         {
             Type = InputType.Construct,
-            Team = team,
             Structure = d
         };
     }
-    public static InputRecord AssembleRecord(MoveUnitsData d, int team)
+    public static InputRecord AssembleRecord(MoveUnitsData d)
     {
         return new InputRecord
         {
             Type = InputType.MoveUnits,
-            Team = team,
             Move = d
         };
     }
     
-    public static InputRecord AssembleRecord(FixedSelectionData d, int team)
+    public static InputRecord AssembleRecord(FixedSelectionData d)
     {
         return new InputRecord
         {
             Type = InputType.SelectUnits,
-            Team = team,
             Select = d
         };
     }
     //dataless like clear units
-    public static InputRecord AssembleDatalessRecord(InputType t, int team)
+    public static InputRecord AssembleDatalessRecord(InputType t)
     {
         switch (t)
         {

@@ -73,7 +73,7 @@ public class ConstructionBridge : MonoBehaviour
                         end = hit.point,
                         constructData = constructData,
                         isSingleVis = false
-                    }, team));
+                    }));
                     CancelContrstruction?.Invoke();
                 }
 
@@ -111,7 +111,7 @@ public class ConstructionBridge : MonoBehaviour
                     Data = constructData,
                     Dir = ray.direction,
                     Origin = ray.origin
-                }, team));
+                }));
             }
             //visualize
             else

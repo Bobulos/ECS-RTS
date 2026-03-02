@@ -131,7 +131,7 @@ public partial class LockstepInputSenderSystem : SystemBase
             //if (_pendingInput.Type != InputType.None) UnityEngine.Debug.Log($"Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}"); // Skip if no input to send
             //UnityEngine.Debug.Log($"Sending input for turn from client");
             if (_logging) UnityEngine.Debug.Log($"<color=green>[Client] Sending input for turn {_currentTurn} from client with type {_pendingInput.Type}</color>");
-            
+            _pendingInput.TeamID = SystemAPI.GetSingleton<LocalPlayerData>().TeamID;
             //if (_pendingInput.Type == InputType.Action) UnityEngine.Debug.Log("Sending action rpc");
             var rpcEntity = EntityManager.CreateEntity();
             ecb.AddComponent(rpcEntity, new ClientInputRpc 
@@ -151,23 +151,23 @@ public partial class LockstepInputSenderSystem : SystemBase
     }
 
     #region  Collection
-    void OnMoveUnits(MoveUnitsData d, int team)
-        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.MoveUnits, Move = d };
+    void OnMoveUnits(MoveUnitsData d)
+        => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.MoveUnits, Move = d };
 
-    void OnClearUnits(int team)
-        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.ClearUnits };
+    void OnClearUnits()
+        => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.ClearUnits };
 
-    void OnAction(ActionData d, int team)
-        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.Action, Action = d };
+    void OnAction(ActionData d)
+        => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.Action, Action = d };
 
-    void OnCodeSelectUnits(byte code, int team)
-        => _pendingInput = new BittableInput { TeamID = team, Type = InputType.CodeSelectUnits, CodeSelect = code };
+    void OnCodeSelectUnits(byte code)
+        => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.CodeSelectUnits, CodeSelect = code };
 
-    void OnSelectUnits(FixedSelectionData verts, int team)
+    void OnSelectUnits(FixedSelectionData verts)
     {
-        //UnityEngine.Debug.Log($"Select units with {verts.Value.Length} verts for team {team} added to buffer");
+        //UnityEngine.Debug.Log($"Select units with {verts.Value.Length} verts added to buffer");
         if (verts.Value.Length < 8) return;
-        _pendingInput = new BittableInput { TeamID = team, Type = InputType.SelectUnits, Select = verts };
+        _pendingInput = new BittableInput { TeamID = 0, Type = InputType.SelectUnits, Select = verts };
     }
     #endregion
 }

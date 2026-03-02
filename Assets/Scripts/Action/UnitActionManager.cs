@@ -31,8 +31,6 @@ public class UnitActionManager : MapLoadedAccess
     public Texture2D[] cursors;
     public UnitGUIActionElement[] elements;
     public ConstructionData[] structures;
-    public int team = 0;
-    
     [Header("Update Settings")]
     public float updateInterval = 0.1f; // Update every 0.1 seconds
 
@@ -49,7 +47,7 @@ public class UnitActionManager : MapLoadedAccess
     
     private UnityEngine.Coroutine updateCoroutine;
 
-    public static Action<ActionData, int> OnAction;
+    public static Action<ActionData> OnAction;
     public static event Action<ConstructData> VisualizeStructure;
     public static event Action CancelStructure;
     
@@ -101,7 +99,7 @@ public class UnitActionManager : MapLoadedAccess
         // The byte is the index of the action in the UGUIData 
         foreach (var input in buffer)
         {
-            var record = InputRecordUtil.AssembleRecord(input, team);
+            var record = InputRecordUtil.AssembleRecord(input);
             PlaybackInput(record);
             //UnityEngine.Debug.Log($"Action executed - Shifting: {record.Action.Shifting}");
         }
@@ -119,7 +117,7 @@ public class UnitActionManager : MapLoadedAccess
             RayOrigin = r.Action.RayOrigin,
             RayDirection = r.Action.RayDirection
         };
-        OnAction?.Invoke(data, r.Team);
+        OnAction?.Invoke(data);
     }
     
     #endregion

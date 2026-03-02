@@ -35,8 +35,8 @@ public class GameManager : MapLoadedAccess
         
         if (GameLoadConfig.InReplayMode)
         {
-            var p = Instantiate(inputPlayback).GetComponent<InputPlayback>();
-            p.StartReplay(GameLoadConfig.ReplayPath);
+            //var p = Instantiate(inputPlayback).GetComponent<InputPlayback>();
+            //p.StartReplay(GameLoadConfig.ReplayPath);
         }
         else
         {
@@ -77,9 +77,9 @@ public class GameManager : MapLoadedAccess
             data.TeamID = newTeam;
             //write to it
             if (localData.TryGetSingletonEntity<LocalPlayerData>(out var e)) entityManager.SetComponentData(e, data);
-            inputBridge.team = newTeam;
+            //inputBridge.team = newTeam;
             constructionBridge.team = newTeam;
-            unitActionManager.team = newTeam;
+            //unitActionManager.team = newTeam;
             UnityEngine.Debug.Log($"Change player team to {newTeam}");
 
         }
