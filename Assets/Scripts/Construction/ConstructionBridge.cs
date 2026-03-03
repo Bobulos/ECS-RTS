@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using RTS.InputLogging;
 /// <summary>
 /// Deprecated being replaced by unit action manager
 /// </summary>
@@ -67,7 +68,7 @@ public class ConstructionBridge : MonoBehaviour
                 //build walls command
                 else
                 {
-                    buffer.Add(InputRecordUtil.AssembleRecord(new ConstructWallData
+                    buffer.Add(InputRecordDataUtil.AssembleRecord(new ConstructWallData
                     {
                         start = startBuildPos,
                         end = hit.point,
@@ -106,7 +107,7 @@ public class ConstructionBridge : MonoBehaviour
             var ray = cam.ScreenPointToRay(Input.mousePosition);
             if (Input.GetMouseButtonDown(0))
             {
-                buffer.Add(InputRecordUtil.AssembleRecord(new ConstructData
+                buffer.Add(InputRecordDataUtil.AssembleRecord(new ConstructData
                 {
                     Data = constructData,
                     Dir = ray.direction,
@@ -129,14 +130,14 @@ public class ConstructionBridge : MonoBehaviour
     private void FixedUpdate()
     {
 
-        foreach (InputRecord r in buffer)
+        foreach (InputRecordData r in buffer)
         {
             PlaybackRLInput(r);
         }
         buffer.Clear();
     }
-    List<InputRecord> buffer = new List<InputRecord>();
-    public void PlaybackRLInput(InputRecord r)
+    List<InputRecordData> buffer = new List<InputRecordData>();
+    public void PlaybackRLInput(InputRecordData r)
     {
         switch (r.Type)
         {
@@ -168,7 +169,7 @@ public class ConstructionBridge : MonoBehaviour
                 break;
         }
     }
-    public void PlaybackInput(InputRecord r)
+    public void PlaybackInput(InputRecordData r)
     {
         switch (r.Type)
         {

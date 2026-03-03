@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-
+using RTS.InputLogging;
 public struct FixedSelectionData
 {
     public bool Shifting;
@@ -51,7 +51,7 @@ public class InputBridge : MapLoadedAccess
         //Ray ray = mainCamera.ScreenPointToRay(mousePos);
         if (b == 1)
         {
-            buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
+            buffer.Add(InputRecordDataUtil.AssembleRecord(new MoveUnitsData
                 {
                     Shifting = Input.GetKey(KeyCode.LeftShift),
                     RayDirection = -Vector3.up,
@@ -91,7 +91,7 @@ public class InputBridge : MapLoadedAccess
         //Code selection
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            buffer.Add(InputRecordUtil.AssembleRecord(0));
+            buffer.Add(InputRecordDataUtil.AssembleRecord(0));
         }
 
         // LEFT CLICK DOWN (Start Drag/Single Select)
@@ -100,7 +100,7 @@ public class InputBridge : MapLoadedAccess
             if (!Input.GetKey(KeyCode.LeftShift))
             {
                 /*OnClearUnits?.Invoke(team);*/
-                buffer.Add(InputRecordUtil.AssembleDatalessRecord(InputType.ClearUnits));
+                buffer.Add(InputRecordDataUtil.AssembleDatalessRecord(InputType.ClearUnits));
             }
 
             // Capture the screen position
@@ -122,14 +122,14 @@ public class InputBridge : MapLoadedAccess
                 selectionData.Shifting = false;
             }
             /*OnSelectUnits?.Invoke(selectionBox.GetColliderEntity(), verts, team);*/
-            buffer.Add(InputRecordUtil.AssembleRecord(selectionData));
+            buffer.Add(InputRecordDataUtil.AssembleRecord(selectionData));
             isDraggingLeft = false;
             selectionVisual?.EndSelection();
 
         }
         else if (Input.GetMouseButtonDown(1))
         {
-            buffer.Add(InputRecordUtil.AssembleRecord(new MoveUnitsData
+            buffer.Add(InputRecordDataUtil.AssembleRecord(new MoveUnitsData
             {
                 Shifting = Input.GetKey(KeyCode.LeftShift),
                 RayDirection = ray.direction,
@@ -143,7 +143,7 @@ public class InputBridge : MapLoadedAccess
     }
     #endregion
     #region PlaybackBuffer
-    List<InputRecord> buffer = new List<InputRecord>(16);
+    List<InputRecordData> buffer = new List<InputRecordData>(16);
     //playback buffer
     private void FixedUpdate()
     {
@@ -153,7 +153,7 @@ public class InputBridge : MapLoadedAccess
         }
         bool needsGUIUpdate = false;
         
-        foreach (InputRecord r in buffer)
+        foreach (InputRecordData r in buffer)
         {
             if (PlaybackInput(r))
             {
@@ -168,7 +168,7 @@ public class InputBridge : MapLoadedAccess
         }
     }
 
-    public bool PlaybackInput(InputRecord r)
+    public bool PlaybackInput(InputRecordData r)
     {
         bool affectsGUI = false;
         

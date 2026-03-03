@@ -2,8 +2,7 @@ using System;
 using Unity.Collections;
 using Unity.Physics;
 using Unity.Mathematics;
-using Unity.Burst;
-using Unity.Entities.UniversalDelegates;
+using RTS.InputLogging;
 public struct PackedBittableInput
 {
     // 2 bytes

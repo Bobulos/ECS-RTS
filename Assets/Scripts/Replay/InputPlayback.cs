@@ -5,7 +5,7 @@
 
 // public class InputPlayback : MonoBehaviour
 // {
-//     List<InputRecord> record;
+//     List<InputRecordData> record;
 
 //     //bridges
 //     public InputBridge input;
@@ -38,7 +38,7 @@
 //             record.RemoveAt(0); // ONLY remove here
 //         }
 //     }
-//     void ProcessRecord(InputRecord r)
+//     void ProcessRecord(InputRecordData r)
 //     {
 //         if (r.Step != step) return;
     

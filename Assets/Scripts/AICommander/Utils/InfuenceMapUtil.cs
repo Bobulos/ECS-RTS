@@ -1,8 +1,9 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-
-public struct InfluenceMap : IComponentData
+namespace AICommander
+{
+    public struct InfluenceMap : IComponentData
 {
     public FixedList4096Bytes<InfluenceMapNode> MapNodes;
 }
@@ -36,12 +37,12 @@ public static class InfluenceMapUtil
         return map[index];
     }
 
-    public static FixedList4096Bytes<InfluenceMapNode> BuildMap(int mapSize)
+    public static FixedList4096Bytes<InfluenceMapNode> BuildMap(int worldSize)
     {
-        //_mapDimensions = mapSize.x; // Cache for use in GetPositionOfNode
+        int gridSize = worldSize / NODE_SIZE;
+        int totalNodes = gridSize * gridSize;
 
         var map = new FixedList4096Bytes<InfluenceMapNode>();
-        int totalNodes = mapSize * mapSize;
 
         for (int i = 0; i < totalNodes; i++)
         {
@@ -55,16 +56,15 @@ public static class InfluenceMapUtil
         return map;
     }
 
-    public static int2 GetPositionOfNode(int index, int mapSize)
+    public static int2 GetPositionOfNode(int index, int gridSize)
     {
-        // Reconstruct 2D grid coords from flat index
-        int x = index % mapSize;
-        int z = index / mapSize;
+        int x = index % gridSize;
+        int z = index / gridSize;
 
-        // Return center of the node cell
         return new int2(
-            (x * NODE_SIZE + NODE_SIZE)/2,
-            (z * NODE_SIZE + NODE_SIZE)/2
+            x * NODE_SIZE + NODE_SIZE / 2,
+            z * NODE_SIZE + NODE_SIZE / 2
         );
     }
+}
 }

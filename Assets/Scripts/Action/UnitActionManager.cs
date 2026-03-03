@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using Unity.NetCode;
-
+using RTS.InputLogging;
 //32
 public struct ActionData
 {
@@ -99,7 +99,7 @@ public class UnitActionManager : MapLoadedAccess
         // The byte is the index of the action in the UGUIData 
         foreach (var input in buffer)
         {
-            var record = InputRecordUtil.AssembleRecord(input);
+            var record = InputRecordDataUtil.AssembleRecord(input);
             PlaybackInput(record);
             //UnityEngine.Debug.Log($"Action executed - Shifting: {record.Action.Shifting}");
         }
@@ -107,7 +107,7 @@ public class UnitActionManager : MapLoadedAccess
         buffer.Clear();
     }
 
-    public void PlaybackInput(InputRecord r)
+    public void PlaybackInput(InputRecordData r)
     {
         var data = new ActionData
         {

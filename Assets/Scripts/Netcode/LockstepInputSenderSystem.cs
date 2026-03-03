@@ -10,6 +10,7 @@ using System;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Physics;
+using RTS.InputLogging;
 
 public struct BittableInput
 {

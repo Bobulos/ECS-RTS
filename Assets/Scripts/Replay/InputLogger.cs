@@ -6,13 +6,15 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
+public  class InputLogger : MonoBehaviour
+{}
 //MAKE THIS INTO
 // public class InputLogger : MonoBehaviour
 // {
 //     const int FLUSH_THRESHOLD = 128;
 //     const uint FILE_VERSION = 1;
 
-//     private List<InputRecord> buffer = new List<InputRecord>(256);
+//     private List<InputRecordData> buffer = new List<InputRecordData>(256);
 //     private BinaryWriter writer;
 
 //     private string fileName;
@@ -48,7 +50,7 @@ using UnityEngine;
 //     }
 //     public void OnAction(ActionData d)
 //     {
-//         buffer.Add(new InputRecord { 
+//         buffer.Add(new InputRecordData { 
 //             Step = step, 
 //             Type = InputType.Action, 
 //             Action = d,
@@ -57,7 +59,7 @@ using UnityEngine;
 //     }
 //     public void OnCodeSelectUnits(byte code)
 //     {
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.CodeSelectUnits,
@@ -67,7 +69,7 @@ using UnityEngine;
 //     }
 //     public void OnConstructWalls(ConstructWallData d)
 //     {
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.ConstructWalls,
@@ -77,7 +79,7 @@ using UnityEngine;
 //     }
 //     public void OnConstructStructure(ConstructData d)
 //     {
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.Construct,
@@ -87,7 +89,7 @@ using UnityEngine;
 //     }
 //     public void OnMoveUnits(MoveUnitsData d)
 //     {
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.MoveUnits,
@@ -97,7 +99,7 @@ using UnityEngine;
 //     }
 //     public void OnClearUnits()
 //     {
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.ClearUnits,
@@ -108,7 +110,7 @@ using UnityEngine;
 //     public void OnSelectUnits(FixedSelectionData vertecies)
 //     {
 //         if (vertecies.Value.Length == 0 || vertecies.Value.Length < 8) { return; }
-//         buffer.Add(new InputRecord
+//         buffer.Add(new InputRecordData
 //         {
 //             Step = step,
 //             Type = InputType.SelectUnits,
@@ -135,8 +137,8 @@ using UnityEngine;
 //         InputBridge.OnSelectUnits -= OnSelectUnits;
 //         InputBridge.OnCodeSelectUnits -= OnCodeSelectUnits;
 //         UnitActionManager.OnAction -= OnAction;
-//         /*List<InputRecord> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
-//         foreach (InputRecord r in record)
+//         /*List<InputRecordData> record = InputDecoder.LoadLog(Path.Combine(Application.persistentDataPath, fileName));
+//         foreach (InputRecordData r in record)
 //         {
 //             Debug.Log($"record of {r.Type} at {r.Step} step");
 //         }*/
@@ -209,9 +211,9 @@ using UnityEngine;
 // }
 // public static class InputDecoder
 // {
-//     public static List<InputRecord> LoadLog(string path)
+//     public static List<InputRecordData> LoadLog(string path)
 //     {
-//         var records = new List<InputRecord>();
+//         var records = new List<InputRecordData>();
 //         if (!File.Exists(path)) return records;
 
 //         using (var reader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
@@ -224,7 +226,7 @@ using UnityEngine;
 
 //                 while (reader.BaseStream.Position < reader.BaseStream.Length)
 //                 {
-//                     var record = new InputRecord
+//                     var record = new InputRecordData
 //                     {
 //                         Type = (InputType)reader.ReadByte(),
 //                         Step = reader.ReadUInt32(),
@@ -272,92 +274,94 @@ using UnityEngine;
 
 //     private static Vector3 ReadVector3(BinaryReader r) => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 // }
+namespace RTS.InputLogging
+{
+    public enum InputType : byte
+    {
+        None, //used for no input
+        ConstructWalls,
+        Construct,
+        MoveUnits,
+        SelectUnits,
+        CodeSelectUnits,
+        Action,
+        ClearUnits
+    }
+    public struct InputRecordData
+    {
+        public InputType Type;
+        public uint Step;
+        // data
 
-public enum InputType : byte
-{
-    None, //used for no input
-    ConstructWalls,
-    Construct,
-    MoveUnits,
-    SelectUnits,
-    CodeSelectUnits,
-    Action,
-    ClearUnits
-}
-public struct InputRecord
-{
-    public InputType Type;
-    public uint Step;
-    // data
-
-    //dont write actionData
-    public ActionData Action;
-    public ConstructWallData Wall;
-    public ConstructData Structure;
-    public MoveUnitsData Move;
-    public FixedSelectionData Select;
-    public byte CodeSelect;
-}
-public static class InputRecordUtil
-{
-    public static InputRecord AssembleRecord(byte d)
-    {
-        return new InputRecord
-        {
-            Type = InputType.CodeSelectUnits,
-            CodeSelect = d
-        };
+        //dont write actionData
+        public ActionData Action;
+        public ConstructWallData Wall;
+        public ConstructData Structure;
+        public MoveUnitsData Move;
+        public FixedSelectionData Select;
+        public byte CodeSelect;
     }
-    public static InputRecord AssembleRecord(ActionData d)
+    public static class InputRecordDataUtil
     {
-        return new InputRecord
+        public static InputRecordData AssembleRecord(byte d)
         {
-            Type = InputType.Action,
-            Action = d,
-        };
-    }
-    public static InputRecord AssembleRecord(ConstructWallData d)
-    {
-        return new InputRecord
-        {
-            Type = InputType.ConstructWalls,
-            Wall = d
-        };
-    }
-    public static InputRecord AssembleRecord(ConstructData d)
-    {
-        return new InputRecord
-        {
-            Type = InputType.Construct,
-            Structure = d
-        };
-    }
-    public static InputRecord AssembleRecord(MoveUnitsData d)
-    {
-        return new InputRecord
-        {
-            Type = InputType.MoveUnits,
-            Move = d
-        };
-    }
-    
-    public static InputRecord AssembleRecord(FixedSelectionData d)
-    {
-        return new InputRecord
-        {
-            Type = InputType.SelectUnits,
-            Select = d
-        };
-    }
-    //dataless like clear units
-    public static InputRecord AssembleDatalessRecord(InputType t)
-    {
-        switch (t)
-        {
-            case InputType.ClearUnits:
-                return new InputRecord { Type = InputType.ClearUnits };
+            return new InputRecordData
+            {
+                Type = InputType.CodeSelectUnits,
+                CodeSelect = d
+            };
         }
-        Debug.LogError("You used your own utility wrong dumbass");
-        return new InputRecord { Type = InputType.ClearUnits };
+        public static InputRecordData AssembleRecord(ActionData d)
+        {
+            return new InputRecordData
+            {
+                Type = InputType.Action,
+                Action = d,
+            };
+        }
+        public static InputRecordData AssembleRecord(ConstructWallData d)
+        {
+            return new InputRecordData
+            {
+                Type = InputType.ConstructWalls,
+                Wall = d
+            };
+        }
+        public static InputRecordData AssembleRecord(ConstructData d)
+        {
+            return new InputRecordData
+            {
+                Type = InputType.Construct,
+                Structure = d
+            };
+        }
+        public static InputRecordData AssembleRecord(MoveUnitsData d)
+        {
+            return new InputRecordData
+            {
+                Type = InputType.MoveUnits,
+                Move = d
+            };
+        }
+        
+        public static InputRecordData AssembleRecord(FixedSelectionData d)
+        {
+            return new InputRecordData
+            {
+                Type = InputType.SelectUnits,
+                Select = d
+            };
+        }
+        //dataless like clear units
+        public static InputRecordData AssembleDatalessRecord(InputType t)
+        {
+            switch (t)
+            {
+                case InputType.ClearUnits:
+                    return new InputRecordData { Type = InputType.ClearUnits };
+            }
+            Debug.LogError("You used your own utility wrong dumbass");
+            return new InputRecordData { Type = InputType.ClearUnits };
+        }
     }
 }

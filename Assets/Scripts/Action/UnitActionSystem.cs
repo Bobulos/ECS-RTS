@@ -7,7 +7,7 @@ using Unity.Transforms;
 using ConstructionMan;
 using Unity.NetCode;
 using UnityEngine;
-
+using RTS.InputLogging;
 [InternalBufferCapacity(16)]
 public struct ConstructRequest : IBufferElementData
 {   
