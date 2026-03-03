@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.NetCode;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Jobs;
 public struct UnitSpatialData
 {
     public float3 Position;
@@ -18,6 +19,8 @@ public struct TargSpatialData
     public int TeamID;
     public Entity Entity;
 }
+
+
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
@@ -37,9 +40,9 @@ public partial struct UnitSpatialPartitioning : ISystem
     private int _targBucket;
     private float _timeHorizon;
 
+
     public void OnCreate(ref SystemState state)
     {
-
         //SimulationSettings
         var config = SimConfigLoader.LoadSim();
         _maxNavBucket = config.navBucketCount;
@@ -62,6 +65,8 @@ public partial struct UnitSpatialPartitioning : ISystem
         //_unitData = new NativeList<UnitSpatialData>(64, Allocator.Persistent);
         _spatialMap = new NativeParallelMultiHashMap<int, UnitSpatialData>(config.spatialPartitionTargetCount, Allocator.Persistent);
         _targSpatialMap = new NativeParallelMultiHashMap<int, TargSpatialData>(config.spatialPartitionTargetCount, Allocator.Persistent);
+        
+        state.RequireForUpdate<MapData>();
     }
 
     public void OnDestroy(ref SystemState state)
@@ -78,7 +83,6 @@ public partial struct UnitSpatialPartitioning : ISystem
     public void OnUpdate(ref SystemState state)
     {
         //_unitData.Clear();
-
 
         int unitCount = _query.CalculateEntityCount();
         int targetCount = _targQuery.CalculateEntityCount();
@@ -139,7 +143,7 @@ public partial struct UnitSpatialPartitioning : ISystem
             Bucket = _targBucket,
         };
         job.ScheduleParallel();
-    
+
 
         //var handle = job.ScheduleParallel(state.Dependency);
         //state.Dependency = handle;
