@@ -19,9 +19,19 @@ public static class BMath
         float2 b2 = new float2(b.x, b.z);
         return math.distancesq(a2, b2);
     }
+    public static uint ManhattanDist2D(int2 a, int2 b)
+    {
+        uint x = (uint)(a.x-b.x);
+        uint y = (uint)(a.y-b.y);
+        return x + y;
+    }
     //[BurstCompile]
     public static float3 IgnoreY(float3 a)
     {
         return new float3(a.x, 0, a.z);
+    }
+    public static int2 FlatPosition(float3 a)
+    {
+        return new int2((int)a.x, (int)a.z);
     }
 }
