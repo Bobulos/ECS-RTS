@@ -6,6 +6,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine.AI;
+using System;
+using UnityEditor.Experimental.GraphView;
 namespace AICommander
 {
     [BurstCompile]
@@ -24,7 +26,7 @@ namespace AICommander
             UnityEngine.Debug.Log($"CalculateInfluenceSystem created");
             //state.RequireForUpdate<MapData>();
             _influenceData = new NativeList<UnitInfluenceData>(1024, Allocator.Persistent);
-            _tickFrequency = 50;
+            _tickFrequency = 100;
             _curTick = 0;
             _initialized = false;
 
@@ -80,18 +82,21 @@ namespace AICommander
                 var buildHandle = buildMapJob.Schedule(_influenceData.Length, 64);
 
                 // Get writable map nodes ref
-                var mapNodes = SystemAPI.GetSingletonRW<InfluenceMap>().ValueRW.MapNodes;
+                //var mapNodes = SystemAPI.GetSingletonRW<InfluenceMap>().ValueRW.MapNodes;
+                var mapSingleton = SystemAPI.GetSingletonRW<InfluenceMap>();
+                var nodes = mapSingleton.ValueRW.MapNodes;
 
                 var calcJob = new CalculateInfluenceMapJob
                 {
                     MapSize = mapSize,
                     SpatialMap = spatialMap,
-                    MapNodes = mapNodes
+                    MapNodes = nodes
                 };
+                
                 var calcHandle = calcJob.Schedule(buildHandle);
                 calcHandle.Complete();
 
-                SystemAPI.GetSingletonRW<InfluenceMap>().ValueRW.MapNodes = calcJob.MapNodes;
+                mapSingleton.ValueRW.MapNodes = calcJob.MapNodes;
 
                 spatialMap.Dispose();
             }
@@ -139,47 +144,52 @@ namespace AICommander
 
         public void Execute()
         {
-            int halfNodeSize = InfluenceMapUtil.NODE_SIZE / 2;
+            //int halfNodeSize = InfluenceMapUtil.NODE_SIZE / 2;
             int gridSize = MapSize / InfluenceMapUtil.NODE_SIZE;
             int totalNodes = gridSize * gridSize;
+            
+            //starting at 0 index matched team
+            // -1 is nuetral so wont count
+            FixedList128Bytes<int> strengthCount = new FixedList128Bytes<int>();
+            for (int t = 0; t < 15; t++)
+                strengthCount.Add(0);
 
             for (int i = 0; i < totalNodes; i++)
             {
                 int2 nodeCenter = InfluenceMapUtil.GetPositionOfNode(i, gridSize);
                 int2 nodeCell = nodeCenter / InfluenceMapUtil.NODE_SIZE;
 
-                sbyte favor = 0;
-                byte strength = 0;
 
-                // Search surrounding cells in the hashmap instead of all units
-                for (int dx = -INFLUENCE_RADIUS_CELLS; dx <= INFLUENCE_RADIUS_CELLS; dx++)
+
+                
+
+                if (SpatialMap.TryGetFirstValue( nodeCell, out UnitInfluenceData influ, out var it))
                 {
-                    for (int dz = -INFLUENCE_RADIUS_CELLS; dz <= INFLUENCE_RADIUS_CELLS; dz++)
+                    do
                     {
-                        int2 searchCell = nodeCell + new int2(dx, dz);
-
-                        if (!SpatialMap.TryGetFirstValue(searchCell, out var unit, out var it))
-                            continue;
-
-                        do
-                        {
-                            uint dist = BMath.ManhattanDist2D(nodeCenter, unit.Position);
-                            if (dist <= halfNodeSize * INFLUENCE_RADIUS_CELLS)
-                            {
-                                // Closer units contribute more strength
-                                byte contribution = (byte)math.max(1, 10 - dist / halfNodeSize);
-                                strength = (byte)math.min(255, strength + contribution);
-                                favor = (sbyte)math.clamp(favor + unit.TeamID * contribution, -127, 127);
-                            }
-                        }
-                        while (SpatialMap.TryGetNextValue(out unit, ref it));
+                        strengthCount[influ.TeamID]+=1;
+                        //UnityEngine.Debug.Log("Unit in hash");
+                    }while (SpatialMap.TryGetNextValue(out influ, ref it));
+                }
+                //handles 15 teams
+                int strongest = 0;
+                int strongestTeam = -1;
+                for (int t = 0; t < strengthCount.Length; t++)
+                {
+                    if (strengthCount[t] > strongest)
+                    {
+                        strongest = strengthCount[t];
+                        strongestTeam = t;
                     }
                 }
+                // Bind to byte size
+                if (strongest >= 255) strongest = 255;
 
+                sbyte favor = (sbyte)strongestTeam;
                 MapNodes[i] = new InfluenceMapNode
                 {
                     TeamFavor = favor,
-                    Strength = strength
+                    Strength = (byte)strongest
                 };
             }
         }
