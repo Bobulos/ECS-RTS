@@ -60,10 +60,12 @@ public static class InfluenceMapUtil
     {
         int x = index % gridSize;
         int z = index / gridSize;
+        
+        int halfSize = (gridSize*NODE_SIZE)/2;
 
         return new int2(
-            x * NODE_SIZE + NODE_SIZE / 2,
-            z * NODE_SIZE + NODE_SIZE / 2
+            (x * NODE_SIZE + NODE_SIZE / 2)-halfSize,
+            (z * NODE_SIZE + NODE_SIZE / 2)-halfSize
         );
     }
 }

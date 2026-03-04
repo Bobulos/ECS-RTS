@@ -23,19 +23,21 @@ public class DebugInfluence : MapLoadedAccess
     {
         if (_initialized && _influenceQuery.TryGetSingleton<InfluenceMap>(out var m))
         {
+            //float halfSize = 512f/2f;
             int gridSize = 512 / InfluenceMapUtil.NODE_SIZE;
             int totalNodes = gridSize * gridSize;
             for (int i = 0; i < totalNodes; i++)
             {
-                var s = m.MapNodes[i].TeamFavor;
+                var t = m.MapNodes[i].TeamFavor;
+                var s = m.MapNodes[i].Strength;
                 GUIStyle style = new GUIStyle();
-                style.normal.textColor = Color.red;
+                style.normal.textColor = Color.azure;
                 style.alignment = TextAnchor.MiddleCenter;
                 style.fontSize = 28;
 
                 // Draw the text at the GameObject's position
                 int2 pos = InfluenceMapUtil.GetPositionOfNode(i, gridSize);
-                Handles.Label(new Vector3(pos.x, 0, pos.y) + Vector3.up * 2f, $"{s}", style);
+                Handles.Label(new Vector3(pos.x, 0, pos.y) + Vector3.up * 2f, $"{s},{t}", style);
             }
             
         }
