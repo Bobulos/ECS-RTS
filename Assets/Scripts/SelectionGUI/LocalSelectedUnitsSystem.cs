@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -12,13 +13,15 @@ using UnityEngine;
 
 //[UpdateInGroup(typeof(PresentationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[BurstCompile]
 public partial struct SelectionGUIManagerSystem : ISystem
 {
+    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         var e = state.EntityManager.CreateSingleton<LocalSelectedUnits>();
     }
-    private int _teamID;
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingleton<LocalPlayerData>(out var data))

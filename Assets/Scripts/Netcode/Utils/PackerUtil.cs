@@ -262,9 +262,9 @@ public static class PackerUtil
         float x = Dequantize(qx);
         float z = Dequantize(qz);
 
-        UnityEngine.Debug.DrawRay(new float3(x,40f,z),math.down()*MAX_RAY_LENGTH, UnityEngine.Color.aquamarine, 10f);
+        //UnityEngine.Debug.DrawRay(new float3(x,40f,z),math.down()*MAX_RAY_LENGTH, UnityEngine.Color.aquamarine, 10f);
         input.Action.RayOrigin = new float3(x,40f,z);
-        input.Action.RayDirection = math.down()*MAX_RAY_LENGTH;
+        input.Action.RayDirection = math.down();
         //un.Action = new ActionUseData { Value = d.LA };
     }
     #endregion
