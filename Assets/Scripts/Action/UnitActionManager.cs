@@ -36,6 +36,7 @@ public class UnitActionManager : MapLoadedAccess
 
     private EntityManager entityManager;
     private EntityQuery query;
+    private EntityQuery visualizeQuery;
     private EntityGUIManifest manifest;
     private EntityData curGUIData;
     private Camera cam;
@@ -51,6 +52,7 @@ public class UnitActionManager : MapLoadedAccess
     public static event Action<ConstructData> VisualizeStructure;
     public static event Action CancelStructure;
     
+    //private World world;
     #endregion
 
     #region Unity Lifecycle
@@ -59,9 +61,10 @@ public class UnitActionManager : MapLoadedAccess
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
 
-        World defaultWorld = ClientServerBootstrap.ClientWorld;
-        entityManager = defaultWorld.EntityManager;
+        World world = ClientServerBootstrap.ClientWorld;
+        entityManager = world.EntityManager;
         query = entityManager.CreateEntityQuery(typeof(LocalSelectedUnits));
+        visualizeQuery = entityManager.CreateEntityQuery(typeof(ActionVisualizationData));
 
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
@@ -73,7 +76,18 @@ public class UnitActionManager : MapLoadedAccess
         }
 
         cam = Camera.main;
-        
+        visualizeQuery.SetSingleton(new ActionVisualizationData
+        {
+            Data = new ActionUseData
+            {
+                Shifting = false,
+                LocalActionIndex = 0,
+                SelectionKey = -1,
+                RayOrigin = float3.zero,
+                RayDirection = float3.zero,
+            }
+        });
+
         // Start continuous update
         updateCoroutine = StartCoroutine(ContinuousUpdateCoroutine());
     }
@@ -175,6 +189,17 @@ public class UnitActionManager : MapLoadedAccess
                 data.RayOrigin = r.origin;
                 data.RayDirection = r.direction;
                 
+                visualizeQuery.SetSingleton(new ActionVisualizationData
+                {
+                    Data = new ActionUseData
+                    {
+                        Shifting = false,
+                        LocalActionIndex = 0,
+                        SelectionKey = -1, // Clear visualization
+                        RayOrigin = float3.zero,
+                        RayDirection = float3.zero
+                    }
+                });
                 // Re-check shift state at the moment of confirmation
                 // This allows player to add/remove shift during targeting
                 data.Shifting = Input.GetKey(KeyCode.LeftShift);
@@ -185,19 +210,20 @@ public class UnitActionManager : MapLoadedAccess
             {
                 done = true;
             }
-
             
-            // Visualize structure placement
-            // if (data..ActionType == ActionType.BuildStructure)
-            // {
-            //     var r = cam.ScreenPointToRay(Input.mousePosition);
-            //     VisualizeStructure?.Invoke(new ConstructData
-            //     {
-            //         Origin = r.origin,
-            //         Dir = r.direction,
-            //         Data = structures[entity.visuals[data.LocalActionIndex].key],
-            //     });
-            // }
+            var sr = cam.ScreenPointToRay(Input.mousePosition);
+            //Visualize structure placement
+            visualizeQuery.SetSingleton(new ActionVisualizationData
+            {
+                Data = new ActionUseData
+                {
+                    Shifting = data.Shifting,
+                    LocalActionIndex = data.LocalActionIndex,
+                    SelectionKey = data.SelectionKey,
+                    RayOrigin = sr.origin,
+                    RayDirection = sr.direction,
+                }
+            });
 
             yield return null;
         }

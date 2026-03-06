@@ -39,7 +39,7 @@ public class UnitManifestAuthoring : MonoBehaviour
         // Update each entity's key to match array index
         for (int i = 0; i < totalManifest.Length; i++)
         {
-            totalManifest[i].key = i;
+            totalManifest[i].selectionKey = i;
             EditorUtility.SetDirty(totalManifest[i]);
         }
         EditorUtility.SetDirty(this);

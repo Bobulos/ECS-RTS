@@ -13,6 +13,7 @@ namespace AICommander
     [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
     public partial struct CalculateInfluenceSystem : ISystem
     {
+        const int MAX_ALLOC = 4096*2;
         private int _tickFrequency;
         private int _curTick;
         private bool _initialized;
@@ -52,7 +53,7 @@ namespace AICommander
 
                 // Step 1: Collect unit data into spatial map via IJobEntity
                 var spatialMap = new NativeParallelMultiHashMap<int2, UnitInfluenceData>(
-                    256, Allocator.TempJob);
+                    MAX_ALLOC, Allocator.TempJob);
 
                 var collectJob = new CollectUnitsJob
                 {

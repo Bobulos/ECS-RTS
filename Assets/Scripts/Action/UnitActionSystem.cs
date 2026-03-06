@@ -4,7 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-using ConstructionMan;
+using Construction;
 using Unity.NetCode;
 using UnityEngine;
 using RTS.InputLogging;
@@ -51,6 +51,7 @@ public partial struct UnitActionSystem : ISystem
         //UnitActionManager.OnAction -= OnAction;
     }
     #region  Read input commands
+    [BurstCompile]
     private void OnAction(ref SystemState state, ref EntityCommandBuffer ecb, ActionUseData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<ActionInfoManifest>(out var manifest))
@@ -63,13 +64,15 @@ public partial struct UnitActionSystem : ISystem
         {
             case  ActionType.AddUnitToQueue:
                 AddUnitToQueue(ref state, actionInfo, team);
-                UnityEngine.Debug.Log("Added unit to queue");
+                //UnityEngine.Debug.Log("Added unit to queue");
                 break;
             case ActionType.Move:
                 //UnityEngine.
+                //Debug.Log("Move order");
                 Move(ref state, action, team);
                 break;
             case ActionType.SetRallyPoint:
+                //UnityEngine.Debug.Log("Set rally point");
                 SetRallyPoint(ref state, action, team);
                 break;
             case ActionType.BuildStructure:
@@ -77,6 +80,7 @@ public partial struct UnitActionSystem : ISystem
                 break;
         }
     }
+    [BurstCompile]
 
     public void OnUpdate(ref SystemState state)
     {
@@ -99,7 +103,7 @@ public partial struct UnitActionSystem : ISystem
 
         
     }
-
+    [BurstCompile]
     private void ProcessInput(ref SystemState state, ref EntityCommandBuffer ecb, BittableInput unpacked)
     {
         
@@ -164,11 +168,11 @@ public partial struct UnitActionSystem : ISystem
 
             float3 offset = new float3(0, 10, 0);
             
-            foreach (var (transform, orders, selected, entity) in 
-                     SystemAPI.Query<LocalTransform, RefRW<OrderList>, RefRO<Selected>>()
+            foreach (var (transform, orders, selected, uTeam, entity) in 
+                     SystemAPI.Query<LocalTransform, RefRW<OrderList>, RefRO<Selected>, RefRO<Team>>()
                      .WithEntityAccess())
             {
-                if (!selected.ValueRO.Value) continue;
+                if (uTeam.ValueRO.TeamID != team || !selected.ValueRO.Value) continue;
                 
                 float3 movPos = (transform.Position - calculatedCenter) + movCenter.Position;
                 
@@ -224,12 +228,11 @@ public partial struct UnitActionSystem : ISystem
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (key, selected, prod) in SystemAPI.Query<
-            RefRO<SelectionKey>, RefRO<Selected>,
-            RefRW<ProductionStructure>>())
+        foreach (var (key, selected, uTeam, prod) in SystemAPI.Query<
+            RefRO<SelectionKey>, RefRO<Selected>, RefRO<Team>, RefRW<ProductionStructure>>())
         {
             //check that it is the type that needs to be modified
-            if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
+            if (uTeam.ValueRO.TeamID != team || !selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
             
             prod.ValueRW.RallyPoint = hit.Position;
             //UnityEngine.Debug.Log($"Set rally point to{hit.Position}");
@@ -248,27 +251,32 @@ public partial struct UnitActionSystem : ISystem
 
         float time = (float)SystemAPI.Time.ElapsedTime;
 
-        foreach (var (key, selected, prod) in SystemAPI.Query<
+        foreach (var (key, selected, uTeam, prod) in SystemAPI.Query<
             RefRO<SelectionKey>,
             RefRO<Selected>,
+            RefRO<Team>,
             RefRW<ProductionStructure>>())
         {
             //check that it is the type that needs to be modified
-            if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
+            if (uTeam.ValueRO.TeamID != team || !selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
+
             if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize && prod.ValueRO.QueueCount < prod.ValueRO.Queue.Capacity)
+            {
+                //UnityEngine.Debug.Log(action.PrefabIndex);
+                prod.ValueRW.QueueCount++;
+                prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.PrefabIndex]);
 
-            UnityEngine.Debug.Log(action.PrefabIndex);
-            prod.ValueRW.QueueCount++;
-            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.PrefabIndex]);
-
-            //if it is the first in list need to start cycle
-            if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;
+                //if it is the first in list need to start cycle
+                if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;
+            }
+            
         }
     }
     #endregion
     //public static Action s;
     //[BurstCompile]
     #region  Build Structure
+    [BurstCompile]
     private void BuildStructure(ref SystemState state, ref EntityCommandBuffer ecb, 
     ActionUseData ActionUseData, ActionInfo actionInfo, int team)
     {
@@ -291,12 +299,13 @@ public partial struct UnitActionSystem : ISystem
         if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit hit))
         {
             //round the raycast pos
-            float3 roundPos = SnapToGrid(physicsWorld, hit.Position);
+            float3 roundPos = ConstructionUtil.SnapToGrid(physicsWorld, hit.Position, TERRAIN_FILTER);
 
             int targetKey = selectedUnits.Buckets[0].Key;
-            foreach (var (orders, key, work, selected, entity) in SystemAPI.Query<
+            foreach (var (orders, key, uTeam, work, selected, entity) in SystemAPI.Query<
                 RefRW<OrderList>,
                 RefRO<SelectionKey>,
+                RefRO<Team>,
                 RefRW<Worker>,
                 RefRO<Selected>>().WithEntityAccess())
             {
@@ -304,24 +313,13 @@ public partial struct UnitActionSystem : ISystem
             
                 //UnityEngine.Debug.Log("GOGOGOGOOG");
                 //check that it is the type that needs to be modified
-                if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
+                if (uTeam.ValueRO.TeamID != team || !selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
                 // Get the construction data
                 var cD = constructionData[work.ValueRO.ConstructKeys[actionInfo.PrefabIndex]];
                 //UnityEngine.Debug.Log($"Built as index {work.ValueRO.ConstructKeys[action.Info.PrefabIndex]}");
                 //UnityEngine.Debug.Log($"Built as size of {cD.Size}");
-                if (!CheckValidStructurePlacement(physicsWorld, roundPos, cD.Size)) continue;
+                if (!ConstructionUtil.CheckValidStructurePlacement(physicsWorld, roundPos, cD.Size, STRUCTURE_MASK)) continue;
                 
-                // work.ValueRW.BuildRequest = new ConstructionRequest
-                // {
-                //     Dest = roundPos,
-                //     Size = cD.Size,
-                //     //Spacing = cD.Spacing,
-                //     PrimaryKey = cD.PrimaryKey
-                // };
-                // work.ValueRW.HasRequest = true;
-                //yai
-                // var e = ecb.Instantiate(structures[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]].Value);
-                // ecb.SetComponent(e, new LocalTransform {Position = hit.Position, Rotation = quaternion.identity, Scale = 1f});
                 if (!ActionUseData.Shifting) {orders.ValueRW.Value.Clear();}
                 orders.ValueRW.Value.Add(new OrderElement
                 {
@@ -336,64 +334,9 @@ public partial struct UnitActionSystem : ISystem
         }
     }
     #endregion
-    #region Helpers
-    const float STRUCTURE_CHECK_BEVEL = 0.3f;
-    bool CheckValidStructurePlacement(PhysicsWorldSingleton world, float3 position, int3 size)
-    {
-        NativeList<int> hits = new NativeList<int>(Allocator.Temp);
-        float3 halfExtent = ((float3)size / 2) - new float3(STRUCTURE_CHECK_BEVEL);
-        
-        var box = new OverlapAabbInput
-        {
-            Aabb = new Aabb
-            {
-                Max = position + halfExtent,
-                Min = position - halfExtent,
-            },
-            Filter = STRUCTURE_MASK,
-        };
-
-        bool hasOverlap = world.OverlapAabb(box, ref hits);
-        hits.Dispose();
-        
-        return !hasOverlap;
-    }
-    private const float GRID_SIZE = 3f;
-    float3 SnapToGrid(PhysicsWorldSingleton world, float3 position)
-    {
-        float3 gridSnapped = math.round(position / GRID_SIZE) * GRID_SIZE;
-        
-        if (TryGetGroundPoint(world, gridSnapped, out float3 groundPos))
-        {
-            return groundPos;
-        }
-        
-        return gridSnapped;
-    }
-    private const float DEPTH_TEST_HEIGHT = 10f;
-    private bool TryGetGroundPoint(PhysicsWorldSingleton world, float3 pos, out float3 result)
-    {
-        float3 upOffset = new float3(0, DEPTH_TEST_HEIGHT, 0);
-        RaycastInput ray = new RaycastInput
-        {
-            Start = pos + upOffset,
-            End = pos - upOffset,
-            Filter = TERRAIN_FILTER,
-        };
-
-        if (world.CastRay(ray, out Unity.Physics.RaycastHit hit))
-        {
-            result = hit.Position;
-            return true;
-        }
-
-        result = float3.zero;
-        return false;
-    }
-    #endregion
 }
 
-namespace ConstructionMan
+namespace Construction
 {
     [InternalBufferCapacity(8)]
     public struct ConstructionDataManifest : IBufferElementData

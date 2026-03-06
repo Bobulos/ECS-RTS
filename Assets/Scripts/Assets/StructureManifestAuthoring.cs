@@ -3,7 +3,7 @@ using System.Linq;
 using Unity.Entities;
 using UnityEngine;
 using Unity.Mathematics;
-using ConstructionMan;
+using Construction;
 public class StructureManifestAuthoring : MonoBehaviour
 {
     [SerializeField]

@@ -8,6 +8,7 @@ using Unity.Transforms;
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup)), UpdateAfter(typeof(UnitMovementSystem)), BurstCompile]
 public partial struct ProductionStructureSystem : ISystem
 {
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingletonBuffer<UnitManifest>(out var manifest)) return;
@@ -21,7 +22,7 @@ public partial struct ProductionStructureSystem : ISystem
         var job = new ProductionJob
         {
             Manifest = m,
-            Ecb = ecbSys.CreateCommandBuffer(state.World.Unmanaged),
+            Ecb = ecbSys.CreateCommandBuffer(state.WorldUnmanaged),
             Time = time,
         };
         job.Schedule();

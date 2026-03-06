@@ -1,6 +1,6 @@
 using System;
 using System.Diagnostics;
-using ConstructionMan;
+using Construction;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
