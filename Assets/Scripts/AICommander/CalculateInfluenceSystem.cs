@@ -92,7 +92,6 @@ namespace AICommander
         [BurstCompile]
         public void OnDestroy(ref SystemState state) { }
     }
-
     // Replaces both the manual foreach loop AND BuildSpatialHashMapJob
     [BurstCompile]
     public partial struct CollectUnitsJob : IJobEntity

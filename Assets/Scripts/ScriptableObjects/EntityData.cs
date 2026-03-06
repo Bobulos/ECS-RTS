@@ -32,7 +32,7 @@ public class EntityData : ScriptableObject
     //Ident
     public Hash128 entityGuid;
     public int key;
-    public int keyGUI;
+    public int selectionKey;
 }
 [Serializable]
 public struct ActionInfo

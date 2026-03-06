@@ -14,7 +14,7 @@ public struct PackedBittableInput
     
     public byte BA; // for shiftin
     public byte BB;
-    public byte BC;
+    //public byte BC;
     public ulong LA;
     public ulong LB;
     public ulong LC;
@@ -220,17 +220,17 @@ public static class PackerUtil
     //needs to pack shifing ray stuff and prefab index 
     #region Action
     private static void PackAction( 
-        ActionData d,
+        ActionUseData d,
         ref PackedBittableInput input,
         PhysicsWorldSingleton phys)
     {
         input.BA = Convert.ToByte(d.Shifting);
 
-        input.BB = d.ActionByte;
+        input.BB = d.LocalActionIndex;
 
-        input.BC = (byte)d.Info.ActionType;
+        //input.BC = (byte)d.Info.ActionType;
 
-        input.LB = (ulong)d.Info.PrefabIndex;
+        input.LB = (ulong)d.SelectionKey;
 
         var raycastInput = new RaycastInput
         {
@@ -251,11 +251,11 @@ public static class PackerUtil
     {
         input.Action.Shifting = Convert.ToBoolean(d.BA);
 
-        input.Action.ActionByte = d.BB;
-        input.Action.Info.ActionType = (ActionType)d.BC;
+        input.Action.LocalActionIndex = d.BB;
+        //input.Action.Info.ActionType = (ActionType)d.BC;
         //UnityEngine.Debug.Log($"Unpacked action type {(ActionType)d.BC}");
         
-        input.Action.Info.PrefabIndex = (int)d.LB;
+        input.Action.SelectionKey = (int)d.LB;
 
         Unpack2x32(d.LA, out int qx, out int qz);
 
@@ -265,7 +265,7 @@ public static class PackerUtil
         UnityEngine.Debug.DrawRay(new float3(x,40f,z),math.down()*MAX_RAY_LENGTH, UnityEngine.Color.aquamarine, 10f);
         input.Action.RayOrigin = new float3(x,40f,z);
         input.Action.RayDirection = math.down()*MAX_RAY_LENGTH;
-        //un.Action = new ActionData { Value = d.LA };
+        //un.Action = new ActionUseData { Value = d.LA };
     }
     #endregion
     #region Code Select

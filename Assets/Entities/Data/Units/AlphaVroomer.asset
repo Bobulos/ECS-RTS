@@ -29,5 +29,5 @@ MonoBehaviour:
   entityGuid:
     serializedVersion: 2
     Hash: fa260329a255be647bd8fa2e9d309fac
-  key: 2
-  keyGUI: 5
+  key: 5
+  selectionKey: 5

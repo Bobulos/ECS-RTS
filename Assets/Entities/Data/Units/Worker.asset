@@ -35,5 +35,5 @@ MonoBehaviour:
   entityGuid:
     serializedVersion: 2
     Hash: 7f30aa9e60a7193468539615164050ed
-  key: 0
-  keyGUI: 1
+  key: 1
+  selectionKey: 1

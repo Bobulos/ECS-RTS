@@ -14,6 +14,7 @@ public class MapConnectionBootstrap : MonoBehaviour
     public static Action OnMapLoaded;
     private World _clientWorld;
     private EntityQuery _inGameQuery;
+    private bool _timerStarted = false;
     private void Update()
     {
         if (_clientWorld == null && ClientServerBootstrap.ClientWorld != null)
@@ -21,8 +22,9 @@ public class MapConnectionBootstrap : MonoBehaviour
             _clientWorld = ClientServerBootstrap.ClientWorld;
             _inGameQuery = _clientWorld.EntityManager.CreateEntityQuery(typeof(NetworkStreamInGame));
             
-        } else if (_clientWorld != null && _inGameQuery.CalculateEntityCount() > 0)
+        } else if (!_timerStarted && _clientWorld != null && _inGameQuery.CalculateEntityCount() > 0)
         {
+            _timerStarted = true;
             Invoke(nameof(OnMapLoadedInternal), _loadTime);
             UnityEngine.Debug.Log($"<color=red>[MapConnectionBootstrap] Detected client world, starting map load timer</color>");
             //UnityEngine.Debug.Log($"<color=red>[MapConnectionBootstrap] Map load timer started, will invoke OnMapLoaded in {_loadTime} seconds</color>");

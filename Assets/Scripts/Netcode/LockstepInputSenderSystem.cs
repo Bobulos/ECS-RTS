@@ -18,7 +18,7 @@ public struct BittableInput
     public InputType Type;
 
     public MoveUnitsData Move;
-    public ActionData Action;
+    public ActionUseData Action;
     public byte CodeSelect;
     public FixedSelectionData Select;
 }
@@ -158,7 +158,7 @@ public partial class LockstepInputSenderSystem : SystemBase
     void OnClearUnits()
         => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.ClearUnits };
 
-    void OnAction(ActionData d)
+    void OnAction(ActionUseData d)
         => _pendingInput = new BittableInput { TeamID = 0, Type = InputType.Action, Action = d };
 
     void OnCodeSelectUnits(byte code)

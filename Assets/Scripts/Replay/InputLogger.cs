@@ -48,7 +48,7 @@ public  class InputLogger : MonoBehaviour
 //     {
 //         step++;
 //     }
-//     public void OnAction(ActionData d)
+//     public void OnAction(ActionUseData d)
 //     {
 //         buffer.Add(new InputRecordData { 
 //             Step = step, 
@@ -160,7 +160,7 @@ public  class InputLogger : MonoBehaviour
 //                     // only needs to write the index of
 //                     // the fella
 //                     writer.Write(r.Action.Shifting);
-//                     writer.Write(r.Action.ActionByte);
+//                     writer.Write(r.Action.LocalActionIndex);
 //                     WriteVector3(r.Action.RayOrigin);
 //                     WriteVector3(r.Action.RayDirection);
 //                     break;
@@ -237,7 +237,7 @@ public  class InputLogger : MonoBehaviour
 //                     {
 //                         case InputType.Action:
 //                             record.Action.Shifting = reader.ReadBoolean();
-//                             record.Action.ActionByte = reader.ReadByte();
+//                             record.Action.LocalActionIndex = reader.ReadByte();
 //                             record.Action.RayOrigin = ReadVector3(reader);
 //                             record.Action.RayDirection = ReadVector3(reader);
 //                             break;
@@ -293,8 +293,8 @@ namespace RTS.InputLogging
         public uint Step;
         // data
 
-        //dont write actionData
-        public ActionData Action;
+        //dont write ActionUseData
+        public ActionUseData Action;
         public ConstructWallData Wall;
         public ConstructData Structure;
         public MoveUnitsData Move;
@@ -311,7 +311,7 @@ namespace RTS.InputLogging
                 CodeSelect = d
             };
         }
-        public static InputRecordData AssembleRecord(ActionData d)
+        public static InputRecordData AssembleRecord(ActionUseData d)
         {
             return new InputRecordData
             {

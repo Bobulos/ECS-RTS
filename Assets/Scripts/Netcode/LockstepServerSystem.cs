@@ -9,7 +9,7 @@ public partial class LockstepServerSystem : SystemBase
 {
     // Map from NetworkId → input for this turn
     private NativeHashMap<int, PackedBittableInput> _collectedInputs;
-    private int _expectedPlayers = 2; // or track dynamically
+    private int _expectedPlayers;
     private ushort _currentTurn = 0;
     bool _logging;
     protected override void OnCreate()

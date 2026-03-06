@@ -84,7 +84,7 @@ class UnitBaker : Baker<UnitAuthoring>
         
         AddComponent(entity, new Selected { Value = false});
 
-        AddComponent(entity, new SelectionKey {Value = authoring.data.keyGUI });
+        AddComponent(entity, new SelectionKey {Value = authoring.data.selectionKey });
         //buffers
         AddComponent(entity, new OrderList{Value = new FixedList4096Bytes<OrderElement>()});
         AddComponent<PatherWayPoint>(entity);

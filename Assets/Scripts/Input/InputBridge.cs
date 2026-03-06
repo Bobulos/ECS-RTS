@@ -24,7 +24,7 @@ public class InputBridge : MapLoadedAccess
 
     public SelectionBox selectionBox;
 
-    // Action<SelectActionData> is the signature.
+    // Action<SelectActionUseData> is the signature.
     public static event Action<FixedSelectionData> OnSelectUnits;
     public static event Action<byte> OnCodeSelectUnits;
     public static event Action<MoveUnitsData> OnMoveUnits;

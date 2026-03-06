@@ -18,10 +18,12 @@ MonoBehaviour:
   icon: {fileID: 2800000, guid: 532fe197b6d944845986d94eacedc31c, type: 3}
   description: 
   actions: []
+  hotKeys: 
+  visuals: []
   actionIcons: []
   trainingTime: 0
   entityGuid:
     serializedVersion: 2
     Hash: 192c76075db0ce947a9d2d628dba01ec
-  key: 3
-  keyGUI: 6
+  key: 6
+  selectionKey: 6

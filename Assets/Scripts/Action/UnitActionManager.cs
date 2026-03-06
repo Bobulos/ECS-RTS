@@ -8,20 +8,20 @@ using System.Linq;
 using Unity.NetCode;
 using RTS.InputLogging;
 //32
-public struct ActionData
+public struct ActionUseData
 {
     public bool Shifting;
     //WRITE
-    public byte ActionByte;
+    // Index of action in unit
+    public byte LocalActionIndex;
 
-    //NOT FOR REPLAY FETCHED DYNAMICALLY
-    //6 B
-    public ActionInfo Info;
+    public int SelectionKey;
 
     //for stuff like set rally points WRITE
     public float3 RayOrigin;
     public float3 RayDirection;
 }
+
 
 public class UnitActionManager : MapLoadedAccess
 {
@@ -39,7 +39,7 @@ public class UnitActionManager : MapLoadedAccess
     private EntityGUIManifest manifest;
     private EntityData curGUIData;
     private Camera cam;
-    private List<ActionData> buffer = new List<ActionData>();
+    private List<ActionUseData> buffer = new List<ActionUseData>();
     
     // Cache for change detection
     private int lastSelectedKey = -1;
@@ -47,7 +47,7 @@ public class UnitActionManager : MapLoadedAccess
     
     private UnityEngine.Coroutine updateCoroutine;
 
-    public static Action<ActionData> OnAction;
+    public static Action<ActionUseData> OnAction;
     public static event Action<ConstructData> VisualizeStructure;
     public static event Action CancelStructure;
     
@@ -109,11 +109,11 @@ public class UnitActionManager : MapLoadedAccess
 
     public void PlaybackInput(InputRecordData r)
     {
-        var data = new ActionData
+        var data = new ActionUseData
         {
             Shifting = r.Action.Shifting, // Preserve shifting from record
-            ActionByte = r.Action.ActionByte,
-            Info = curGUIData.actions[r.Action.ActionByte],
+            LocalActionIndex = r.Action.LocalActionIndex,
+            SelectionKey = curGUIData.selectionKey,
             RayOrigin = r.Action.RayOrigin,
             RayDirection = r.Action.RayDirection
         };
@@ -124,18 +124,18 @@ public class UnitActionManager : MapLoadedAccess
 
     #region Action Handling
     
-    public void OnElementAction(byte actionByte)
+    public void OnElementAction(byte LocalActionIndex)
     {
-        ActionInfo info = curGUIData.actions[actionByte];
+        ActionInfo info = curGUIData.actions[LocalActionIndex];
 
         // Capture shift state immediately when action is triggered
         bool isShifting = Input.GetKey(KeyCode.LeftShift);
 
-        var data = new ActionData
+        var data = new ActionUseData
         {
             Shifting = isShifting,
-            ActionByte = actionByte,
-            Info = info,
+            LocalActionIndex = LocalActionIndex,
+            SelectionKey = curGUIData.selectionKey,
             RayOrigin = float3.zero,
             RayDirection = float3.zero
         };
@@ -159,7 +159,7 @@ public class UnitActionManager : MapLoadedAccess
 
     #region Target Action Coroutine
     
-    System.Collections.IEnumerator TargetAction(ActionData data, EntityData entity)
+    System.Collections.IEnumerator TargetAction(ActionUseData data, EntityData entity)
     {
         bool done = false;
         InputData.inAction = true;
@@ -186,17 +186,18 @@ public class UnitActionManager : MapLoadedAccess
                 done = true;
             }
 
+            
             // Visualize structure placement
-            if (data.Info.ActionType == ActionType.BuildStructure)
-            {
-                var r = cam.ScreenPointToRay(Input.mousePosition);
-                VisualizeStructure?.Invoke(new ConstructData
-                {
-                    Origin = r.origin,
-                    Dir = r.direction,
-                    Data = structures[entity.visuals[data.ActionByte].key],
-                });
-            }
+            // if (data..ActionType == ActionType.BuildStructure)
+            // {
+            //     var r = cam.ScreenPointToRay(Input.mousePosition);
+            //     VisualizeStructure?.Invoke(new ConstructData
+            //     {
+            //         Origin = r.origin,
+            //         Dir = r.direction,
+            //         Data = structures[entity.visuals[data.LocalActionIndex].key],
+            //     });
+            // }
 
             yield return null;
         }

@@ -20,7 +20,7 @@ public class EntityGUIManifest : MonoBehaviour
         // Update each entity's key to match array index
         for (int i = 0; i < manifest.Length; i++)
         {
-            manifest[i].keyGUI = i;
+            manifest[i].selectionKey = i;
             EditorUtility.SetDirty(manifest[i]);
         }
         

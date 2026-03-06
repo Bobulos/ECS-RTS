@@ -51,12 +51,18 @@ public partial struct UnitActionSystem : ISystem
         //UnitActionManager.OnAction -= OnAction;
     }
     #region  Read input commands
-    private void OnAction(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
+    private void OnAction(ref SystemState state, ref EntityCommandBuffer ecb, ActionUseData action, int team)
     {
-        switch (action.Info.ActionType)
+        if (!SystemAPI.TryGetSingleton<ActionInfoManifest>(out var manifest))
+        {
+            return;
+        }
+        ActionInfo actionInfo = 
+        manifest.Blob.Value.UnitsActionInfo[action.SelectionKey][action.LocalActionIndex];
+        switch (actionInfo.ActionType)
         {
             case  ActionType.AddUnitToQueue:
-                AddUnitToQueue(ref state, action, team);
+                AddUnitToQueue(ref state, actionInfo, team);
                 UnityEngine.Debug.Log("Added unit to queue");
                 break;
             case ActionType.Move:
@@ -67,7 +73,7 @@ public partial struct UnitActionSystem : ISystem
                 SetRallyPoint(ref state, action, team);
                 break;
             case ActionType.BuildStructure:
-                BuildStructure(ref state, ref ecb, action, team);
+                BuildStructure(ref state, ref ecb, action, actionInfo, team);
                 break;
         }
     }
@@ -110,7 +116,7 @@ public partial struct UnitActionSystem : ISystem
     #region  Move
     //shared no check for key
     [BurstCompile]
-    private void Move(ref SystemState state, ActionData action, int team)
+    private void Move(ref SystemState state, ActionUseData action, int team)
     {
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var raycastInput = new RaycastInput
@@ -197,7 +203,7 @@ public partial struct UnitActionSystem : ISystem
     #endregion
     #region Rallypoint
     [BurstCompile]
-    private void SetRallyPoint(ref SystemState state, ActionData action, int team)
+    private void SetRallyPoint(ref SystemState state, ActionUseData action, int team)
     {
         if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var world)) return;
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
@@ -233,7 +239,7 @@ public partial struct UnitActionSystem : ISystem
     #endregion
     #region  Add Unit to Queue
     [BurstCompile]
-    private void AddUnitToQueue(ref SystemState state, ActionData action, int team)
+    private void AddUnitToQueue(ref SystemState state, ActionInfo action, int team)
     {
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
 
@@ -251,8 +257,9 @@ public partial struct UnitActionSystem : ISystem
             if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
             if (prod.ValueRO.QueueCount < prod.ValueRO.QueueSize && prod.ValueRO.QueueCount < prod.ValueRO.Queue.Capacity)
 
+            UnityEngine.Debug.Log(action.PrefabIndex);
             prod.ValueRW.QueueCount++;
-            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.Info.PrefabIndex]);
+            prod.ValueRW.Queue.Add(prod.ValueRO.Prefabs[action.PrefabIndex]);
 
             //if it is the first in list need to start cycle
             if (prod.ValueRO.QueueCount == 1) prod.ValueRW.StartTime = time;
@@ -262,7 +269,8 @@ public partial struct UnitActionSystem : ISystem
     //public static Action s;
     //[BurstCompile]
     #region  Build Structure
-    private void BuildStructure(ref SystemState state, ref EntityCommandBuffer ecb, ActionData action, int team)
+    private void BuildStructure(ref SystemState state, ref EntityCommandBuffer ecb, 
+    ActionUseData ActionUseData, ActionInfo actionInfo, int team)
     {
         //UnityEngine.Debug.Log("Build structure");
         if (!SystemAPI.TryGetSingleton<LocalSelectedUnits>(out var selectedUnits)) return;
@@ -274,8 +282,8 @@ public partial struct UnitActionSystem : ISystem
 
         var raycastInput = new RaycastInput
         {
-            Start = action.RayOrigin, // Ray origin
-            End = action.RayOrigin + action.RayDirection * MAX_RAY_LENGTH,   // Ray end point
+            Start = ActionUseData.RayOrigin, // Ray origin
+            End = ActionUseData.RayOrigin + ActionUseData.RayDirection * MAX_RAY_LENGTH,   // Ray end point
             Filter = CollisionFilter.Default // Or a custom filter
         };
 
@@ -298,7 +306,7 @@ public partial struct UnitActionSystem : ISystem
                 //check that it is the type that needs to be modified
                 if (!selected.ValueRO.Value || key.ValueRO.Value != targetKey) continue;
                 // Get the construction data
-                var cD = constructionData[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]];
+                var cD = constructionData[work.ValueRO.ConstructKeys[actionInfo.PrefabIndex]];
                 //UnityEngine.Debug.Log($"Built as index {work.ValueRO.ConstructKeys[action.Info.PrefabIndex]}");
                 //UnityEngine.Debug.Log($"Built as size of {cD.Size}");
                 if (!CheckValidStructurePlacement(physicsWorld, roundPos, cD.Size)) continue;
@@ -314,13 +322,13 @@ public partial struct UnitActionSystem : ISystem
                 //yai
                 // var e = ecb.Instantiate(structures[work.ValueRO.ConstructKeys[action.Info.PrefabIndex]].Value);
                 // ecb.SetComponent(e, new LocalTransform {Position = hit.Position, Rotation = quaternion.identity, Scale = 1f});
-                if (!action.Shifting) {orders.ValueRW.Value.Clear();}
+                if (!ActionUseData.Shifting) {orders.ValueRW.Value.Clear();}
                 orders.ValueRW.Value.Add(new OrderElement
                 {
                    Type = OrderType.BuildStructure,
                    Position = roundPos,
                    //construction index of the structure
-                   Data = action.Info.PrefabIndex,
+                   Data = actionInfo.PrefabIndex,
                 });
                 break;
                 //ecb.AddComponent(entity, new UnitMoveOrder {Dest = roundPos});
