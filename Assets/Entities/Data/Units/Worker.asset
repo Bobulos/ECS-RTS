@@ -24,13 +24,18 @@ MonoBehaviour:
   - ActionType: 3
     InteractionType: 1
     PrefabIndex: 0
-  hotKeys: 6d00000062000000
+  - ActionType: 3
+    InteractionType: 1
+    PrefabIndex: 1
+  hotKeys: 6d0000006200000078000000
   visuals:
   - {fileID: 0}
   - {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}
+  - {fileID: 11400000, guid: f853ae03de79b634d9f06291ae5398b7, type: 2}
   actionIcons:
   - {fileID: 2800000, guid: c66f0ae48e46d2b4a85686f31b71955a, type: 3}
   - {fileID: 2800000, guid: cb267c5ba32157e4aa62ec6b86273fd7, type: 3}
+  - {fileID: 2800000, guid: ee182efa825d42b41ad36699bb93e2e5, type: 3}
   trainingTime: 5
   entityGuid:
     serializedVersion: 2

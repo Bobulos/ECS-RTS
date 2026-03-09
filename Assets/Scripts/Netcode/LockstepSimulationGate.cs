@@ -11,7 +11,7 @@ public partial class LockstepSimulationGate : SystemBase
     {
         _logging = NetworkConfigLoader.LoadNetwork().logNetwork;
         //RequireForUpdate<NetworkStreamInGame>();
-        EntityManager.CreateSingleton<CurrentTurnInput>(new CurrentTurnInput { Ready = false });
+        EntityManager.CreateSingleton(new CurrentTurnInput { Ready = false });
     }
     protected override void OnUpdate()
     {

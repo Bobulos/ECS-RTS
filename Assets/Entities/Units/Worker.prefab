@@ -244,6 +244,7 @@ MonoBehaviour:
   buildAsWorker: 1
   prefabs:
   - {fileID: 11400000, guid: a040849098b833944b98abaed6e4dbda, type: 2}
+  - {fileID: 11400000, guid: f853ae03de79b634d9f06291ae5398b7, type: 2}
 --- !u!135 &2741386297836675233
 SphereCollider:
   m_ObjectHideFlags: 0
