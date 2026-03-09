@@ -30,14 +30,12 @@ public struct LockstepInput : IComponentData
     public bool Ready;
 }
 
-// Client → Server: "here is my input for turn N"
 public struct ClientInputRpc : IRpcCommand
 {
     //public ushort TurnNumber;
+    // this in packed input
     public PackedBittableInput Value;
 }
-
-// Server → All Clients: "all inputs for turn N, go simulate"
 public struct TurnReadyRpc : IRpcCommand
 {
     public ushort TurnNumber;

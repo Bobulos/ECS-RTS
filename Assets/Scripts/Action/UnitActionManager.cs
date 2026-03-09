@@ -7,32 +7,26 @@ using UnityEditor;
 using System.Linq;
 using Unity.NetCode;
 using RTS.InputLogging;
-//32
+
 public struct ActionUseData
 {
     public bool Shifting;
-    //WRITE
-    // Index of action in unit
     public byte LocalActionIndex;
-
     public int SelectionKey;
-
-    //for stuff like set rally points WRITE
     public float3 RayOrigin;
     public float3 RayDirection;
 }
 
-
 public class UnitActionManager : MapLoadedAccess
 {
     #region Fields
-    
+
     public Vector2 cursorOffset;
     public Texture2D[] cursors;
     public UnitGUIActionElement[] elements;
     public ConstructionData[] structures;
     [Header("Update Settings")]
-    public float updateInterval = 0.1f; // Update every 0.1 seconds
+    public float updateInterval = 0.1f;
 
     private EntityManager entityManager;
     private EntityQuery query;
@@ -40,23 +34,20 @@ public class UnitActionManager : MapLoadedAccess
     private EntityGUIManifest manifest;
     private EntityData curGUIData;
     private Camera cam;
-    private List<ActionUseData> buffer = new List<ActionUseData>();
-    
-    // Cache for change detection
+
     private int lastSelectedKey = -1;
     private int lastSelectedCount = 0;
-    
+
     private UnityEngine.Coroutine updateCoroutine;
 
     public static Action<ActionUseData> OnAction;
     public static event Action<ConstructData> VisualizeStructure;
     public static event Action CancelStructure;
-    
-    //private World world;
+
     #endregion
 
     #region Unity Lifecycle
-    
+
     public override void OnLoad()
     {
         manifest = FindFirstObjectByType<EntityGUIManifest>();
@@ -68,8 +59,8 @@ public class UnitActionManager : MapLoadedAccess
 
         InputBridge.OnUpdateGUI += OnUpdateGUI;
         UnitGUIActionElement.OnAction += OnElementAction;
-        
-        if (GameLoadConfig.InReplayMode) 
+
+        if (GameLoadConfig.InReplayMode)
         {
             this.enabled = false;
             return;
@@ -88,7 +79,6 @@ public class UnitActionManager : MapLoadedAccess
             }
         });
 
-        // Start continuous update
         updateCoroutine = StartCoroutine(ContinuousUpdateCoroutine());
     }
 
@@ -96,59 +86,24 @@ public class UnitActionManager : MapLoadedAccess
     {
         InputBridge.OnUpdateGUI -= OnUpdateGUI;
         UnitGUIActionElement.OnAction -= OnElementAction;
-        
+
         if (updateCoroutine != null)
-        {
             StopCoroutine(updateCoroutine);
-        }
-    }
-    
-    #endregion
-
-    #region Input Buffer Playback
-    
-    private void FixedUpdate()
-    {
-        // Only playback input buffer if not in playback mode
-        // The byte is the index of the action in the UGUIData 
-        foreach (var input in buffer)
-        {
-            var record = InputRecordDataUtil.AssembleRecord(input);
-            PlaybackInput(record);
-            //UnityEngine.Debug.Log($"Action executed - Shifting: {record.Action.Shifting}");
-        }
-        
-        buffer.Clear();
     }
 
-    public void PlaybackInput(InputRecordData r)
-    {
-        var data = new ActionUseData
-        {
-            Shifting = r.Action.Shifting, // Preserve shifting from record
-            LocalActionIndex = r.Action.LocalActionIndex,
-            SelectionKey = curGUIData.selectionKey,
-            RayOrigin = r.Action.RayOrigin,
-            RayDirection = r.Action.RayDirection
-        };
-        OnAction?.Invoke(data);
-    }
-    
     #endregion
 
     #region Action Handling
-    
-    public void OnElementAction(byte LocalActionIndex)
-    {
-        ActionInfo info = curGUIData.actions[LocalActionIndex];
 
-        // Capture shift state immediately when action is triggered
+    public void OnElementAction(byte localActionIndex)
+    {
+        ActionInfo info = curGUIData.actions[localActionIndex];
         bool isShifting = Input.GetKey(KeyCode.LeftShift);
 
         var data = new ActionUseData
         {
             Shifting = isShifting,
-            LocalActionIndex = LocalActionIndex,
+            LocalActionIndex = localActionIndex,
             SelectionKey = curGUIData.selectionKey,
             RayOrigin = float3.zero,
             RayDirection = float3.zero
@@ -157,22 +112,20 @@ public class UnitActionManager : MapLoadedAccess
         switch (info.InteractionType)
         {
             case InteractionType.Target:
-                // Set cursor for targeting mode
                 Cursor.SetCursor(cursors[0], cursorOffset, CursorMode.Auto);
                 StartCoroutine(TargetAction(data, curGUIData));
                 break;
 
             case InteractionType.Instant:
-                // Instant actions go straight to buffer
-                buffer.Add(data);
+                OnAction?.Invoke(data);
                 break;
         }
     }
-    
+
     #endregion
 
     #region Target Action Coroutine
-    
+
     System.Collections.IEnumerator TargetAction(ActionUseData data, EntityData entity)
     {
         bool done = false;
@@ -180,39 +133,35 @@ public class UnitActionManager : MapLoadedAccess
 
         while (!done)
         {
-            // Check for left click to confirm action
             if (Input.GetMouseButtonDown(0))
             {
                 if (!Input.GetKey(KeyCode.LeftShift)) done = true;
-                
+
                 var r = cam.ScreenPointToRay(Input.mousePosition);
                 data.RayOrigin = r.origin;
                 data.RayDirection = r.direction;
-                
+                data.Shifting = Input.GetKey(KeyCode.LeftShift);
+
                 visualizeQuery.SetSingleton(new ActionVisualizationData
                 {
                     Data = new ActionUseData
                     {
                         Shifting = false,
                         LocalActionIndex = 0,
-                        SelectionKey = -1, // Clear visualization
+                        SelectionKey = -1,
                         RayOrigin = float3.zero,
                         RayDirection = float3.zero
                     }
                 });
-                // Re-check shift state at the moment of confirmation
-                // This allows player to add/remove shift during targeting
-                data.Shifting = Input.GetKey(KeyCode.LeftShift);
-                
-                buffer.Add(data);
-            } 
+
+                OnAction?.Invoke(data);
+            }
             else if (Input.GetKeyDown(KeyCode.Escape))
             {
                 done = true;
             }
-            
+
             var sr = cam.ScreenPointToRay(Input.mousePosition);
-            //Visualize structure placement
             visualizeQuery.SetSingleton(new ActionVisualizationData
             {
                 Data = new ActionUseData
@@ -228,22 +177,16 @@ public class UnitActionManager : MapLoadedAccess
             yield return null;
         }
 
-        // Reset cursor
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-
-        // Small delay before allowing new input
         yield return new WaitForSeconds(0.2f);
         InputData.inAction = false;
-
-        // Cancel structure visualization if not queuing
         CancelStructure?.Invoke();
     }
-    
+
     #endregion
 
     #region GUI Update
-    
-    // Continuous update coroutine
+
     System.Collections.IEnumerator ContinuousUpdateCoroutine()
     {
         while (true)
@@ -252,18 +195,13 @@ public class UnitActionManager : MapLoadedAccess
             yield return new WaitForSeconds(updateInterval);
         }
     }
-    
-    // Optional: Immediate update triggered by event
-    public void OnUpdateGUI()
-    {
-        UpdateGUI();
-    }
+
+    public void OnUpdateGUI() => UpdateGUI();
 
     void UpdateGUI()
     {
         if (!query.TryGetSingleton(out LocalSelectedUnits selectedUnits))
         {
-            // No selection - clear if we had something selected before
             if (lastSelectedKey != -1)
             {
                 ClearAllElements();
@@ -273,10 +211,9 @@ public class UnitActionManager : MapLoadedAccess
             return;
         }
 
-        // Find first non-empty bucket
         bool found = false;
         SelectedUnitBucket toDisplay = new SelectedUnitBucket { Key = 0, Count = 0 };
-        
+
         foreach (var bucket in selectedUnits.Buckets)
         {
             found = true;
@@ -284,7 +221,6 @@ public class UnitActionManager : MapLoadedAccess
             break;
         }
 
-        // Clear all elements if no selection
         if (!found)
         {
             if (lastSelectedKey != -1)
@@ -296,68 +232,47 @@ public class UnitActionManager : MapLoadedAccess
             return;
         }
 
-        // Check if selection has changed
         if (toDisplay.Key == lastSelectedKey && toDisplay.Count == lastSelectedCount)
-        {
-            return; // No change, skip update
-        }
+            return;
 
-        // Update cache
         lastSelectedKey = toDisplay.Key;
         lastSelectedCount = toDisplay.Count;
 
-        // Get and validate data
         if (!manifest.TryGetData(toDisplay.Key, out EntityData data))
         {
             ClearAllElements();
-            curGUIData = null;
             return;
         }
 
         if (data.actions == null)
         {
             ClearAllElements();
-            curGUIData = null;
             return;
         }
 
         curGUIData = data;
 
-        // Populate action elements
         for (int i = 0; i < elements.Length; i++)
         {
             if (i < data.actions.Length)
-            {
                 elements[i].SetData(data, (byte)i);
-            }
             else
-            {
                 elements[i].Clear();
-            }
         }
     }
 
     void ClearAllElements()
     {
         foreach (var e in elements)
-        {
             e.Clear();
-        }
         curGUIData = null;
     }
 
-    // Kept for backwards compatibility but now just calls UpdateGUI
-    System.Collections.IEnumerator ReadSelection()
-    {
-        yield return new WaitForSeconds(0.2f);
-        UpdateGUI();
-    }
-    
     #endregion
 
     #region Editor Utilities
-    
-    #if UNITY_EDITOR
+
+#if UNITY_EDITOR
     [ContextMenu("Update manifest")]
     public void UpdateManifest()
     {
@@ -372,11 +287,11 @@ public class UnitActionManager : MapLoadedAccess
             structures[i].key = i;
             EditorUtility.SetDirty(structures[i]);
         }
-        
+
         EditorUtility.SetDirty(this);
         AssetDatabase.SaveAssets();
     }
-    #endif
-    
+#endif
+
     #endregion
 }
