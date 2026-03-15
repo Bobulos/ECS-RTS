@@ -8,115 +8,122 @@ using Unity.Transforms;
 [BurstCompile]
 public partial class SelectionVisualSystem : SystemBase
 {
-    private EntityQuery _selectedUnitsQuery;
-    private EntityQuery _visualsQuery;
+    private EntityQuery _needsVisualQuery;
+    private EntityQuery _removeVisualQuery;
 
     protected override void OnCreate()
     {
-        _selectedUnitsQuery = SystemAPI.QueryBuilder()
+        // Units that are selected but have no visual child yet
+        _needsVisualQuery = SystemAPI.QueryBuilder()
             .WithAll<Selected>()
+            .WithNone<HasSelectionVisual>()
             .Build();
-            
-        _visualsQuery = SystemAPI.QueryBuilder()
+
+        // Visual entities whose parent is no longer selected
+        _removeVisualQuery = SystemAPI.QueryBuilder()
             .WithAll<SelectedVisualTag, Parent>()
             .Build();
     }
-    [BurstCompile]
 
+    [BurstCompile]
     protected override void OnUpdate()
     {
-        if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton)) 
+        if (!SystemAPI.TryGetSingleton<AssetSingleton>(out var assetSingleton))
             return;
 
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(World.Unmanaged);
 
-        // Handle adding visuals for newly selected units
-        foreach (var (selected, entity) in 
-                 SystemAPI.Query<RefRO<Selected>>()
-                 .WithEntityAccess()
-                 .WithNone<Child>())
+        var selectedLookup   = SystemAPI.GetComponentLookup<Selected>(true);
+        var hasVisualLookup  = SystemAPI.GetComponentLookup<HasSelectionVisual>(true);
+        var structureLookup  = SystemAPI.GetComponentLookup<StructureTag>(true);
+
+        // ── Add visuals ──────────────────────────────────────────────────────
+        new AddSelectionVisualJob
         {
-            if (selected.ValueRO.Value)
-            {
-                AddVisual(ref ecb, entity, assetSingleton);
-            }
-        }
+            ECB            = ecb.AsParallelWriter(),
+            VisualPrefab   = assetSingleton.SelectedVisual,
+            StructureLookup = structureLookup,
+        }.ScheduleParallel(_needsVisualQuery);
 
-        // Handle adding visuals for units that already have children but need visual
-        foreach (var (selected, children, entity) in 
-                 SystemAPI.Query<RefRO<Selected>, DynamicBuffer<Child>>()
-                 .WithEntityAccess())
+        // ── Remove visuals ───────────────────────────────────────────────────
+        new RemoveSelectionVisualJob
         {
-            if (selected.ValueRO.Value)
-            {
-                bool hasVisual = false;
-                foreach (var child in children)
-                {
-                    if (EntityManager.HasComponent<SelectedVisualTag>(child.Value))
-                    {
-                        hasVisual = true;
-                        break;
-                    }
-                }
-
-                if (!hasVisual)
-                {
-                    AddVisual(ref ecb, entity, assetSingleton);
-                }
-            }
-        }
-
-        // Handle removing visuals for deselected units
-        var parentLookup = SystemAPI.GetComponentLookup<Parent>(true);
-        var selectedLookup = SystemAPI.GetComponentLookup<Selected>(true);
-
-        foreach (var (parent, entity) in 
-                 SystemAPI.Query<RefRO<Parent>>()
-                 .WithAll<SelectedVisualTag>()
-                 .WithEntityAccess())
-        {
-            Entity parentEntity = parent.ValueRO.Value;
-            
-            if (selectedLookup.HasComponent(parentEntity))
-            {
-                if (!selectedLookup[parentEntity].Value)
-                {
-                    ecb.DestroyEntity(entity);
-                }
-            }
-            else
-            {
-                // Parent doesn't have Selected component, destroy visual
-                ecb.DestroyEntity(entity);
-            }
-        }
-
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
-    }
-
-    [BurstCompile]
-    private void AddVisual(ref EntityCommandBuffer ecb, Entity unit, AssetSingleton assetSingleton)
-    {
-        if (!EntityManager.HasBuffer<Child>(unit))
-        {
-            ecb.AddBuffer<Child>(unit);
-        }
-
-        var visual = ecb.Instantiate(assetSingleton.SelectedVisual);
-
-        ecb.AddComponent(visual, new Parent { Value = unit });
-        
-        // Determine scale based on whether it's a structure or unit
-        float scale = EntityManager.HasComponent<StructureTag>(unit) ? 2.3f : 1f;
-        
-        ecb.SetComponent(visual, new LocalTransform
-        {
-            Position = new float3(0, 0, 0),
-            Rotation = quaternion.identity,
-            Scale = scale
-        });
-        
-        ecb.AddComponent<SelectedVisualTag>(visual);
+            ECB            = ecb.AsParallelWriter(),
+            SelectedLookup = selectedLookup,
+        }.ScheduleParallel(_removeVisualQuery);
     }
 }
+
+/// <summary>
+/// Spawns a selection visual for every selected unit that doesn't have one yet.
+/// A <see cref="HasSelectionVisual"/> tag is added to the unit so the query
+/// naturally excludes it on subsequent frames — no child-buffer scan needed.
+/// </summary>
+[BurstCompile]
+public partial struct AddSelectionVisualJob : IJobEntity
+{
+    public EntityCommandBuffer.ParallelWriter ECB;
+    public Entity VisualPrefab;
+
+    [ReadOnly] public ComponentLookup<StructureTag> StructureLookup;
+
+    private void Execute(
+        Entity unit,
+        [ChunkIndexInQuery] int sortKey,
+        in Selected selected)
+    {
+        if (!selected.Value) return;
+
+        float scale = StructureLookup.HasComponent(unit) ? 2.3f : 1f;
+
+        Entity visual = ECB.Instantiate(sortKey, VisualPrefab);
+
+        ECB.AddComponent(sortKey, visual, new Parent { Value = unit });
+        ECB.SetComponent(sortKey, visual, new LocalTransform
+        {
+            Position = float3.zero,
+            Rotation = quaternion.identity,
+            Scale    = scale,
+        });
+        ECB.AddComponent<SelectedVisualTag>(sortKey, visual);
+
+        // Tag the unit so this job won't touch it again next frame
+        ECB.AddComponent<HasSelectionVisual>(sortKey, unit);
+    }
+}
+
+/// <summary>
+/// Destroys selection visuals whose parent unit is no longer selected (or gone).
+/// Also removes the <see cref="HasSelectionVisual"/> marker from the parent so
+/// a visual will be re-added if the unit is selected again.
+/// </summary>
+[BurstCompile]
+public partial struct RemoveSelectionVisualJob : IJobEntity
+{
+    public EntityCommandBuffer.ParallelWriter ECB;
+
+    [ReadOnly] public ComponentLookup<Selected> SelectedLookup;
+
+    private void Execute(
+        Entity visual,
+        [ChunkIndexInQuery] int sortKey,
+        in Parent parent,
+        in SelectedVisualTag _)
+    {
+        bool shouldRemove =
+            !SelectedLookup.TryGetComponent(parent.Value, out var selected)
+            || !selected.Value;
+
+        if (!shouldRemove) return;
+
+        ECB.DestroyEntity(sortKey, visual);
+
+        // Clean up the marker on the parent (if it still exists)
+        if (SelectedLookup.HasComponent(parent.Value))
+            ECB.RemoveComponent<HasSelectionVisual>(sortKey, parent.Value);
+    }
+}
+
+/// <summary>Zero-size tag placed on a unit while it has a selection visual.</summary>
+public struct HasSelectionVisual : IComponentData { }
